@@ -213,6 +213,13 @@
     else calendar?.next();
   }
 
+  function getLocalDateKey(date: Date = new Date()): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+
   function handleDeadlineClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
     const deadlineSpan = target.closest(".sch-deadline[data-deadline-date]") as HTMLElement | null;
@@ -379,7 +386,7 @@
         const weather = dateStr ? weatherByDate.get(dateStr) : null;
         const weekday = arg.text?.split(" ")[0] || "";
         const dayNum = arg.text?.split(" ").slice(1).join(" ") || "";
-        const isToday = dateStr === new Date().toISOString().slice(0, 10);
+        const isToday = dateStr === getLocalDateKey();
         const todayClass = isToday ? " fc-day-header-today" : "";
 
         if (weather) {
@@ -1321,9 +1328,6 @@
     text-transform: capitalize;
   }
 
-  :global(.fc .fc-day-header-content.fc-day-header-today .fc-day-header-text) {
-    color: #fff;
-  }
 
   :global(.fc .fc-day-header-weather) {
     display: flex;
@@ -1371,12 +1375,6 @@
   }
 
   /* Сегодня — в month view */
-  :global(.fc .fc-daygrid-day.fc-day-today .fc-daygrid-day-number) {
-    background: var(--mcp-accent, rgba(95, 153, 225, 0.55));
-    color: #fff;
-    border-radius: 6px;
-    font-weight: 700;
-  }
 
   :global(.fc .fc-timegrid .fc-day-today) {
     background: rgba(95, 153, 225, 0.06) !important;
