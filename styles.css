@@ -4455,6 +4455,21 @@ content: attr(data-task-count);
    Schedule View (FullCalendar)
    ============================ */
 
+/* FullCalendar event harnesses — pass clicks through to actual events */
+.schedule-view-container .fc .fc-timegrid-event-harness {
+  pointer-events: none;
+}
+
+.schedule-view-container .fc .fc-timegrid-event-harness-inset {
+  pointer-events: none;
+}
+
+/* Ensure actual event elements are always clickable */
+.schedule-view-container .fc .fc-timegrid-event {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 .schedule-view-container {
   height: 100%;
   overflow: hidden;
@@ -4568,6 +4583,8 @@ content: attr(data-task-count);
 .schedule-view-container .fc .fc-timegrid-event {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .schedule-view-container .fc .fc-event:hover {

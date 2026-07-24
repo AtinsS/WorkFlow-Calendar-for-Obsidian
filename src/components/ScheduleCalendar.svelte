@@ -527,7 +527,7 @@
         task.status === "done" ? "Готово" : ""
       ) : "";
     const statusHtml = statusLabel
-      ? `<span class="sch-event-status sch-status-${task.status}">${statusLabel}</span>`
+      ? `<span class="sch-event-status sch-status-${task.status}" data-action="toggle-status" title="Нажмите для смены статуса">${statusLabel}</span>`
       : "";
     const priorityBadge = showPriority
       ? (task.priority === "high" ? '<span class="sch-priority sch-priority-high">!</span>' :
@@ -536,7 +536,7 @@
     const workBadge = (showWorkBadge && task.isWorkTask)
       ? '<span class="sch-work-badge" title="Рабочая задача">&#128188;</span>' : "";
     const noteBadge = (showNoteBadge && task.boundNotePath)
-      ? '<span class="sch-note-badge" title="С привязанной заметкой">&#128279;</span>'
+      ? `<span class="sch-note-badge" data-action="open-note" title="Открыть заметку">&#128279;</span>`
       : "";
 
     let deadlineHtml = "";
@@ -653,6 +653,12 @@
     if (lines.length > 0) {
       el.setAttribute("title", lines.join("\n"));
     }
+
+    // Double-click → open task editor
+    el.addEventListener("dblclick", (e: MouseEvent) => {
+      e.stopPropagation();
+      openTaskEditor(task);
+    });
   }
 
   function handleEventClick(info: any): void {
@@ -675,6 +681,25 @@
     const task = resolveTask(info.event);
     if (!task) return;
 
+    // If clicked on a sub-element with data-action, handle it directly
+    const target = info.jsEvent?.target as HTMLElement;
+    if (target) {
+      const actionEl = target.closest("[data-action]") as HTMLElement | null;
+      if (actionEl) {
+        const action = actionEl.dataset.action;
+        if (action === "toggle-status") {
+          cycleTaskStatus(task);
+          info.jsEvent.stopPropagation();
+          return;
+        }
+        if (action === "open-note" && task.boundNotePath) {
+          plugin.app.workspace.openLinkText(task.boundNotePath, "", false);
+          info.jsEvent.stopPropagation();
+          return;
+        }
+      }
+    }
+
     const menuWidth = 220;
     const menuHeight = 260;
     let x = info.jsEvent?.clientX ?? 0;
@@ -689,6 +714,22 @@
     }
 
     openContextMenu(task, x, y);
+  }
+
+  function cycleTaskStatus(task: ITask): void {
+    const statusOrder: Array<"todo" | "progress" | "paused" | "done"> = ["todo", "progress", "paused", "done"];
+    const currentStatus = task.status === "all" ? "todo" : task.status;
+    const currentIdx = statusOrder.indexOf(currentStatus);
+    const nextStatus = statusOrder[(currentIdx + 1) % statusOrder.length];
+    updateTaskStatus(task.id, nextStatus);
+    if (nextStatus === "todo") {
+      resetTaskTimer(task.id);
+    }
+    const updatedTask = get(tasks).find((t) => t.id === task.id);
+    if (updatedTask) {
+      syncTaskToNote(updatedTask, plugin.app);
+    }
+    scheduleRefetch();
   }
 
   function handleCalendarSelect(info: any): void {
@@ -1417,7 +1458,6 @@
 
   :global(.fc .fc-timegrid-now-indicator-container) {
     overflow: visible;
-    z-index: 10;
   }
 
   :global(.fc .fc-timegrid-now-indicator-now) {
@@ -1484,10 +1524,21 @@
   :global(.fc .fc-timegrid-event) {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  /* Pass clicks through overlay harnesses to actual event elements */
+  :global(.fc .fc-timegrid-event-harness) {
+    pointer-events: none;
+  }
+
+  :global(.fc .fc-timegrid-event-harness-inset) {
+    pointer-events: none;
   }
 
   :global(.fc .fc-event:hover) {
-    transform: none;
+    transform: scale(1.01);
     box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)), 0 4px 16px rgba(0, 0, 0, 0.25);
     filter: brightness(1.15);
   }
@@ -1592,6 +1643,12 @@
     color: rgba(255, 230, 150, 0.95);
     flex-shrink: 0;
     white-space: nowrap;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+
+  :global(.sch-deadline:hover) {
+    background: rgba(251, 191, 36, 0.5);
+    transform: scale(1.05);
   }
 
   :global(.sch-deadline-transparent) {
@@ -1701,6 +1758,11 @@
     font-size: 9px;
     font-weight: 700;
     flex-shrink: 0;
+    transition: transform 0.15s ease;
+  }
+
+  :global(.sch-priority:hover) {
+    transform: scale(1.15);
   }
 
   :global(.sch-priority-high) {
@@ -1739,6 +1801,17 @@
     border-radius: 4px;
     font-weight: 500;
     letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: filter 0.15s ease, transform 0.15s ease;
+  }
+
+  :global(.sch-event-status:hover) {
+    filter: brightness(1.3);
+    transform: scale(1.05);
+  }
+
+  :global(.sch-event-status:active) {
+    transform: scale(0.95);
   }
 
   :global(.sch-status-todo) {
@@ -1787,12 +1860,28 @@
     font-size: 10px;
     opacity: 0.8;
     flex-shrink: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  :global(.sch-work-badge:hover) {
+    opacity: 1;
   }
 
   :global(.sch-note-badge) {
     font-size: 10px;
     opacity: 0.85;
     flex-shrink: 0;
+    cursor: pointer;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  :global(.sch-note-badge:hover) {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+
+  :global(.sch-note-badge:active) {
+    transform: scale(0.9);
   }
 
   /* ===== List view ===== */
