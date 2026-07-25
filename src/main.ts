@@ -6,6 +6,7 @@ import {
   VIEW_TYPE_CALENDAR,
   VIEW_TYPE_SCHEDULE,
   VIEW_TYPE_MOBILE_SCHEDULE,
+  VIEW_TYPE_MOBILE_TASKS,
   VIEW_TYPE_HABIT_ANALYTICS,
   VIEW_TYPE_FINANCE,
   VIEW_TYPE_FINANCIAL_ANALYTICS,
@@ -23,6 +24,7 @@ import { TFile } from "obsidian";
 import CalendarView from "./view";
 import ScheduleView from "./views/ScheduleView";
 import MobileScheduleView from "./views/MobileScheduleView";
+import MobileTaskTrackerView from "./views/MobileTaskTrackerView";
 import HabitAnalyticsView from "./views/HabitAnalyticsView";
 import FinanceView from "./views/FinanceView";
 import FinancialAnalyticsView from "./views/FinancialAnalyticsView";
@@ -91,6 +93,9 @@ export default class CalendarPlugin extends Plugin {
       .getLeavesOfType(VIEW_TYPE_MOBILE_SCHEDULE)
       .forEach((leaf) => leaf.detach());
     this.app.workspace
+      .getLeavesOfType(VIEW_TYPE_MOBILE_TASKS)
+      .forEach((leaf) => leaf.detach());
+    this.app.workspace
       .getLeavesOfType(VIEW_TYPE_HABIT_ANALYTICS)
       .forEach((leaf) => leaf.detach());
     this.app.workspace
@@ -131,6 +136,11 @@ export default class CalendarPlugin extends Plugin {
     this.registerView(
       VIEW_TYPE_MOBILE_SCHEDULE,
       (leaf: WorkspaceLeaf) => new MobileScheduleView(leaf, this)
+    );
+
+    this.registerView(
+      VIEW_TYPE_MOBILE_TASKS,
+      (leaf: WorkspaceLeaf) => new MobileTaskTrackerView(leaf, this)
     );
 
     this.registerView(
@@ -435,6 +445,15 @@ export default class CalendarPlugin extends Plugin {
       return;
     }
 
+    const activeLeaf = this.app.workspace.activeLeaf;
+    if (!activeLeaf) return;
+
+    // Don't move to sidebar leaves — only main content area
+    const isSidebar = activeLeaf.view.containerEl.closest(
+      ".workspace-split.left-split, .workspace-split.right-split, .workspace-split.mod-left-split, .workspace-split.mod-right-split, .sidebar"
+    );
+    if (isSidebar) return;
+
     // Destroy old panel if it exists
     this.removeDateTimeWeather();
     this.createDateTimeWeatherPanel();
@@ -463,6 +482,10 @@ export default class CalendarPlugin extends Plugin {
 
     this.dtwContainer = document.createElement("div");
     this.dtwContainer.addClass("mcp-dtw-global");
+    // Prevent clicks on dtw-bar from triggering active-leaf-change
+    this.dtwContainer.addEventListener("click", (e) => {
+      e.stopPropagation();
+    });
     headerEl.parentElement?.insertBefore(this.dtwContainer, headerEl.nextSibling);
 
     this.dtwPanel = new DateTimeWeather({ target: this.dtwContainer });
@@ -515,6 +538,10 @@ export default class CalendarPlugin extends Plugin {
 
   async activateMobileScheduleView(): Promise<void> {
     return this.activateView(VIEW_TYPE_MOBILE_SCHEDULE);
+  }
+
+  async activateMobileTasksView(): Promise<void> {
+    return this.activateView(VIEW_TYPE_MOBILE_TASKS);
   }
 
   async activateHabitAnalyticsView(): Promise<void> {

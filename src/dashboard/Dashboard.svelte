@@ -149,7 +149,7 @@
               <button
                 class="dash-btn dash-btn--sm dash-btn--danger"
                 title="Удалить ссылку"
-                on:click|stopPropagation={() => removeLink(card.id, link.id)}
+                on:click|stopPropagation|preventDefault={() => removeLink(card.id, link.id)}
               >✕</button>
             </a>
           {/each}

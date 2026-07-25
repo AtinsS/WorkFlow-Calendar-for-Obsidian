@@ -191,7 +191,6 @@ export default class CalendarView extends ItemView {
 .mv-calendar-card {
   flex: 1 1 0;
   min-width: 300px;
-  max-width: 480px;
   max-height: max-content;
   display: flex;
   flex-direction: column;
@@ -277,7 +276,7 @@ export default class CalendarView extends ItemView {
 
 /* ── Panels card — right ──────────────────── */
 .mv-panels-card {
-  flex: 1 1 0;
+  flex: 1 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -600,9 +599,275 @@ export default class CalendarView extends ItemView {
 
 /* ── Stack on narrow screens ──────────────── */
 @media (max-width: 860px) {
-  .mv-body { flex-direction: column; align-items: stretch; gap: 12px; }
+  .mv-body { flex-direction: column; align-items: stretch; gap: 12px; width: 100%; }
   .mv-calendar-card { flex: none; width: 100%; max-width: 100%; min-width: 0; margin: 0; }
-  .mv-panels-card { width: 100%; max-width: 100%; margin: 0; border-radius: var(--mcp-radius); }
+  .mv-panels-card { width: 100%; max-width: 100%; margin: 0; border-radius: var(--mcp-radius); overflow: visible; }
+}
+
+/* ── Small phone (≤360px) — widget style ── */
+@media (max-width: 360px) {
+  .mv-body { padding: 0 4px !important; gap: 3px !important; max-width: 340px !important; margin: 0 auto !important; }
+  .calendar-main-view { overflow-x: visible !important; }
+
+  /* ── Calendar card — match reference ── */
+  .mv-calendar-card {
+    min-width: 0 !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+  }
+  .mv-calendar-card .mv-card,
+  .mv-card.mv-calendar-card {
+    border-radius: 12px !important;
+  }
+  .mv-calendar-header {
+    padding: 8px 10px 0 !important;
+    gap: 6px !important;
+  }
+  .mv-calendar-header .schedule-open-btn {
+    padding: 4px 8px !important;
+    font-size: 10px !important;
+    min-height: 22px !important;
+    border-radius: 6px !important;
+  }
+  .mv-calendar-card #calendar-container {
+    padding: 0 6px 10px !important;
+  }
+  .mv-calendar-card #calendar-container .calendar {
+    border-spacing: 3px !important;
+  }
+  .mv-calendar-card #calendar-container .day,
+  .mv-calendar-card #calendar-container .week-num {
+    min-height: 38px !important;
+    font-size: 13px !important;
+    padding: 5px 2px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+  }
+  .mv-calendar-card #calendar-container .day.today,
+  .mv-calendar-card #calendar-container .day.active {
+    border-radius: 6px !important;
+  }
+  .mv-calendar-card #calendar-container .calendar th {
+    font-size: 9px !important;
+    letter-spacing: 0.5px !important;
+    padding: 4px 0 !important;
+    font-weight: 600 !important;
+  }
+  .mv-calendar-card #calendar-container .nav {
+    padding: 0 4px 8px !important;
+    align-items: center;
+  }
+  .mv-calendar-card #calendar-container .nav .title {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+  }
+  .mv-calendar-card #calendar-container .nav .title .year {
+    font-size: 15px !important;
+    margin-left: 4px !important;
+    font-weight: 700 !important;
+  }
+  .mv-calendar-card #calendar-container .arrow svg {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  .mv-calendar-card #calendar-container .reset-button {
+    padding: 3px 10px !important;
+    font-size: 10px !important;
+    min-height: 24px !important;
+    border-radius: 6px !important;
+  }
+  .mv-calendar-card #calendar-container .day[data-task-count]::after {
+    font-size: 8px !important;
+    min-width: 12px !important;
+    height: 12px !important;
+    line-height: 12px !important;
+    bottom: 1px !important;
+    right: 1px !important;
+    border-radius: 4px !important;
+    padding: 0 2px !important;
+  }
+  .mv-calendar-card #calendar-container .day[data-habit-count]::before {
+    font-size: 7px !important;
+    min-width: 10px !important;
+    height: 10px !important;
+    top: 1px !important;
+    left: 1px !important;
+  }
+
+  /* ── Panels card — full width, rounded ── */
+  .mv-panels-card {
+    border-radius: 12px !important;
+    border-top: none !important;
+    overflow: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .mv-panels-card .month-goals-indicator { display: none !important; }
+  .mv-panels-card .panels-container { gap: 0 !important; width: 100% !important; }
+  .mv-panels-card .task-tracker-panel,
+  .mv-panels-card .habit-tracker-panel {
+    padding: 8px 10px !important;
+    border-radius: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-header {
+    padding: 0 0 4px !important;
+    gap: 4px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-title {
+    font-size: 11px !important;
+    letter-spacing: 0.6px !important;
+    font-weight: 700 !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-count {
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-item {
+    padding: 5px 6px !important;
+    gap: 3px !important;
+    min-height: 28px !important;
+    border-radius: 6px !important;
+    margin-bottom: 3px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-title {
+    font-size: 12px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-status-btn {
+    width: 18px !important;
+    height: 18px !important;
+    font-size: 8px !important;
+    border-radius: 5px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-filter-btn {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+    min-height: 22px !important;
+    border-radius: 6px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-search-input {
+    padding: 4px 8px !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-list {
+    max-height: 35vh !important;
+    overflow-x: visible !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-actions-toggle {
+    min-width: 22px !important;
+    min-height: 22px !important;
+    font-size: 11px !important;
+    padding: 1px 3px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-scheduled,
+  .mv-panels-card .task-tracker-panel .task-timer,
+  .mv-panels-card .task-tracker-panel .task-estimate,
+  .mv-panels-card .task-tracker-panel .task-deadline {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+    border-radius: 3px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-project-dot {
+    width: 4px !important;
+    height: 4px !important;
+  }
+  .mv-panels-card .task-tracker-panel .note-icon {
+    font-size: 10px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-btn,
+  .mv-panels-card .habit-tracker-panel .habit-tracker-btn {
+    min-width: 24px !important;
+    min-height: 24px !important;
+    font-size: 12px !important;
+    padding: 2px 4px !important;
+  }
+  .mv-panels-card .task-tracker-panel .add-btn {
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+  }
+
+  /* ── Habit panel — match reference ── */
+  .mv-panels-card .habit-tracker-panel .habit-tracker-header {
+    padding: 4px 0 !important;
+    gap: 3px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-tracker-title {
+    font-size: 11px !important;
+    letter-spacing: 0.6px !important;
+    font-weight: 700 !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-tracker-streak {
+    font-size: 9px !important;
+    padding: 2px 5px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-item {
+    padding: 4px 6px !important;
+    gap: 4px !important;
+    min-height: 26px !important;
+    border-radius: 6px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-check-btn {
+    width: 20px !important;
+    height: 20px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-icon {
+    font-size: 13px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-title {
+    font-size: 10px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-progress-text {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+    border-radius: 4px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-streak {
+    font-size: 8px !important;
+    padding: 1px 4px !important;
+    border-radius: 4px !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-edit-btn,
+  .mv-panels-card .habit-tracker-panel .habit-delete-btn {
+    display: none !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-tracker-list {
+    max-height: 25vh !important;
+    overflow-x: visible !important;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-tracker-empty {
+    padding: 10px 8px !important;
+    font-size: 11px !important;
+  }
+
+  /* ── Kanban tabs — scroll ── */
+  .kanban-dropdown-trigger {
+    padding: 2px 6px !important;
+    font-size: 9px !important;
+    min-height: 20px !important;
+    gap: 2px !important;
+    border-radius: 5px !important;
+  }
+  .kanban-trigger-icon { font-size: 9px !important; }
+  .kanban-trigger-label { font-size: 9px !important; }
+  .kanban-trigger-count { font-size: 7px !important; padding: 0 2px !important; }
+
+  /* ── Filter bar — scroll ── */
+  .task-tracker-filter-bar {
+    padding: 2px 0 !important;
+    gap: 2px !important;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap !important;
+  }
+  .task-tracker-filter-bar::-webkit-scrollbar { display: none; }
+  .task-tracker-filter-btn {
+    flex-shrink: 0 !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -616,6 +881,114 @@ export default class CalendarView extends ItemView {
   .mv-panels-card .habit-tracker-panel .habit-edit-btn,
   .mv-panels-card .habit-tracker-panel .habit-delete-btn { min-width: 36px; min-height: 36px; }
   .mv-panels-card .task-tracker-panel .task-actions-toggle { min-width: 36px; min-height: 36px; }
+}
+
+/* ── Mobile: hide info panel, fix two-column collapse ── */
+@media (max-width: 768px) {
+  .calendar-main-view .month-goals-indicator { display: none !important; }
+  .mv-panels-card .month-goals-indicator { display: none !important; }
+  .mv-body {
+    flex-direction: column !important;
+    gap: 4px !important;
+    padding: 0 6px;
+    max-width: 420px !important;
+    margin: 0 auto !important;
+  }
+  .mv-calendar-card { max-width: 100% !important; min-width: 0 !important; }
+  .mv-calendar-card #calendar-container { padding: 4px 12px 12px; }
+  .mv-calendar-card #calendar-container .calendar { border-spacing: 4px; }
+  .mv-calendar-card #calendar-container .day,
+  .mv-calendar-card #calendar-container .week-num {
+    min-height: 38px; font-size: 12px; padding: 6px 3px; border-radius: 8px;
+  }
+  .mv-calendar-card #calendar-container .nav .title { font-size: 14px; }
+  .mv-calendar-card #calendar-container .nav .title .year { font-size: 15px; }
+  .mv-calendar-card #calendar-container .arrow svg { width: 14px; height: 14px; }
+  .mv-calendar-card #calendar-container .reset-button {
+    padding: 4px 12px; font-size: 10px; min-height: 26px;
+  }
+  .mv-calendar-card #calendar-container .calendar th {
+    font-size: 8px; letter-spacing: 1px; padding: 4px 0 6px;
+  }
+  .mv-calendar-card #calendar-container .day[data-task-count]::after {
+    font-size: 8px; min-width: 12px; height: 12px; bottom: 1px; right: 1px;
+  }
+  .mv-calendar-card #calendar-container .day[data-habit-count]::before {
+    font-size: 7px; min-width: 11px; height: 11px;
+  }
+  .mv-calendar-header { padding: 6px 8px 0; gap: 4px; }
+
+  /* ── Panels — compact inline ── */
+  .mv-panels-card { padding: 0 !important; border-radius: 0 !important; }
+  .mv-panels-card .panels-container { gap: 0; }
+  .mv-panels-card .task-tracker-panel,
+  .mv-panels-card .habit-tracker-panel {
+    padding: 6px 8px !important; border-radius: 0 !important;
+    border-top: 1px solid var(--mcp-glass-border); background: transparent !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-header {
+    padding: 0 0 4px; gap: 3px; flex-wrap: nowrap;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-title { font-size: 10px; letter-spacing: 0.5px; }
+  .mv-panels-card .task-tracker-panel .task-tracker-count { font-size: 9px; }
+  .mv-panels-card .task-tracker-panel .task-item {
+    padding: 3px 5px !important; gap: 2px !important; min-height: 26px !important;
+    margin-bottom: 2px !important; border-radius: 6px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-item-row-main { gap: 4px; }
+  .mv-panels-card .task-tracker-panel .task-item-row-meta {
+    display: flex !important; gap: 3px; padding-left: 0;
+  }
+  .mv-panels-card .task-tracker-panel .task-status-badge,
+  .mv-panels-card .task-tracker-panel .task-scheduled,
+  .mv-panels-card .task-tracker-panel .task-timer,
+  .mv-panels-card .task-tracker-panel .task-estimate {
+    font-size: 8px !important; padding: 1px 3px !important;
+  }
+  .mv-panels-card .task-tracker-panel .task-title { font-size: 11px; }
+  .mv-panels-card .task-tracker-panel .task-status-btn {
+    width: 16px; height: 16px; font-size: 8px; border-radius: 4px;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-filter-bar {
+    padding: 2px 0; gap: 2px; overflow-x: auto; flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-filter-bar::-webkit-scrollbar { display: none; }
+  .mv-panels-card .task-tracker-panel .task-tracker-filter-btn {
+    padding: 2px 6px; font-size: 9px; min-height: 20px; flex-shrink: 0;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-search-input {
+    padding: 4px 6px; font-size: 11px;
+  }
+  .mv-panels-card .task-tracker-panel .task-tracker-list { max-height: none; overflow-y: auto; }
+  .mv-panels-card .task-tracker-panel .task-actions-toggle {
+    min-width: 20px; min-height: 20px; font-size: 10px; padding: 1px 2px;
+  }
+  .mv-panels-card .task-tracker-panel .task-scheduled,
+  .mv-panels-card .task-tracker-panel .task-timer,
+  .mv-panels-card .task-tracker-panel .task-estimate { font-size: 8px; padding: 1px 3px; }
+  .mv-panels-card .task-tracker-panel .note-icon { font-size: 9px; }
+
+  /* ── Kanban tabs — compact ── */
+  .kanban-dropdown-trigger { padding: 2px 5px; font-size: 9px; min-height: 18px; gap: 2px; border-radius: 4px; }
+  .kanban-trigger-icon { font-size: 9px; }
+  .kanban-trigger-label { font-size: 9px; }
+  .kanban-trigger-count { font-size: 7px; padding: 0 2px; }
+
+  /* ── Habit panel — compact ── */
+  .mv-panels-card .habit-tracker-panel .habit-tracker-header { padding: 4px 0; gap: 2px; }
+  .mv-panels-card .habit-tracker-panel .habit-tracker-title { font-size: 10px; }
+  .mv-panels-card .habit-tracker-panel .habit-item {
+    padding: 3px 5px; gap: 4px; min-height: 28px;
+  }
+  .mv-panels-card .habit-tracker-panel .habit-check-btn { width: 20px; height: 20px; }
+  .mv-panels-card .habit-tracker-panel .habit-icon { font-size: 12px; }
+  .mv-panels-card .habit-tracker-panel .habit-title { font-size: 10px; }
+  .mv-panels-card .habit-tracker-panel .habit-progress-text,
+  .mv-panels-card .habit-tracker-panel .habit-streak { font-size: 8px; padding: 1px 3px; }
+  .mv-panels-card .habit-tracker-panel .habit-edit-btn,
+  .mv-panels-card .habit-tracker-panel .habit-delete-btn { display: none !important; }
+  .mv-panels-card .habit-tracker-panel .habit-tracker-list { max-height: none; }
 }
 /* ═══════ END MAIN VIEW ═══════ */
 `;

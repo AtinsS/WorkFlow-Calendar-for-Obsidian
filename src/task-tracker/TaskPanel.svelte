@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
   import type { App } from "obsidian";
   import type { ITask, IProject } from "./types";
@@ -27,7 +28,24 @@
 
   export let appInstance: App;
 
-  $: isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+  let isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
+  let mqlMobile: MediaQueryList | null = null;
+  let mqlHandler: ((e: MediaQueryListEvent) => void) | null = null;
+
+  onMount(() => {
+    if (typeof window !== "undefined" && window.matchMedia) {
+      mqlMobile = window.matchMedia("(max-width: 768px)");
+      isMobile = mqlMobile.matches;
+      mqlHandler = (e: MediaQueryListEvent) => { isMobile = e.matches; };
+      mqlMobile.addEventListener("change", mqlHandler);
+    }
+  });
+
+  onDestroy(() => {
+    if (mqlMobile && mqlHandler) {
+      mqlMobile.removeEventListener("change", mqlHandler);
+    }
+  });
 
   let showTimeLogs = false;
   let showMenu = false;

@@ -145,18 +145,19 @@ table {
   display: flex;
   gap: 28px;
   width: 100%;
-  max-width: 1000px;
+  max-width: 1400px;
   align-items: flex-start;
 }
 
 .calendar-main-view .calendar-layout-left {
-  flex: 0 0 460px;
-  min-width: 0;
+  flex: 1 1 480px;
+  min-width: 340px;
+  max-width: 600px;
 }
 
 .calendar-main-view .calendar-layout-right {
-  flex: 1 1 0;
-  min-width: 0;
+  flex: 1 1 380px;
+  min-width: 300px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -201,9 +202,50 @@ table {
 /* Calendar day cells — bigger */
 .calendar-main-view #calendar-container .day,
 .calendar-main-view #calendar-container .week-num {
-  min-height: 52px;
-  font-size: 16px;
-  padding: 12px 8px;
+  min-height: 56px;
+  font-size: 17px;
+  padding: 14px 10px;
+}
+
+/* Wide screens — even bigger calendar */
+@media (min-width: 1200px) {
+  .calendar-main-view .calendar-layout {
+    max-width: 1600px;
+    gap: 36px;
+  }
+  .calendar-main-view .calendar-layout-left {
+    flex: 1 1 540px;
+    max-width: 680px;
+  }
+  .calendar-main-view #calendar-container .day,
+  .calendar-main-view #calendar-container .week-num {
+    min-height: 64px;
+    font-size: 18px;
+    padding: 16px 12px;
+  }
+  .calendar-main-view #calendar-container .calendar th {
+    font-size: 13px;
+    letter-spacing: 3px;
+    padding: 10px 0;
+  }
+  .calendar-main-view #calendar-container .nav .title {
+    font-size: 18px;
+  }
+  .calendar-main-view #calendar-container .nav .title .year {
+    font-size: 20px;
+  }
+  .calendar-main-view #calendar-container .nav .right-nav {
+    gap: 8px;
+  }
+  .calendar-main-view #calendar-container .reset-button {
+    padding: 6px 20px;
+    font-size: 13px;
+    min-height: 36px;
+  }
+  .calendar-main-view #calendar-container .arrow svg {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 /* Calendar headers */
@@ -345,6 +387,7 @@ table {
   .calendar-main-view .calendar-layout {
     flex-direction: column;
     align-items: center;
+    gap: 12px;
   }
   .calendar-main-view .calendar-layout-left {
     flex: none;
@@ -354,6 +397,47 @@ table {
   .calendar-main-view .calendar-layout-right {
     width: 100%;
     max-width: 540px;
+    min-width: 0;
+  }
+  /* Main view: stack columns, hide info panel */
+  .calendar-main-view .month-goals-indicator {
+    display: none !important;
+  }
+  .calendar-main-view .task-tracker-panel,
+  .calendar-main-view .habit-tracker-panel {
+    padding: 14px 14px;
+  }
+  .calendar-main-view .task-tracker-panel .task-tracker-list {
+    max-height: 40vh;
+  }
+}
+
+/* Medium screens — compress but keep side-by-side */
+@media (min-width: 801px) and (max-width: 1100px) {
+  .calendar-main-view .calendar-layout {
+    gap: 16px;
+    max-width: 900px;
+  }
+  .calendar-main-view .calendar-layout-left {
+    flex: 1 1 360px;
+    min-width: 300px;
+    max-width: 440px;
+  }
+  .calendar-main-view .calendar-layout-right {
+    flex: 1 1 320px;
+    min-width: 280px;
+  }
+  .calendar-main-view #calendar-container .day,
+  .calendar-main-view #calendar-container .week-num {
+    min-height: 44px;
+    font-size: 14px;
+    padding: 8px 6px;
+  }
+  .calendar-main-view #calendar-container .nav .title {
+    font-size: 15px;
+  }
+  .calendar-main-view #calendar-container .nav .title .year {
+    font-size: 16px;
   }
 }
 
@@ -3648,6 +3732,10 @@ content: attr(data-task-count);
    RESPONSIVE — PHONE (≤480px)
    ============================================ */
 @media (max-width: 480px) {
+  /* Hide DateTimeWeather bar on phones */
+  .dtw-bar {
+    display: none !important;
+  }
   /* Calendar — more air between cells */
   #calendar-container .calendar {
     border-spacing: 5px;
@@ -3693,6 +3781,7 @@ content: attr(data-task-count);
   .habit-tracker-panel {
     padding: 14px 16px;
     max-height: 32vh;
+    overflow-y: auto;
   }
 
   /* Header — more space */
@@ -3779,7 +3868,7 @@ content: attr(data-task-count);
     flex-shrink: 0;
   }
 
-  /* ===== MOBILE TASK ITEM — single row, essentials only ===== */
+  /* ===== MOBILE TASK ITEM — compact with meta ===== */
   .task-item {
     padding: 4px 6px;
     gap: 2px;
@@ -3791,7 +3880,11 @@ content: attr(data-task-count);
   }
 
   .task-item-row-meta {
-    display: none !important;
+    display: flex !important;
+    gap: 4px;
+    padding-left: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
   }
 
   .task-title {
@@ -3803,9 +3896,38 @@ content: attr(data-task-count);
     white-space: nowrap;
   }
 
-  /* Hide everything non-essential on mobile */
+  /* Show status badge and time, hide the rest */
+  .task-item .task-status-badge {
+    display: inline-flex !important;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .task-item .task-scheduled {
+    display: inline-flex !important;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .task-item .task-timer,
+  .task-item .task-estimate,
+  .task-item .task-estimate-compare {
+    display: inline-flex !important;
+    font-size: 8px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Hide non-essential meta on mobile */
   .task-item .task-recurring-icon,
-  .task-item .task-status-badge,
   .task-item .task-deadline,
   .task-item .task-work-paused,
   .task-item .task-priority,
@@ -4489,105 +4611,552 @@ content: attr(data-task-count);
 }
 
 /* ============================================
-   RESPONSIVE — SMALL PHONE (≤360px)
+   RESPONSIVE — SMALL PHONE (≤360px) — WIDGET
    ============================================ */
 @media (max-width: 360px) {
+  /* ── Calendar container — no overflow ── */
+  #calendar-container {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  #calendar-container .calendar {
+    border-spacing: 3px;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  /* ── Calendar grid — match reference ── */
   #calendar-container .day,
   #calendar-container .week-num {
-    min-height: 40px;
+    min-height: 38px;
     font-size: 13px;
-    padding: 6px 3px;
-    border-radius: 8px;
+    padding: 5px 2px;
+    border-radius: 6px;
+    font-weight: 500;
   }
 
   #calendar-container .calendar th {
     font-size: 9px;
+    letter-spacing: 0.5px;
+    padding: 4px 0;
+    font-weight: 600;
   }
 
+  /* ── Nav — match reference ── */
+  #calendar-container .nav {
+    padding: 0 4px 8px;
+    align-items: center;
+  }
+
+  #calendar-container .nav .title {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  #calendar-container .nav .title .year {
+    font-size: 15px;
+    margin-left: 4px;
+    font-weight: 700;
+  }
+
+  #calendar-container .arrow svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  #calendar-container .reset-button {
+    padding: 3px 10px;
+    font-size: 10px;
+    min-height: 24px;
+    border-radius: 6px;
+  }
+
+  #calendar-container .day[data-task-count]::after {
+    font-size: 8px;
+    min-width: 12px;
+    height: 12px;
+    bottom: 1px;
+    right: 1px;
+    border-radius: 4px;
+    padding: 0 2px;
+  }
+
+  #calendar-container .day[data-habit-count]::before {
+    font-size: 7px;
+    min-width: 10px;
+    height: 10px;
+  }
+
+  /* ── Main view layout — match reference ── */
+  .calendar-main-view {
+    padding: 0 4px;
+    overflow-x: visible;
+  }
+
+  .calendar-main-view .calendar-layout {
+    gap: 6px;
+  }
+
+  .schedule-open-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    border-radius: 6px;
+  }
+
+  .month-goals-single,
+  .month-goals-multi {
+    padding: 5px 8px;
+    font-size: 10px;
+    gap: 4px;
+    border-radius: 6px;
+  }
+
+  .month-goals-show-btn {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  /* ── Panels — match reference ── */
   .task-tracker-panel,
   .habit-tracker-panel {
-    padding: 6px 6px;
+    padding: 10px 12px;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
   }
 
   .task-tracker-panel .task-tracker-list,
   .habit-tracker-panel {
     max-height: 42vh;
+    overflow-x: visible;
   }
 
   .task-tracker-title,
   .habit-tracker-title {
+    font-size: 11px;
+    letter-spacing: 0.6px;
+    font-weight: 700;
+  }
+
+  .task-tracker-header,
+  .habit-tracker-header {
+    padding: 4px 6px;
+    gap: 4px;
+  }
+
+  .task-tracker-date {
     font-size: 10px;
+    max-width: 70px;
   }
 
+  .task-tracker-count {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  /* ── Task items — match reference ── */
   .task-item {
-    padding: 3px 5px;
-    gap: 3px;
-    min-height: 26px;
+    padding: 6px 8px;
+    gap: 4px;
+    min-height: 32px;
+    border-radius: 8px;
   }
 
-  .task-title {
+  /* ── calendar-main-view task items — compact inline ── */
+  .calendar-main-view .task-tracker-panel .task-item {
+    padding: 3px 5px;
+    gap: 2px;
+    min-height: 26px;
+    margin-bottom: 2px;
+    border-radius: 6px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-item-row-main {
+    gap: 4px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-item-row-meta {
+    display: flex !important;
+    gap: 3px;
+    padding-left: 0;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-status-badge,
+  .calendar-main-view .task-tracker-panel .task-scheduled,
+  .calendar-main-view .task-tracker-panel .task-timer,
+  .calendar-main-view .task-tracker-panel .task-estimate {
+    font-size: 8px;
+    padding: 1px 3px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-tracker-panel {
+    padding: 6px 8px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-tracker-header {
+    padding: 0 0 4px;
+    gap: 3px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-tracker-filter-btn {
+    padding: 2px 6px;
+    font-size: 9px;
+    min-height: 20px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-status-btn {
+    width: 16px;
+    height: 16px;
+    font-size: 8px;
+  }
+
+  .calendar-main-view .task-tracker-panel .task-title {
     font-size: 11px;
   }
 
-  .habit-item {
+  .calendar-main-view .task-tracker-panel .task-tracker-list {
+    max-height: none;
+  }
+
+  .task-item-row-main {
+    gap: 3px;
+  }
+
+  .task-title {
+    font-size: 12px;
+  }
+
+  .task-status-btn {
+    width: 20px;
+    height: 20px;
+    font-size: 9px;
+    border-radius: 5px;
+  }
+
+  .task-item .task-scheduled,
+  .task-item .task-timer,
+  .task-item .task-estimate {
+    font-size: 9px;
     padding: 2px 5px;
-    gap: 4px;
-    min-height: 24px;
+    border-radius: 4px;
+  }
+
+  .task-item .task-deadline {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .task-item .task-work-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .task-item .task-status-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+
+  .task-project-dot {
+    width: 5px;
+    height: 5px;
+  }
+
+  .note-icon {
+    font-size: 11px;
+  }
+
+  /* ── Habit items — match reference ── */
+  .habit-item {
+    padding: 5px 8px;
+    gap: 5px;
+    min-height: 30px;
+    border-radius: 8px;
+  }
+
+  .habit-check-btn {
+    width: 22px;
+    height: 22px;
+  }
+
+  .habit-icon {
+    font-size: 14px;
   }
 
   .habit-title {
-    font-size: 10px;
+    font-size: 11px;
+  }
+
+  .habit-progress-text {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 5px;
+  }
+
+  .habit-streak {
+    font-size: 9px;
+    padding: 2px 5px;
+    border-radius: 5px;
+  }
+
+  .habit-edit-btn,
+  .habit-delete-btn {
+    display: none;
+  }
+
+  /* ── Filter & search — match reference ── */
+  .task-tracker-filter-bar {
+    padding: 3px 0;
+    gap: 3px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+
+  .task-tracker-filter-bar::-webkit-scrollbar {
+    display: none;
   }
 
   .task-tracker-filter-btn {
     padding: 3px 8px;
-    font-size: 9px;
-    min-height: 24px;
+    font-size: 10px;
+    min-height: 26px;
+    border-radius: 8px;
+    flex-shrink: 0;
   }
 
-  /* Habit panel even more compact */
-  .habit-tracker-panel {
-    max-height: 28vh;
+  .task-tracker-search-bar {
+    padding: 3px 0;
   }
 
-  .task-tracker-panel .task-tracker-list {
-    max-height: 36vh;
+  .task-tracker-search-input {
+    padding: 5px 8px;
+    font-size: 11px;
+    border-radius: 8px;
   }
 
+  .task-tracker-sort-select {
+    padding: 5px 8px;
+    font-size: 11px;
+  }
+
+  /* ── Kanban tabs — match reference ── */
   .kanban-dropdown-trigger {
     padding: 3px 8px;
     font-size: 10px;
-    min-height: 24px;
+    min-height: 22px;
+    gap: 3px;
+    border-radius: 6px;
   }
 
-  .task-tracker-btn {
-    min-width: 24px;
-    min-height: 24px;
-    font-size: 12px;
+  .kanban-trigger-icon {
+    font-size: 10px;
   }
 
-  /* Modals — full width on smallest screens */
+  .kanban-trigger-label {
+    font-size: 10px;
+  }
+
+  .kanban-trigger-count {
+    font-size: 8px;
+    padding: 0 3px;
+  }
+
+  .kanban-dropdown-menu {
+    min-width: 130px;
+  }
+
+  .kanban-dropdown-item {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  /* ── Action buttons — match reference ── */
+  .task-tracker-btn,
+  .habit-tracker-btn {
+    min-width: 28px;
+    min-height: 28px;
+    font-size: 13px;
+    padding: 3px 5px;
+    border-radius: 6px;
+  }
+
+  .task-actions-toggle {
+    padding: 2px 3px;
+    font-size: 10px;
+    min-width: 18px;
+    min-height: 18px;
+  }
+
+  .task-actions-menu {
+    min-width: 120px;
+  }
+
+  .task-actions-item {
+    padding: 4px 6px;
+    font-size: 10px;
+  }
+
+  /* ── Modals — match reference ── */
   .task-tracker-modal,
   .task-tracker-project-modal {
-    padding: 18px;
+    padding: 12px;
   }
 
   .task-tracker-modal h2,
   .task-tracker-project-modal h2 {
-    font-size: 18px;
-    margin-bottom: 18px;
+    font-size: 15px;
+    margin-bottom: 12px;
   }
 
   .time-logs-modal {
-    width: 95%;
-    max-height: 65vh;
+    width: 98%;
+    max-height: 70vh;
   }
 
-  .task-tracker-btn,
-  .habit-tracker-btn {
-    min-width: 40px;
-    min-height: 40px;
+  .time-logs-header h2 {
+    font-size: 14px;
+  }
+
+  .time-logs-body {
+    max-height: 50vh;
+  }
+
+  .goals-modal {
+    width: 98%;
+    max-height: 80vh;
+  }
+
+  .goals-modal-header h2 {
+    font-size: 14px;
+  }
+
+  .goals-modal-body {
+    padding: 10px 12px;
+  }
+
+  /* ── CalendarNav — match reference ── */
+  .calendar-nav {
+    gap: 4px;
+  }
+
+  .calendar-nav-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    gap: 3px;
+    border-radius: 6px;
+  }
+
+  .calendar-nav-icon {
+    font-size: 10px;
+  }
+
+  /* ── Task modal (tm) — match reference ── */
+  .tm-title {
+    font-size: 18px !important;
+  }
+
+  .tm-header {
+    padding: 10px 12px 8px;
+  }
+
+  .tm-field {
+    padding: 6px 12px;
+  }
+
+  .tm-label {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  .tm-input,
+  .tm-select,
+  .tm-textarea {
+    font-size: 16px;
+    height: 36px;
+    border-radius: 8px;
+  }
+
+  .tm-textarea {
+    min-height: 48px;
+  }
+
+  .tm-row-2 {
+    padding: 0 12px 6px;
+  }
+
+  .tm-dur-row {
+    padding: 4px 10px;
+  }
+
+  .tm-dur-input {
+    width: 30px;
+    font-size: 14px;
+  }
+
+  .tm-dur-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+  }
+
+  .tm-footer {
+    padding: 10px 12px 14px;
+  }
+
+  .tm-btn {
+    padding: 12px 16px;
+    font-size: 14px;
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  /* ── Project modal — match reference ── */
+  .pm-input {
+    font-size: 16px;
+    padding: 8px 10px;
+    border-radius: 8px;
+  }
+
+  .pm-color-swatch {
+    width: 30px;
+    height: 30px;
+  }
+
+  .pm-icon-btn {
+    width: 30px;
+    height: 30px;
     font-size: 15px;
+    border-radius: 8px;
+  }
+
+  .pm-create-btn {
+    padding: 10px;
+    font-size: 14px;
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .pm-project-item {
+    padding: 8px 8px;
+    border-radius: 8px;
+  }
+
+  .pm-project-name {
+    font-size: 12px;
+  }
+
+  .pm-action-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+    border-radius: 6px;
+  }
+
+  /* ── Holiday modal — match reference ── */
+  .holiday-list-modal {
+    width: 98%;
   }
 }
 
@@ -5422,7 +5991,6 @@ content: attr(data-task-count);
    ============================================ */
 
 .dashboard {
-  max-width: 1280px;
   margin: 0;
   padding: 0;
 }
@@ -5586,6 +6154,8 @@ content: attr(data-task-count);
     0 4px 16px rgba(0, 0, 0, 0.2),
     0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.015);
+    max-height: 400px;
+    overflow-y: auto;
 }
 
 .theme-dark .dashboard-card:hover {
