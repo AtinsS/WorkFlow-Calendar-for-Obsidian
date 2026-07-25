@@ -1091,12 +1091,12 @@ priority: medium
 
     const code = document.createElement("pre");
     code.style.cssText = "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
-    code.textContent = "```calendar-nav\nschedule:Расписание\ntasks:Задачи\nfinance:Финансы\nfinance-analytics:Аналитика\n```";
+    code.textContent = "```calendar-nav\nschedule:Расписание\ntasks:Задачи\nfinance:Финансы\nanalytics:Аналитика\n```";
     desc.appendChild(code);
 
     const p2 = document.createElement("p");
     p2.style.marginTop = "8px";
-    p2.textContent = "Доступные ключи: schedule, tasks, finance, finance-analytics";
+    p2.textContent = "Доступные ключи: schedule, tasks, finance, analytics";
     desc.appendChild(p2);
 
     const p3 = document.createElement("p");

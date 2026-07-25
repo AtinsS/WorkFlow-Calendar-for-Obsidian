@@ -13,7 +13,7 @@
     schedule: "📋",
     tasks: "✅",
     finance: "💰",
-    "finance-analytics": "📊",
+    analytics: "📊",
   };
 
   function handleClick(key: string) {

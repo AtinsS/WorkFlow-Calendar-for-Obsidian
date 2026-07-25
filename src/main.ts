@@ -209,9 +209,9 @@ export default class CalendarPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "open-financial-analytics",
-      name: "Открыть финансовую аналитику",
-      callback: () => this.activateFinancialAnalyticsView(),
+      id: "open-analytics",
+      name: "Открыть аналитику",
+      callback: () => this.activateHabitAnalyticsView(),
     });
 
     this.addRibbonIcon("calendar-range", "Расписание", () => {
@@ -279,7 +279,7 @@ export default class CalendarPlugin extends Plugin {
               schedule: () => this.activateScheduleView(),
               tasks: () => this.initLeaf(),
               finance: () => this.activateFinanceView(),
-              "finance-analytics": () => this.activateFinancialAnalyticsView(),
+              analytics: () => this.activateHabitAnalyticsView(),
             };
             const action = viewMap[viewKey];
             if (action) action();

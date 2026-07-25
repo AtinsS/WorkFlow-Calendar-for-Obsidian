@@ -158,11 +158,11 @@ priority: medium
 schedule:Расписание
 tasks:Задачи
 finance:Финансы
-finance-analytics:Аналитика
+analytics:Аналитика
 ```
 ````
 
-Доступные ключи: `schedule`, `tasks`, `finance`, `finance-analytics`.
+Доступные ключи: `schedule`, `tasks`, `finance`, `analytics`.
 
 Кастомизация стиля (первая строка начинается с `%`):
 
