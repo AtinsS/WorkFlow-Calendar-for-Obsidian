@@ -54,11 +54,19 @@ function getCacheKey(lat: number, lon: number): string {
   return `${lat.toFixed(2)}_${lon.toFixed(2)}`;
 }
 
-function getCached(lat: number, lon: number): DayWeather[] | null {
+function getCached(lat: number, lon: number, startDate: string, endDate: string): DayWeather[] | null {
   if (!cache) return null;
   if (cache.key !== getCacheKey(lat, lon)) return null;
   if (Date.now() - cache.fetchedAt > CACHE_TTL_MS) return null;
-  return cache.data;
+  // Check if cached data covers the requested date range
+  const filtered = cache.data.filter((d) => d.date >= startDate && d.date <= endDate);
+  if (filtered.length === 0) return null;
+  // Check if we have data for every day in the range
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const dayCount = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  if (filtered.length < dayCount) return null;
+  return filtered;
 }
 
 export async function fetchWeekWeather(
@@ -67,11 +75,9 @@ export async function fetchWeekWeather(
   startDate: string,
   endDate: string
 ): Promise<DayWeather[]> {
-  const cached = getCached(lat, lon);
+  const cached = getCached(lat, lon, startDate, endDate);
   if (cached) {
-    // Return cached data that falls within the requested range
-    const filtered = cached.filter((d) => d.date >= startDate && d.date <= endDate);
-    if (filtered.length > 0) return filtered;
+    return cached;
   }
 
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&start_date=${startDate}&end_date=${endDate}&timezone=auto`;

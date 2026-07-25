@@ -123,6 +123,240 @@ table {
   margin-top: 0;
 }
 
+/* ============================================
+   MAIN VIEW — side-by-side adaptive layout
+   ============================================ */
+.calendar-main-view {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 16px;
+}
+
+.calendar-main-view .schedule-open-btn {
+  margin: 0;
+}
+
+.calendar-main-view .month-goals-indicator {
+  margin: 0;
+}
+
+.calendar-main-view .calendar-layout {
+  display: flex;
+  gap: 28px;
+  width: 100%;
+  max-width: 1000px;
+  align-items: flex-start;
+}
+
+.calendar-main-view .calendar-layout-left {
+  flex: 0 0 460px;
+  min-width: 0;
+}
+
+.calendar-main-view .calendar-layout-right {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.calendar-main-view .panels-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.calendar-main-view .task-tracker-panel,
+.calendar-main-view .habit-tracker-panel {
+  width: 100%;
+  max-width: none;
+  border-radius: var(--mcp-radius);
+  background: var(--mcp-glass-bg);
+}
+
+/* ── Larger sizes for main view ─────────────────────── */
+
+/* Calendar nav and title */
+.calendar-main-view #calendar-container .nav .title {
+  font-size: 16px;
+}
+.calendar-main-view #calendar-container .nav .title .year {
+  font-size: 18px;
+}
+.calendar-main-view #calendar-container .nav .right-nav {
+  gap: 6px;
+}
+.calendar-main-view #calendar-container .reset-button {
+  padding: 5px 16px;
+  font-size: 12px;
+  min-height: 32px;
+}
+.calendar-main-view #calendar-container .arrow svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Calendar day cells — bigger */
+.calendar-main-view #calendar-container .day,
+.calendar-main-view #calendar-container .week-num {
+  min-height: 52px;
+  font-size: 16px;
+  padding: 12px 8px;
+}
+
+/* Calendar headers */
+.calendar-main-view #calendar-container .calendar th {
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 8px 0;
+}
+
+/* Calendar table spacing */
+.calendar-main-view #calendar-container .calendar {
+  border-spacing: 6px;
+}
+
+/* Task badges on calendar days — bigger */
+.calendar-main-view #calendar-container .day[data-task-count]::after {
+  font-size: 15px;
+  min-width: 20px;
+  height: 20px;
+  bottom: 3px;
+  right: 2px;
+  border-radius: 6px;
+}
+
+.calendar-main-view #calendar-container .day[data-habit-count]::before {
+  font-size: 14px;
+  min-width: 18px;
+  height: 18px;
+  bottom: 3px;
+  left: 2px;
+}
+
+/* Task panel — bigger */
+.calendar-main-view .task-tracker-panel {
+  padding: 24px 26px;
+}
+.calendar-main-view .task-tracker-panel .task-tracker-header {
+  padding: 12px 14px;
+}
+.calendar-main-view .task-tracker-panel .task-tracker-title {
+  font-size: 14px;
+}
+.calendar-main-view .task-tracker-panel .task-item {
+  padding: 10px 12px;
+  gap: 8px;
+}
+.calendar-main-view .task-tracker-panel .task-title {
+  font-size: 14px;
+}
+.calendar-main-view .task-tracker-panel .task-status-btn {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+}
+.calendar-main-view .task-tracker-panel .task-project-dot {
+  width: 7px;
+  height: 7px;
+}
+.calendar-main-view .task-tracker-panel .task-scheduled,
+.calendar-main-view .task-tracker-panel .task-timer,
+.calendar-main-view .task-tracker-panel .task-estimate,
+.calendar-main-view .task-tracker-panel .task-estimate-compare {
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.calendar-main-view .task-tracker-panel .task-deadline {
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.calendar-main-view .task-tracker-panel .task-work-badge {
+  font-size: 11px;
+  padding: 2px 7px;
+}
+.calendar-main-view .task-tracker-panel .task-status-badge {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+.calendar-main-view .task-tracker-panel .task-tracker-filter-btn {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-height: 34px;
+}
+.calendar-main-view .task-tracker-panel .task-tracker-search-input {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+.calendar-main-view .task-tracker-panel .task-actions-toggle {
+  padding: 4px 8px;
+  font-size: 14px;
+  min-width: 28px;
+  min-height: 28px;
+}
+.calendar-main-view .task-tracker-panel .note-icon {
+  font-size: 17px;
+}
+
+/* Habit panel — bigger */
+.calendar-main-view .habit-tracker-panel {
+  padding: 24px 26px;
+}
+.calendar-main-view .habit-tracker-panel .habit-tracker-header {
+  padding: 12px 14px;
+}
+.calendar-main-view .habit-tracker-panel .habit-tracker-title {
+  font-size: 14px;
+}
+.calendar-main-view .habit-tracker-panel .habit-item {
+  padding: 10px 14px;
+  gap: 10px;
+}
+.calendar-main-view .habit-tracker-panel .habit-check-btn {
+  width: 30px;
+  height: 30px;
+}
+.calendar-main-view .habit-tracker-panel .habit-icon {
+  font-size: 20px;
+}
+.calendar-main-view .habit-tracker-panel .habit-title {
+  font-size: 14px;
+}
+.calendar-main-view .habit-tracker-panel .habit-progress-text {
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.calendar-main-view .habit-tracker-panel .habit-streak {
+  font-size: 12px;
+  padding: 3px 8px;
+}
+.calendar-main-view .habit-tracker-panel .habit-edit-btn,
+.calendar-main-view .habit-tracker-panel .habit-delete-btn {
+  font-size: 13px;
+  padding: 3px 7px;
+  min-width: 28px;
+  min-height: 28px;
+}
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 800px) {
+  .calendar-main-view .calendar-layout {
+    flex-direction: column;
+    align-items: center;
+  }
+  .calendar-main-view .calendar-layout-left {
+    flex: none;
+    width: 100%;
+    max-width: 400px;
+  }
+  .calendar-main-view .calendar-layout-right {
+    width: 100%;
+    max-width: 540px;
+  }
+}
+
 /* Schedule view open button */
 .schedule-open-btn {
   width: 100%;
@@ -5160,4 +5394,208 @@ content: attr(data-task-count);
   border-top: 1px solid var(--background-modifier-border);
   display: flex;
   justify-content: flex-end;
+}
+
+/* ============================================
+   DATETIME-WEATHER — GLOBAL BAR (below tabs)
+   ============================================ */
+
+.mcp-dtw-global {
+  width: 100%;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+}
+
+/* ============================================
+   DATETIME-WEATHER CODE BLOCK
+   ============================================ */
+
+.markdown-preview-view .dtw-panel,
+.markdown-source-view .dtw-panel {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ============================================
+   DASHBOARD — Velocity Style
+   ============================================ */
+
+.dashboard {
+  max-width: 1280px;
+  margin: 0;
+  padding: 0;
+}
+
+.dashboard__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+  gap: clamp(16px, 2vw, 24px);
+}
+
+.markdown-preview-view .dashboard-card,
+.markdown-source-view .dashboard-card {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(16px, 2.5vw, 24px);
+  border-radius: clamp(16px, 2vw, 24px);
+  background: color-mix(in srgb, var(--background-secondary) 90%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.08),
+    0 1px 3px rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition:
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0;
+  transform: translateY(20px) scale(0.97);
+  animation: dashboardCardIn 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.dashboard-card:nth-child(1) { animation-delay: 0s; }
+.dashboard-card:nth-child(2) { animation-delay: 0.08s; }
+.dashboard-card:nth-child(3) { animation-delay: 0.16s; }
+.dashboard-card:nth-child(4) { animation-delay: 0.24s; }
+.dashboard-card:nth-child(5) { animation-delay: 0.32s; }
+.dashboard-card:nth-child(6) { animation-delay: 0.40s; }
+
+.markdown-preview-view .dashboard-card:hover,
+.markdown-source-view .dashboard-card:hover {
+  transform: translateY(-6px) scale(1.015);
+  border-color: color-mix(in srgb, var(--interactive-accent) 50%, transparent);
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.18),
+    0 8px 16px rgba(0, 0, 0, 0.08),
+    0 0 0 1px color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+}
+
+.markdown-preview-view .dashboard-card::before,
+.markdown-source-view .dashboard-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 48%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.04) 52%, transparent 70%);
+  transform: translateX(-110%);
+  transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.markdown-preview-view .dashboard-card:hover::before,
+.markdown-source-view .dashboard-card:hover::before {
+  transform: translateX(110%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.markdown-preview-view .dashboard-card__title,
+.markdown-source-view .dashboard-card__title {
+  position: relative;
+  margin: 0 0 clamp(14px, 2vw, 20px);
+  padding-bottom: clamp(10px, 1.5vw, 14px);
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  font-weight: 700;
+  color: var(--text-normal);
+  letter-spacing: -0.01em;
+}
+
+.markdown-preview-view .dashboard-card__title::after,
+.markdown-source-view .dashboard-card__title::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 36px;
+  height: 2px;
+  border-radius: 20px;
+  background: var(--interactive-accent);
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.markdown-preview-view .dashboard-card:hover .dashboard-card__title::after,
+.markdown-source-view .dashboard-card:hover .dashboard-card__title::after {
+  width: 100%;
+}
+
+.dashboard-card__links {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(6px, 1vw, 10px);
+  position: relative;
+  z-index: 2;
+}
+
+.dashboard-card__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: clamp(10px, 1.5vw, 12px) clamp(12px, 1.5vw, 16px);
+  border-radius: clamp(10px, 1.5vw, 14px);
+  text-decoration: none !important;
+  color: var(--text-muted) !important;
+  background: color-mix(in srgb, var(--background-primary-alt) 60%, transparent);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: clamp(0.88rem, 1.5vw, 0.95rem);
+  font-weight: 450;
+  transition:
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    border-color 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    color 0.4s ease;
+  opacity: 0;
+  transform: translateX(-8px);
+  animation: linkSlideIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.dashboard-card__item:hover {
+  background: var(--interactive-accent);
+  color: #fff !important;
+  border-color: var(--interactive-accent);
+  transform: translateX(6px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+@keyframes dashboardCardIn {
+  0% { opacity: 0; transform: translateY(24px) scale(0.96); }
+  60% { opacity: 0.8; transform: translateY(-2px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes linkSlideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Dashboard responsive */
+@media (max-width: 700px) {
+  .dashboard__grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+/* Dashboard dark theme */
+.theme-dark .dashboard-card {
+  background: color-mix(in srgb, var(--background-secondary) 85%, transparent);
+  border-color: rgba(255, 255, 255, 0.04);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.015);
+}
+
+.theme-dark .dashboard-card:hover {
+  box-shadow:
+    0 20px 40px rgba(0, 0, 0, 0.4),
+    0 8px 16px rgba(0, 0, 0, 0.2),
+    0 0 0 1px color-mix(in srgb, var(--interactive-accent) 20%, transparent);
+}
+
+.theme-dark .dashboard-card__item {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.02);
 }

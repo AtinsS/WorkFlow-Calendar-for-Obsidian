@@ -12,6 +12,9 @@ export interface ISettings {
   wordsPerDot: number;
   shouldConfirmBeforeCreate: boolean;
 
+  // View mode
+  calendarInMainView?: boolean;
+
   // Weekly Note settings
   showWeeklyNote: boolean;
   weeklyNoteFormat: string;
@@ -89,12 +92,25 @@ export interface ISettings {
   weatherEnabled: boolean;
   weatherLatitude: number;
   weatherLongitude: number;
+
+  // Status bar
+  showStatusBar: boolean;
+  dtwShowOnAllPages: boolean;
+
+  // Nav panel button style
+  navBtnColor?: string;
+  navBtnBg?: string;
+  navBtnRadius?: string;
+  navBtnSize?: string;
+  navAccentColor?: string;
 }
 
 export const defaultSettings = Object.freeze({
   shouldConfirmBeforeCreate: true,
 
   wordsPerDot: DEFAULT_WORDS_PER_DOT,
+
+  calendarInMainView: false,
 
   showWeeklyNote: false,
   weeklyNoteFormat: "",
@@ -150,6 +166,15 @@ export const defaultSettings = Object.freeze({
   weatherEnabled: false,
   weatherLatitude: 55.75,
   weatherLongitude: 37.62,
+
+  showStatusBar: true,
+  dtwShowOnAllPages: false,
+
+  navBtnColor: "",
+  navBtnBg: "",
+  navBtnRadius: "",
+  navBtnSize: "",
+  navAccentColor: "",
 });
 
 export function applyAccentColor(hex: string): void {
@@ -234,6 +259,13 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
 
     this.containerEl.createEl("h3", {
+      text: "Расположение",
+    });
+    this.addCalendarInMainViewSetting();
+    this.addShowStatusBarSetting();
+    this.addDtwShowOnAllPagesSetting();
+
+    this.containerEl.createEl("h3", {
       text: "Панели",
     });
     this.addShowTaskTrackerSetting();
@@ -277,6 +309,55 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addWorkTaskSettings();
 
     this.addGitHubGistSettings();
+
+    this.containerEl.createEl("h3", {
+      text: "Панель навигации в заметках",
+    });
+    this.addNavPanelInstructions();
+
+    this.containerEl.createEl("h3", {
+      text: "Стиль кнопок навигации",
+    });
+    this.addNavBtnStyleSettings();
+  }
+
+  addCalendarInMainViewSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Календарь в основной вкладке")
+      .setDesc("Отображать календарь по центру основного окна вместо правого сайдбара. Требуется перезапуск для применения.")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.calendarInMainView);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions({ calendarInMainView: value });
+        });
+      });
+  }
+
+  addShowStatusBarSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Панель информации")
+      .setDesc("Отображать панель с датой, временем, погодой и задачами под вкладками")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.showStatusBar);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions({ showStatusBar: value });
+          // Toggle visibility in real-time
+          const el = document.querySelector(".mcp-dtw-global");
+          if (el) (el as HTMLElement).style.display = value ? "" : "none";
+        });
+      });
+  }
+
+  addDtwShowOnAllPagesSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Панель на всех страницах")
+      .setDesc("Показывать панель информации на каждой открытой вкладке (иначе — только на первой)")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.dtwShowOnAllPages);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions({ dtwShowOnAllPages: value });
+        });
+      });
   }
 
   addShowTaskTrackerSetting(): void {
@@ -999,5 +1080,104 @@ priority: medium
           text.inputEl.style.maxWidth = "500px";
         });
     }
+  }
+
+  addNavPanelInstructions(): void {
+    const desc = document.createDocumentFragment();
+
+    const p1 = document.createElement("p");
+    p1.textContent = "Вставьте блок кода в любую заметку для создания панели быстрой навигации:";
+    desc.appendChild(p1);
+
+    const code = document.createElement("pre");
+    code.style.cssText = "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
+    code.textContent = "```calendar-nav\nschedule:Расписание\ntasks:Задачи\nfinance:Финансы\nfinance-analytics:Аналитика\n```";
+    desc.appendChild(code);
+
+    const p2 = document.createElement("p");
+    p2.style.marginTop = "8px";
+    p2.textContent = "Доступные ключи: schedule, tasks, finance, finance-analytics";
+    desc.appendChild(p2);
+
+    const p3 = document.createElement("p");
+    p3.style.marginTop = "4px";
+    p3.textContent = "Кастомизация стиля (первая строка начинается с %):";
+    desc.appendChild(p3);
+
+    const code2 = document.createElement("pre");
+    code2.style.cssText = "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
+    code2.textContent = "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:Расписание\n```";
+    desc.appendChild(code2);
+
+    const p4 = document.createElement("p");
+    p4.style.marginTop = "8px";
+    p4.textContent = "Параметры стиля: color (текст), bg (фон), radius (скругление), size (размер шрифта), accent (цвет при наведении)";
+    desc.appendChild(p4);
+
+    new Setting(this.containerEl)
+      .setName("Инструкция по панели навигации")
+      .setDesc(desc);
+  }
+
+  addNavBtnStyleSettings(): void {
+    new Setting(this.containerEl)
+      .setName("Цвет текста кнопок")
+      .setDesc("Цвет текста на кнопках навигации (hex, например #ffffff)")
+      .addText((text) => {
+        text.setPlaceholder("#ffffff")
+          .setValue(this.plugin.options.navBtnColor || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ navBtnColor: value });
+          });
+        text.inputEl.style.maxWidth = "120px";
+      });
+
+    new Setting(this.containerEl)
+      .setName("Фон кнопок")
+      .setDesc("Цвет фона кнопок (hex, например #333333)")
+      .addText((text) => {
+        text.setPlaceholder("#333333")
+          .setValue(this.plugin.options.navBtnBg || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ navBtnBg: value });
+          });
+        text.inputEl.style.maxWidth = "120px";
+      });
+
+    new Setting(this.containerEl)
+      .setName("Скругление кнопок")
+      .setDesc("Радиус скругления (например 12px, 50%)")
+      .addText((text) => {
+        text.setPlaceholder("12px")
+          .setValue(this.plugin.options.navBtnRadius || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ navBtnRadius: value });
+          });
+        text.inputEl.style.maxWidth = "120px";
+      });
+
+    new Setting(this.containerEl)
+      .setName("Размер шрифта кнопок")
+      .setDesc("Размер шрифта (например 13px)")
+      .addText((text) => {
+        text.setPlaceholder("13px")
+          .setValue(this.plugin.options.navBtnSize || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ navBtnSize: value });
+          });
+        text.inputEl.style.maxWidth = "120px";
+      });
+
+    new Setting(this.containerEl)
+      .setName("Цвет акцента при наведении")
+      .setDesc("Цвет границы при hover (hex, например #5f99e1)")
+      .addText((text) => {
+        text.setPlaceholder("#5f99e1")
+          .setValue(this.plugin.options.navAccentColor || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ navAccentColor: value });
+          });
+        text.inputEl.style.maxWidth = "120px";
+      });
   }
 }

@@ -493,14 +493,39 @@
     <div class="task-tracker-list">
       {#if filteredTasks.length === 0}
         <div class="task-tracker-empty">
+          <div class="empty-illustration">
+            <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <!-- Clipboard body -->
+              <rect x="25" y="15" width="55" height="70" rx="6" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+              <!-- Clipboard clip -->
+              <rect x="38" y="8" width="28" height="12" rx="4" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.12)" stroke-width="1.5"/>
+              <circle cx="52" cy="14" r="2.5" fill="rgba(255,255,255,0.15)"/>
+              <!-- Checkmark lines -->
+              <rect x="35" y="32" width="34" height="5" rx="2.5" fill="rgba(255,255,255,0.06)"/>
+              <rect x="35" y="43" width="34" height="5" rx="2.5" fill="rgba(255,255,255,0.06)"/>
+              <rect x="35" y="54" width="34" height="5" rx="2.5" fill="rgba(255,255,255,0.06)"/>
+              <!-- Checkmarks -->
+              <path d="M33 34.5l2.5 2.5 5-5" stroke="rgba(130,200,170,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M33 45.5l2.5 2.5 5-5" stroke="rgba(130,200,170,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M33 56.5l2.5 2.5 5-5" stroke="rgba(130,200,170,0.7)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- Plant -->
+              <path d="M88 85 C88 72 78 65 82 55" stroke="rgba(130,170,130,0.5)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              <path d="M88 85 C88 72 98 65 94 55" stroke="rgba(130,170,130,0.5)" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+              <path d="M88 78 C85 70 80 68 82 60" stroke="rgba(130,170,130,0.4)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+              <path d="M88 78 C91 70 96 68 94 60" stroke="rgba(130,170,130,0.4)" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+              <ellipse cx="88" cy="87" rx="8" ry="3" fill="rgba(130,170,130,0.15)"/>
+            </svg>
+          </div>
           {#if !currentDate && $tasks.length === 0}
-            Нет задач
+            <div class="empty-title">Нет задач</div>
+            <div class="empty-subtitle">Создайте первую задачу</div>
           {:else if !currentDate}
-            Нет задач в этом статусе
+            <div class="empty-title">Нет задач в этом статусе</div>
           {:else if allTasksForDate.length === 0}
-            Нет задач на эту дату
+            <div class="empty-title">Нет задач на эту дату</div>
+            <div class="empty-subtitle">Наслаждайтесь свободным временем</div>
           {:else}
-            Нет задач в этом статусе
+            <div class="empty-title">Нет задач в этом статусе</div>
           {/if}
         </div>
       {:else if showAllDates}

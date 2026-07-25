@@ -38,6 +38,9 @@ import { initHabitStores, reloadHabitStores, immediateSave as immediateHabitSave
 import { setSyncEnabled as setHabitSync } from "./habit-tracker/storage";
 import { initFinanceStores, reloadFinanceStores, immediateFinanceSave } from "./finance/storage";
 import { initFinancialAnalyticsStores, reloadFinancialAnalyticsStores, immediateAnalyticsSave } from "./finance/financialAnalyticsStorage";
+import CalendarNav from "./components/CalendarNav.svelte";
+import DateTimeWeather from "./components/DateTimeWeather.svelte";
+import Dashboard from "./dashboard/Dashboard.svelte";
 import { NotificationService } from "./services/NotificationService";
 import { initGistSync } from "./services/GistSyncService";
 import { syncNotificationSettingsOnLoad, migrateFromSingleFile, VAULT_DATA_DIR } from "./io/vaultStorage";
@@ -55,8 +58,20 @@ export default class CalendarPlugin extends Plugin {
   private view: CalendarView;
   private syncReloadTimer: ReturnType<typeof setTimeout> | null = null;
   private notificationService: NotificationService;
+  private dtwPanel: DateTimeWeather | null = null;
+  private dtwContainer: HTMLElement | null = null;
 
   onunload(): void {
+    // Destroy global DateTimeWeather panel
+    if (this.dtwPanel) {
+      this.dtwPanel.$destroy();
+      this.dtwPanel = null;
+    }
+    if (this.dtwContainer) {
+      this.dtwContainer.remove();
+      this.dtwContainer = null;
+    }
+
     // Flush pending debounced saves before teardown
     immediateTaskSave();
     immediateHabitSave();
@@ -205,6 +220,106 @@ export default class CalendarPlugin extends Plugin {
       this.activateFinanceView();
     });
 
+    // Register calendar-nav code block processor
+    this.registerMarkdownCodeBlockProcessor("calendar-nav", (source, el) => {
+      const lines = source.split("\n").filter((l) => l.trim());
+      const items = lines.map((line) => {
+        const [key, ...rest] = line.split(":");
+        return {
+          key: key.trim(),
+          label: rest.length > 0 ? rest.join(":").trim() : key.trim(),
+        };
+      });
+      if (items.length === 0) return;
+
+      // Defaults from plugin settings
+      const opts = this.options;
+      let btnColor = opts.navBtnColor || "";
+      let btnBg = opts.navBtnBg || "";
+      let btnRadius = opts.navBtnRadius || "";
+      let btnSize = opts.navBtnSize || "";
+      let accentColor = opts.navAccentColor || "";
+
+      // Override with inline % style line
+      const styleLine = lines[0]?.trim();
+      if (styleLine?.startsWith("%")) {
+        const styleParts = styleLine.slice(1).split(";");
+        for (const part of styleParts) {
+          const [k, v] = part.split(":").map((s) => s.trim());
+          if (k === "color") btnColor = v;
+          if (k === "bg") btnBg = v;
+          if (k === "radius") btnRadius = v;
+          if (k === "size") btnSize = v;
+          if (k === "accent") accentColor = v;
+        }
+        items.shift();
+      }
+
+      new CalendarNav({
+        target: el,
+        props: {
+          items,
+          btnColor,
+          btnBg,
+          btnRadius,
+          btnSize,
+          accentColor,
+          onNavigate: (viewKey: string) => {
+            const viewMap: Record<string, () => Promise<void> | void> = {
+              schedule: () => this.activateScheduleView(),
+              tasks: () => this.initLeaf(),
+              finance: () => this.activateFinanceView(),
+              "finance-analytics": () => this.activateFinancialAnalyticsView(),
+            };
+            const action = viewMap[viewKey];
+            if (action) action();
+          },
+        },
+      });
+    });
+
+    // Register datetime-weather code block processor
+    this.registerMarkdownCodeBlockProcessor("datetime-weather", (_source, el) => {
+      new DateTimeWeather({ target: el });
+    });
+
+    // Register dashboard code block processor
+    this.registerMarkdownCodeBlockProcessor("dashboard", (_source, el) => {
+      new Dashboard({ target: el, props: { appInstance: this.app } });
+    });
+
+    // Right-click menu: insert blocks
+    this.registerEvent(
+      this.app.workspace.on("editor-menu", (menu) => {
+        menu.addItem((item) => {
+          item.setTitle("Вставить блок даты, времени и погоды")
+            .setIcon("calendar-range")
+            .onClick(() => {
+              const view = this.app.workspace.activeLeaf?.view;
+              if (view && "editor" in view) {
+                const editor = (view as any).editor;
+                const cursor = editor.getCursor();
+                editor.replaceRange("```datetime-weather\n```", cursor);
+                editor.setCursor({ line: cursor.line + 1, ch: 0 });
+              }
+            });
+        });
+        menu.addItem((item) => {
+          item.setTitle("Вставить дашборд")
+            .setIcon("layout-grid")
+            .onClick(() => {
+              const view = this.app.workspace.activeLeaf?.view;
+              if (view && "editor" in view) {
+                const editor = (view as any).editor;
+                const cursor = editor.getCursor();
+                editor.replaceRange("```dashboard\n```", cursor);
+                editor.setCursor({ line: cursor.line + 1, ch: 0 });
+              }
+            });
+        });
+      })
+    );
+
     await this.loadOptions();
 
     // Apply accent color from settings
@@ -284,8 +399,83 @@ export default class CalendarPlugin extends Plugin {
 
     if (this.app.workspace.layoutReady) {
       this.initLeaf();
+      this.injectDateTimeWeather();
     } else {
-      this.app.workspace.onLayoutReady(() => this.initLeaf());
+      this.app.workspace.onLayoutReady(() => {
+        this.initLeaf();
+        this.injectDateTimeWeather();
+      });
+    }
+
+    // Re-inject panel when active leaf changes (move to active view)
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", () => {
+        if (this.options.dtwShowOnAllPages) {
+          this.moveDateTimeWeatherToActiveView();
+        }
+      })
+    );
+  }
+
+  private injectDateTimeWeather(): void {
+    if (!this.options.showStatusBar) {
+      this.removeDateTimeWeather();
+      return;
+    }
+
+    // If container still exists in DOM, don't re-inject
+    if (this.dtwContainer && document.body.contains(this.dtwContainer)) return;
+
+    this.createDateTimeWeatherPanel();
+  }
+
+  private moveDateTimeWeatherToActiveView(): void {
+    if (!this.options.showStatusBar) {
+      this.removeDateTimeWeather();
+      return;
+    }
+
+    // Destroy old panel if it exists
+    this.removeDateTimeWeather();
+    this.createDateTimeWeatherPanel();
+  }
+
+  private createDateTimeWeatherPanel(): void {
+    const mainSplit = this.app.workspace.containerEl.querySelector(
+      ".workspace-split.mod-root"
+    );
+    if (!mainSplit) return;
+
+    // Find the active leaf's view-header
+    const activeLeaf = this.app.workspace.activeLeaf;
+    let headerEl: Element | null = null;
+
+    if (activeLeaf?.view?.containerEl) {
+      headerEl = activeLeaf.view.containerEl.querySelector(".view-header");
+    }
+
+    // Fallback to first view-header if active leaf not found
+    if (!headerEl) {
+      headerEl = mainSplit.querySelector(".view-header");
+    }
+
+    if (!headerEl) return;
+
+    this.dtwContainer = document.createElement("div");
+    this.dtwContainer.addClass("mcp-dtw-global");
+    headerEl.parentElement?.insertBefore(this.dtwContainer, headerEl.nextSibling);
+
+    this.dtwPanel = new DateTimeWeather({ target: this.dtwContainer });
+  }
+
+  private removeDateTimeWeather(): void {
+    if (this.dtwPanel) {
+      this.dtwPanel.$destroy();
+      this.dtwPanel = null;
+    }
+    if (this.dtwContainer) {
+      this.dtwContainer.remove();
+      this.dtwContainer = null;
     }
   }
 
@@ -295,7 +485,7 @@ export default class CalendarPlugin extends Plugin {
     }
     // On mobile, open calendar in the main content area (right sidebar is hidden by default)
     const isMobile = this.app.workspace.containerEl.innerWidth <= 768;
-    if (isMobile) {
+    if (isMobile || this.options?.calendarInMainView) {
       const leaf = this.app.workspace.getLeaf("tab");
       leaf.setViewState({ type: VIEW_TYPE_CALENDAR });
     } else {

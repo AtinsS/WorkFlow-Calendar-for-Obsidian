@@ -384,8 +384,7 @@
           ? `${arg.date.getFullYear()}-${String(arg.date.getMonth() + 1).padStart(2, "0")}-${String(arg.date.getDate()).padStart(2, "0")}`
           : null;
         const weather = dateStr ? weatherByDate.get(dateStr) : null;
-        const weekday = arg.text?.split(" ")[0] || "";
-        const dayNum = arg.text?.split(" ").slice(1).join(" ") || "";
+        const headerText = arg.text || "";
         const isToday = dateStr === getLocalDateKey();
         const todayClass = isToday ? " fc-day-header-today" : "";
 
@@ -394,7 +393,7 @@
             html: `
               <div class="fc-day-header-content${todayClass}">
                 <div class="fc-day-header-top">
-                  <span class="fc-day-header-text">${weekday}, ${dayNum}</span>
+                  <span class="fc-day-header-text">${headerText}</span>
                 </div>
                 <div class="fc-day-header-weather">
                   <span class="fc-weather-icon">${weather.icon}</span>
@@ -408,7 +407,7 @@
           html: `
             <div class="fc-day-header-content${todayClass}">
               <div class="fc-day-header-top">
-                <span class="fc-day-header-text">${weekday}, ${dayNum}</span>
+                <span class="fc-day-header-text">${headerText}</span>
               </div>
             </div>
           `,
