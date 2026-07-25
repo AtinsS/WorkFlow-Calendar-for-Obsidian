@@ -2130,7 +2130,7 @@ content: attr(data-task-count);
   padding: 0 !important;
   background: var(--background-primary, #1a1a2e) !important;
   border-radius: 16px !important;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .tm .modal-content {

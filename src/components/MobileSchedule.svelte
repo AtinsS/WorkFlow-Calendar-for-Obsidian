@@ -45,6 +45,8 @@
     if (b.scheduledTime) return 1;
     return (a.title || "").localeCompare(b.title || "");
   });
+  $: timedTasks = dayTasks.filter((t) => t.scheduledTime);
+  $: untimedTasks = dayTasks.filter((t) => !t.scheduledTime);
 
   // Week strip
   $: weekStart = currentDate.clone().startOf("week");
@@ -380,8 +382,8 @@
         {/if}
       {/if}
 
-      <!-- Task blocks -->
-      {#each dayTasks as task (task.id)}
+      <!-- Task blocks (timed) -->
+      {#each timedTasks as task (task.id)}
         <div
           class="ms-task-block"
           class:done={task.status === "done"}
@@ -413,6 +415,38 @@
         </div>
       {/each}
     </div>
+
+    <!-- Untimed tasks -->
+    {#if untimedTasks.length > 0}
+      <div class="ms-untimed-section">
+        <div class="ms-untimed-header">
+          <span class="ms-untimed-title">Без времени</span>
+        </div>
+        <div class="ms-untimed-list">
+          {#each untimedTasks as task (task.id)}
+            <div
+              class="ms-untimed-task"
+              class:done={task.status === "done"}
+              on:click={(e) => openContextMenu(task, e)}
+              role="button"
+              tabindex="0"
+            >
+              <span class="ms-untimed-task-title">{task.title}</span>
+              {#if task.isWorkTask}
+                <span class="ms-task-work-icon">💼</span>
+              {/if}
+              {#if task.status === "progress"}
+                <span class="ms-task-status ms-status-progress">В работе</span>
+              {:else if task.status === "paused"}
+                <span class="ms-task-status ms-status-paused">На паузе</span>
+              {:else if task.status === "done"}
+                <span class="ms-task-status ms-status-done">Готово</span>
+              {/if}
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </div>
   {/if}
 </div>
