@@ -141,7 +141,7 @@ export const defaultSettings = Object.freeze({
   notifyDeadlines: true,
 
   ntfyEnabled: false,
-  ntfyTopic: "Calendar_Remastered",
+  ntfyTopic: "",
 
   overdueCheckEnabled: false,
 
@@ -187,12 +187,18 @@ export function applyAccentColor(hex: string): void {
   root.style.setProperty("--mcp-accent", `rgba(${r}, ${g}, ${b}, 0.55)`);
   root.style.setProperty("--mcp-accent-dim", `rgba(${r}, ${g}, ${b}, 0.10)`);
   root.style.setProperty("--mcp-accent-faint", `rgba(${r}, ${g}, ${b}, 0.15)`);
-  root.style.setProperty("--mcp-accent-ultra-dim", `rgba(${r}, ${g}, ${b}, 0.08)`);
+  root.style.setProperty(
+    "--mcp-accent-ultra-dim",
+    `rgba(${r}, ${g}, ${b}, 0.08)`,
+  );
   root.style.setProperty("--mcp-accent-hover", `rgba(${r}, ${g}, ${b}, 0.18)`);
   root.style.setProperty("--mcp-accent-glow", `rgba(${r}, ${g}, ${b}, 0.18)`);
 
   // Also set Obsidian's --interactive-accent so finance/analytics views follow the color
-  root.style.setProperty("--interactive-accent", `rgba(${r}, ${g}, ${b}, 0.55)`);
+  root.style.setProperty(
+    "--interactive-accent",
+    `rgba(${r}, ${g}, ${b}, 0.55)`,
+  );
   root.style.setProperty("--text-on-accent", "#fff");
   root.style.setProperty("--text-accent", `rgba(${r}, ${g}, ${b}, 0.9)`);
 
@@ -209,12 +215,21 @@ export function applyGlassBgColor(hex: string, opacity?: number): void {
   const alpha = opacity != null ? opacity / 100 : 0.55;
 
   root.style.setProperty("--mcp-glass-bg", `rgba(${r}, ${g}, ${b}, ${alpha})`);
-  root.style.setProperty("--mcp-glass-highlight", `rgba(${r + 5}, ${g + 5}, ${b + 5}, ${Math.max(0.01, alpha * 0.05)})`);
+  root.style.setProperty(
+    "--mcp-glass-highlight",
+    `rgba(${r + 5}, ${g + 5}, ${b + 5}, ${Math.max(0.01, alpha * 0.05)})`,
+  );
 }
 
 export function appHasPeriodicNotesPluginLoaded(): boolean {
   // Undocumented periodic-notes plugin API
-  const appWithPlugins = window.app as unknown as { plugins: { getPlugin: (id: string) => { settings?: { weekly?: { enabled?: boolean } } } } };
+  const appWithPlugins = window.app as unknown as {
+    plugins: {
+      getPlugin: (id: string) => {
+        settings?: { weekly?: { enabled?: boolean } };
+      };
+    };
+  };
   const periodicNotes = appWithPlugins.plugins.getPlugin("periodic-notes");
   return periodicNotes && periodicNotes.settings?.weekly?.enabled;
 }
@@ -231,11 +246,18 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.containerEl.empty();
 
     // Coffee banner
-    const coffeeBanner = this.containerEl.createDiv({ cls: "settings-coffee-banner" });
-    const coffeeTitle = coffeeBanner.createEl("h3", { cls: "settings-coffee-title" });
+    const coffeeBanner = this.containerEl.createDiv({
+      cls: "settings-coffee-banner",
+    });
+    const coffeeTitle = coffeeBanner.createEl("h3", {
+      cls: "settings-coffee-title",
+    });
     coffeeTitle.textContent = "☕ Купить автору кофе";
-    const coffeeDesc = coffeeBanner.createEl("p", { cls: "settings-coffee-desc" });
-    coffeeDesc.textContent = "Если плагин оказался полезен — угостите автора кофе!";
+    const coffeeDesc = coffeeBanner.createEl("p", {
+      cls: "settings-coffee-desc",
+    });
+    coffeeDesc.textContent =
+      "Если плагин оказался полезен — угостите автора кофе!";
     const coffeeBtn = coffeeBanner.createEl("a", {
       cls: "settings-coffee-btn",
       text: "Поддержать",
@@ -251,12 +273,10 @@ export class CalendarSettingsTab extends PluginSettingTab {
         });
         banner.createEl("p", {
           cls: "setting-item-description",
-          text:
-            "Календарь лучше всего работает в связке с плагинами Daily Notes или Periodic Notes (доступны в каталоге плагинов).",
+          text: "Календарь лучше всего работает в связке с плагинами Daily Notes или Periodic Notes (доступны в каталоге плагинов).",
         });
       });
     }
-
 
     this.containerEl.createEl("h3", {
       text: "Расположение",
@@ -324,7 +344,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
   addCalendarInMainViewSetting(): void {
     new Setting(this.containerEl)
       .setName("Календарь в основной вкладке")
-      .setDesc("Отображать календарь по центру основного окна вместо правого сайдбара. Требуется перезапуск для применения.")
+      .setDesc(
+        "Отображать календарь по центру основного окна вместо правого сайдбара. Требуется перезапуск для применения.",
+      )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.calendarInMainView);
         toggle.onChange(async (value) => {
@@ -336,7 +358,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
   addShowStatusBarSetting(): void {
     new Setting(this.containerEl)
       .setName("Панель информации")
-      .setDesc("Отображать панель с датой, временем, погодой и задачами под вкладками")
+      .setDesc(
+        "Отображать панель с датой, временем, погодой и задачами под вкладками",
+      )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.showStatusBar);
         toggle.onChange(async (value) => {
@@ -351,7 +375,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
   addDtwShowOnAllPagesSetting(): void {
     new Setting(this.containerEl)
       .setName("Панель на всех страницах")
-      .setDesc("Показывать панель информации на каждой открытой вкладке (иначе — только на первой)")
+      .setDesc(
+        "Показывать панель информации на каждой открытой вкладке (иначе — только на первой)",
+      )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.dtwShowOnAllPages);
         toggle.onChange(async (value) => {
@@ -400,11 +426,15 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Лимит логов привычек")
-      .setDesc("Максимальное количество записей логов привычек. При превышении старые записи удаляются автоматически.")
+      .setDesc(
+        "Максимальное количество записей логов привычек. При превышении старые записи удаляются автоматически.",
+      )
       .addText((text) => {
         text
           .setPlaceholder("1000")
-          .setValue(String(this.plugin.options.habitLogCleanupThreshold || 1000))
+          .setValue(
+            String(this.plugin.options.habitLogCleanupThreshold || 1000),
+          )
           .onChange(async (value) => {
             const num = parseInt(value);
             if (!isNaN(num) && num >= 50) {
@@ -421,16 +451,56 @@ export class CalendarSettingsTab extends PluginSettingTab {
   addScheduleDisplaySettings(): void {
     const opts = this.plugin.options;
     const items: { key: string; name: string; desc: string }[] = [
-      { key: "scheduleShowTime", name: "Время", desc: "Отображать запланированное время задачи" },
-      { key: "scheduleShowStatus", name: "Статус", desc: "Бейдж статуса (В работе / На паузе / Готово)" },
-      { key: "scheduleShowPriority", name: "Приоритет", desc: "Иконка приоритета (! высокий, ~ средний)" },
-      { key: "scheduleShowWorkBadge", name: "Рабочая задача", desc: "Бейдж рабочей задачи" },
-      { key: "scheduleShowNoteBadge", name: "Привязанная заметка", desc: "Иконка привязанной заметки" },
-      { key: "scheduleShowDeadline", name: "Дедлайн", desc: "Отображать дедлайн (полупрозрачный бейдж)" },
-      { key: "scheduleShowOverdue", name: "Просрочено", desc: "Показывать время просрочки" },
-      { key: "scheduleShowDescription", name: "Описание", desc: "Краткое описание задачи под заголовком" },
-      { key: "scheduleShowNowIndicator", name: "Текущее время", desc: "Индикатор текущего времени в расписании" },
-      { key: "scheduleShowDeadlineEvents", name: "Дедлайн-задачи", desc: "Отдельные задачи-дедлайны в расписании (красные полупрозрачные)" },
+      {
+        key: "scheduleShowTime",
+        name: "Время",
+        desc: "Отображать запланированное время задачи",
+      },
+      {
+        key: "scheduleShowStatus",
+        name: "Статус",
+        desc: "Бейдж статуса (В работе / На паузе / Готово)",
+      },
+      {
+        key: "scheduleShowPriority",
+        name: "Приоритет",
+        desc: "Иконка приоритета (! высокий, ~ средний)",
+      },
+      {
+        key: "scheduleShowWorkBadge",
+        name: "Рабочая задача",
+        desc: "Бейдж рабочей задачи",
+      },
+      {
+        key: "scheduleShowNoteBadge",
+        name: "Привязанная заметка",
+        desc: "Иконка привязанной заметки",
+      },
+      {
+        key: "scheduleShowDeadline",
+        name: "Дедлайн",
+        desc: "Отображать дедлайн (полупрозрачный бейдж)",
+      },
+      {
+        key: "scheduleShowOverdue",
+        name: "Просрочено",
+        desc: "Показывать время просрочки",
+      },
+      {
+        key: "scheduleShowDescription",
+        name: "Описание",
+        desc: "Краткое описание задачи под заголовком",
+      },
+      {
+        key: "scheduleShowNowIndicator",
+        name: "Текущее время",
+        desc: "Индикатор текущего времени в расписании",
+      },
+      {
+        key: "scheduleShowDeadlineEvents",
+        name: "Дедлайн-задачи",
+        desc: "Отдельные задачи-дедлайны в расписании (красные полупрозрачные)",
+      },
     ];
     for (const item of items) {
       new Setting(this.containerEl)
@@ -450,7 +520,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Показывать погоду")
-      .setDesc("Отображать прогноз погоды в заголовках дней недели (Open-Meteo)")
+      .setDesc(
+        "Отображать прогноз погоды в заголовках дней недели (Open-Meteo)",
+      )
       .addToggle((toggle) => {
         toggle.setValue(opts.weatherEnabled);
         toggle.onChange(async (value) => {
@@ -506,12 +578,10 @@ export class CalendarSettingsTab extends PluginSettingTab {
       .setName("Акцентный цвет")
       .setDesc("Основной цвет подсветки кнопок, выделений и активных элементов")
       .addColorPicker((picker) => {
-        picker
-          .setValue(currentColor)
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ accentColor: value });
-            applyAccentColor(value);
-          });
+        picker.setValue(currentColor).onChange(async (value) => {
+          await this.plugin.writeOptions({ accentColor: value });
+          applyAccentColor(value);
+        });
       });
 
     // Add a reset button
@@ -524,7 +594,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
           await this.plugin.writeOptions({ accentColor: defaultColor });
           applyAccentColor(defaultColor);
           this.display();
-        })
+        }),
     );
   }
 
@@ -536,12 +606,10 @@ export class CalendarSettingsTab extends PluginSettingTab {
       .setName("Фон стеклянных панелей")
       .setDesc("Цвет фона панелей задач, привычек, расписания и модальных окон")
       .addColorPicker((picker) => {
-        picker
-          .setValue(currentColor)
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ glassBgColor: value });
-            applyGlassBgColor(value, this.plugin.options.glassOpacity);
-          });
+        picker.setValue(currentColor).onChange(async (value) => {
+          await this.plugin.writeOptions({ glassBgColor: value });
+          applyGlassBgColor(value, this.plugin.options.glassOpacity);
+        });
       });
 
     setting.addButton((btn) =>
@@ -550,10 +618,13 @@ export class CalendarSettingsTab extends PluginSettingTab {
         .setTooltip("Вернуть цвет по умолчанию")
         .onClick(async () => {
           const defaultColor = "#1e2332";
-          await this.plugin.writeOptions({ glassBgColor: defaultColor, glassOpacity: 55 });
+          await this.plugin.writeOptions({
+            glassBgColor: defaultColor,
+            glassOpacity: 55,
+          });
           applyGlassBgColor(defaultColor, 55);
           this.display();
-        })
+        }),
     );
 
     new Setting(this.containerEl)
@@ -566,11 +637,15 @@ export class CalendarSettingsTab extends PluginSettingTab {
           .setDynamicTooltip()
           .onChange(async (value) => {
             await this.plugin.writeOptions({ glassOpacity: value });
-            applyGlassBgColor(this.plugin.options.glassBgColor || "#1e2332", value);
-            // Update description with current value
-            slider.sliderEl.closest(".setting-item")?.querySelector(".setting-item-description")?.setText(
-              `Непрозрачность фона стеклянных панелей: ${value}%`
+            applyGlassBgColor(
+              this.plugin.options.glassBgColor || "#1e2332",
+              value,
             );
+            // Update description with current value
+            slider.sliderEl
+              .closest(".setting-item")
+              ?.querySelector(".setting-item-description")
+              ?.setText(`Непрозрачность фона стеклянных панелей: ${value}%`);
           });
       });
   }
@@ -579,7 +654,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Синхронизация в корень хранилища")
       .setDesc(
-        "Сохранять данные в папку calendar-data/ в корне хранилища вместо папки плагина. Позволяет синхронизировать задачи и привычки через Obsidian Sync, iCloud или Git."
+        "Сохранять данные в папку calendar-data/ в корне хранилища вместо папки плагина. Позволяет синхронизировать задачи и привычки через Obsidian Sync, iCloud или Git.",
       )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.syncToVault);
@@ -611,7 +686,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(this.containerEl)
       .setName("Создавать Task заметку для каждой задачи")
       .setDesc(
-        "При создании задачи автоматически создавать .md файл в папке Tasks/ в формате Tasks плагина."
+        "При создании задачи автоматически создавать .md файл в папке Tasks/ в формате Tasks плагина.",
       )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.syncAllTasksToNotes);
@@ -626,15 +701,20 @@ export class CalendarSettingsTab extends PluginSettingTab {
           .onClick(async () => {
             const { tasks } = await import("./task-tracker/stores");
             const { get } = await import("svelte/store");
-            const { createNoteTask, shouldSyncTaskToNote } = await import("./task-tracker/noteTasks");
+            const { createNoteTask, shouldSyncTaskToNote } =
+              await import("./task-tracker/noteTasks");
 
             const allTasks = get(tasks);
-            const tasksFolderPath = this.plugin.options.tasksFolderPath || "Tasks";
+            const tasksFolderPath =
+              this.plugin.options.tasksFolderPath || "Tasks";
             let created = 0;
 
             for (const task of allTasks) {
               // Пропускаем задачи у которых уже есть Task заметка
-              if (task.notePath && task.notePath.startsWith(tasksFolderPath + "/")) {
+              if (
+                task.notePath &&
+                task.notePath.startsWith(tasksFolderPath + "/")
+              ) {
                 continue;
               }
 
@@ -642,21 +722,27 @@ export class CalendarSettingsTab extends PluginSettingTab {
                 try {
                   const { projects } = await import("./task-tracker/stores");
                   const { get: getS } = await import("svelte/store");
-                  const project = getS(projects).find((p) => p.id === task.projectId);
+                  const project = getS(projects).find(
+                    (p) => p.id === task.projectId,
+                  );
                   const file = await createNoteTask(task, project, this.app);
                   if (file) {
-                    const { updateTask } = await import("./task-tracker/stores");
+                    const { updateTask } =
+                      await import("./task-tracker/stores");
                     updateTask(task.id, { notePath: file.path });
                     created++;
                   }
                 } catch (error) {
-                  console.error(`[Settings] Failed to create note for task ${task.id}:`, error);
+                  console.error(
+                    `[Settings] Failed to create note for task ${task.id}:`,
+                    error,
+                  );
                 }
               }
             }
 
             alert(`Создано ${created} Task заметок`);
-          })
+          }),
       );
 
     new Setting(this.containerEl)
@@ -688,7 +774,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Лимит выполненных задач")
-      .setDesc("Максимальное количество выполненных задач. При превышении старые задачи и их заметки удаляются автоматически.")
+      .setDesc(
+        "Максимальное количество выполненных задач. При превышении старые задачи и их заметки удаляются автоматически.",
+      )
       .addText((text) => {
         text
           .setPlaceholder("1000")
@@ -707,7 +795,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     new Setting(this.containerEl)
       .setName("Лимит логов времени")
-      .setDesc("Максимальное количество записей логов времени. При превышении старые логи удаляются автоматически.")
+      .setDesc(
+        "Максимальное количество записей логов времени. При превышении старые логи удаляются автоматически.",
+      )
       .addText((text) => {
         text
           .setPlaceholder("1000")
@@ -767,7 +857,9 @@ priority: medium
 
     new Setting(this.containerEl)
       .setName("Напоминание за (минут)")
-      .setDesc("За сколько минут до запланированного времени показывать напоминание")
+      .setDesc(
+        "За сколько минут до запланированного времени показывать напоминание",
+      )
       .addDropdown((dropdown) => {
         dropdown.addOption("1", "1 минута");
         dropdown.addOption("5", "5 минут");
@@ -832,6 +924,7 @@ priority: medium
         toggle.setValue(this.plugin.options.ntfyEnabled);
         toggle.onChange(async (value) => {
           this.plugin.writeOptions({ ntfyEnabled: value });
+          this.syncNotificationSettingsToVault();
         });
       });
 
@@ -841,9 +934,10 @@ priority: medium
       .addText((text) => {
         text
           .setPlaceholder("Calendar_Remastered")
-          .setValue(this.plugin.options.ntfyTopic || "Calendar_Remastered")
+          .setValue(this.plugin.options.ntfyTopic)
           .onChange(async (value) => {
-            this.plugin.writeOptions({ ntfyTopic: value || "Calendar_Remastered" });
+            await this.plugin.writeOptions({ ntfyTopic: value });
+            await this.syncNotificationSettingsToVault({ ntfyTopic: value });
           });
         text.inputEl.style.maxWidth = "250px";
       });
@@ -856,7 +950,7 @@ priority: medium
           .setButtonText("Отправить тест")
           .setWarning()
           .onClick(async () => {
-            const topic = this.plugin.options.ntfyTopic || "Calendar_Remastered";
+            const topic = this.plugin.options.ntfyTopic;
             try {
               await requestUrl({
                 url: `https://ntfy.sh/${topic}`,
@@ -867,7 +961,7 @@ priority: medium
             } catch (e) {
               alert(`Ошибка отправки: ${e}`);
             }
-          })
+          }),
       );
 
     this.containerEl.createEl("h4", {
@@ -893,12 +987,14 @@ priority: medium
 
     new Setting(this.containerEl)
       .setName("Проверка просроченных (GitHub Actions)")
-      .setDesc("Проверять просроченные задачи и дедлайны каждые 30 мин, когда компьютер выключен")
+      .setDesc(
+        "Проверять просроченные задачи и дедлайны каждые 30 мин, когда компьютер выключен",
+      )
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.overdueCheckEnabled);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ overdueCheckEnabled: value });
-          this.syncNotificationSettingsToVault();
+          await this.plugin.writeOptions({ overdueCheckEnabled: value });
+          await this.syncNotificationSettingsToVault({ overdueCheckEnabled: value });
         });
       });
 
@@ -917,7 +1013,9 @@ priority: medium
 
     new Setting(this.containerEl)
       .setName("GitHub токен для Actions")
-      .setDesc("Personal access token с правами repo/public_repo + actions:write")
+      .setDesc(
+        "Personal access token с правами repo/public_repo + actions:write",
+      )
       .addText((text) => {
         text
           .setPlaceholder("ghp_...")
@@ -928,16 +1026,16 @@ priority: medium
         text.inputEl.type = "password";
         text.inputEl.style.maxWidth = "300px";
       });
-
   }
 
-  private async syncNotificationSettingsToVault(): Promise<void> {
+  private async syncNotificationSettingsToVault(overrides?: { overdueCheckEnabled?: boolean; ntfyTopic?: string }): Promise<void> {
     if (!this.plugin.options.syncToVault) return;
     const { saveNotificationSyncSettings } = await import("./io/vaultStorage");
-    await saveNotificationSyncSettings(this.app, {
-      overdueCheckEnabled: this.plugin.options.overdueCheckEnabled,
-      ntfyTopic: this.plugin.options.ntfyTopic || "Calendar_Remastered",
-    });
+    const payload = {
+      overdueCheckEnabled: overrides?.overdueCheckEnabled ?? this.plugin.options.overdueCheckEnabled,
+      ntfyTopic: overrides?.ntfyTopic ?? this.plugin.options.ntfyTopic,
+    };
+    await saveNotificationSyncSettings(this.app, payload);
   }
 
   addWorkTaskSettings(): void {
@@ -949,7 +1047,9 @@ priority: medium
         dropdown.addOption("day", "Оплата в день");
         dropdown.setValue(this.plugin.options.defaultPaymentType);
         dropdown.onChange(async (value) => {
-          this.plugin.writeOptions({ defaultPaymentType: value as "hour" | "day" });
+          this.plugin.writeOptions({
+            defaultPaymentType: value as "hour" | "day",
+          });
         });
       });
 
@@ -1014,7 +1114,8 @@ priority: medium
           .setButtonText("Синхронизировать")
           .setCta()
           .onClick(async () => {
-            const { syncToGist, gistSyncStatus, connectGist } = await import("./services/GistSyncService");
+            const { syncToGist, gistSyncStatus, connectGist } =
+              await import("./services/GistSyncService");
             const token = this.plugin.options.githubToken;
 
             if (!token) {
@@ -1038,16 +1139,20 @@ priority: medium
               const status = get(gistSyncStatus);
               // Re-render settings to show the URL field
               this.display();
-              alert(`Синхронизация завершена!\n\nURL для подписки:\n${status.rawUrl}\n\n Скопируйте URL и добавьте его в Ваш календарь`);
+              alert(
+                `Синхронизация завершена!\n\nURL для подписки:\n${status.rawUrl}\n\n Скопируйте URL и добавьте его в Ваш календарь`,
+              );
             } else {
               alert(`Ошибка: ${result.error}`);
             }
-          })
+          }),
       );
 
     new Setting(this.containerEl)
       .setName("Автоматическая синхронизация")
-      .setDesc("Автоматически обновлять Gist при изменении задач (debounce 5 сек)")
+      .setDesc(
+        "Автоматически обновлять Gist при изменении задач (debounce 5 сек)",
+      )
       .addToggle((toggle) => {
         toggle.setValue(!!this.plugin.options.gistAutoSync);
         toggle.onChange(async (value) => {
@@ -1057,7 +1162,8 @@ priority: medium
           if (value) {
             // Show status
             const statusEl = document.getElementById("gist-auto-sync-status");
-            if (statusEl) statusEl.textContent = "✓ Автосинхронизация включена.";
+            if (statusEl)
+              statusEl.textContent = "✓ Автосинхронизация включена.";
           }
         });
       });
@@ -1065,11 +1171,14 @@ priority: medium
     // Auto-sync status indicator
     const statusDesc = document.createElement("div");
     statusDesc.id = "gist-auto-sync-status";
-    statusDesc.style.cssText = "font-size: 11px; color: var(--text-faint); margin-top: 4px; padding: 4px 0;";
+    statusDesc.style.cssText =
+      "font-size: 11px; color: var(--text-faint); margin-top: 4px; padding: 4px 0;";
     statusDesc.textContent = this.plugin.options.gistAutoSync
       ? "✓ Автосинхронизация включена."
       : "Выключена. Включите для автоматического обновления календаря.";
-    this.containerEl.querySelector(".setting-item:last-child")?.appendChild(statusDesc);
+    this.containerEl
+      .querySelector(".setting-item:last-child")
+      ?.appendChild(statusDesc);
 
     if (this.plugin.options.gistRawUrl) {
       new Setting(this.containerEl)
@@ -1086,12 +1195,15 @@ priority: medium
     const desc = document.createDocumentFragment();
 
     const p1 = document.createElement("p");
-    p1.textContent = "Вставьте блок кода в любую заметку для создания панели быстрой навигации:";
+    p1.textContent =
+      "Вставьте блок кода в любую заметку для создания панели быстрой навигации:";
     desc.appendChild(p1);
 
     const code = document.createElement("pre");
-    code.style.cssText = "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
-    code.textContent = "```calendar-nav\nschedule:Расписание\ntasks:Задачи\nfinance:Финансы\nanalytics:Аналитика\n```";
+    code.style.cssText =
+      "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
+    code.textContent =
+      "```calendar-nav\nschedule:Расписание\ntasks:Задачи\nfinance:Финансы\nanalytics:Аналитика\n```";
     desc.appendChild(code);
 
     const p2 = document.createElement("p");
@@ -1105,13 +1217,16 @@ priority: medium
     desc.appendChild(p3);
 
     const code2 = document.createElement("pre");
-    code2.style.cssText = "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
-    code2.textContent = "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:Расписание\n```";
+    code2.style.cssText =
+      "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
+    code2.textContent =
+      "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:Расписание\n```";
     desc.appendChild(code2);
 
     const p4 = document.createElement("p");
     p4.style.marginTop = "8px";
-    p4.textContent = "Параметры стиля: color (текст), bg (фон), radius (скругление), size (размер шрифта), accent (цвет при наведении)";
+    p4.textContent =
+      "Параметры стиля: color (текст), bg (фон), radius (скругление), size (размер шрифта), accent (цвет при наведении)";
     desc.appendChild(p4);
 
     new Setting(this.containerEl)
@@ -1124,7 +1239,8 @@ priority: medium
       .setName("Цвет текста кнопок")
       .setDesc("Цвет текста на кнопках навигации (hex, например #ffffff)")
       .addText((text) => {
-        text.setPlaceholder("#ffffff")
+        text
+          .setPlaceholder("#ffffff")
           .setValue(this.plugin.options.navBtnColor || "")
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnColor: value });
@@ -1136,7 +1252,8 @@ priority: medium
       .setName("Фон кнопок")
       .setDesc("Цвет фона кнопок (hex, например #333333)")
       .addText((text) => {
-        text.setPlaceholder("#333333")
+        text
+          .setPlaceholder("#333333")
           .setValue(this.plugin.options.navBtnBg || "")
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnBg: value });
@@ -1148,7 +1265,8 @@ priority: medium
       .setName("Скругление кнопок")
       .setDesc("Радиус скругления (например 12px, 50%)")
       .addText((text) => {
-        text.setPlaceholder("12px")
+        text
+          .setPlaceholder("12px")
           .setValue(this.plugin.options.navBtnRadius || "")
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnRadius: value });
@@ -1160,7 +1278,8 @@ priority: medium
       .setName("Размер шрифта кнопок")
       .setDesc("Размер шрифта (например 13px)")
       .addText((text) => {
-        text.setPlaceholder("13px")
+        text
+          .setPlaceholder("13px")
           .setValue(this.plugin.options.navBtnSize || "")
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnSize: value });
@@ -1172,7 +1291,8 @@ priority: medium
       .setName("Цвет акцента при наведении")
       .setDesc("Цвет границы при hover (hex, например #5f99e1)")
       .addText((text) => {
-        text.setPlaceholder("#5f99e1")
+        text
+          .setPlaceholder("#5f99e1")
           .setValue(this.plugin.options.navAccentColor || "")
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navAccentColor: value });

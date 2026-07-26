@@ -6,6 +6,7 @@ import type { ITask, RecurrenceConfig } from "./types";
 import { projects, selectedDate } from "./stores";
 import { settings } from "../ui/stores";
 import { FileSuggestModal } from "../modals/FileSuggestModal";
+import { FolderSuggestModal } from "../modals/FolderSuggestModal";
 
 export class TaskModal extends Modal {
   private task: ITask | null;
@@ -365,6 +366,28 @@ export class TaskModal extends Modal {
       new FileSuggestModal(this.app, (filePath) => {
         this.notePathInput = filePath;
         noteInput.value = filePath;
+      }).open();
+    });
+    const createNoteBtn = noteRow.createEl("button", { text: "+", cls: "tm-adv-file-btn" });
+    createNoteBtn.setAttribute("title", "Создать новую заметку");
+    createNoteBtn.addEventListener("click", () => {
+      new FolderSuggestModal(this.app, async (folder) => {
+        const title = this.titleInput.trim() || "Заметка";
+        const filename = title.replace(/[\\/:*?"<>|]/g, "_") + ".md";
+        const path = `${folder}/${filename}`;
+        const parts = path.split("/");
+        if (parts.length > 1) {
+          const folderPath = parts.slice(0, -1).join("/");
+          if (!this.app.vault.getAbstractFileByPath(folderPath)) {
+            await this.app.vault.createFolder(folderPath);
+          }
+        }
+        let file = this.app.vault.getAbstractFileByPath(path);
+        if (!file) {
+          file = await this.app.vault.create(path, "");
+        }
+        this.notePathInput = path;
+        noteInput.value = path;
       }).open();
     });
 

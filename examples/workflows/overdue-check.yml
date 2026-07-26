@@ -18,7 +18,7 @@ jobs:
 
       - name: Check overdue and deadlines
         env:
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC || 'Calendar_Remastered' }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
           TASKS_FILE="calendar-data/tasks.json"
           NOTIF_FILE="calendar-data/notifications.json"
@@ -48,7 +48,7 @@ jobs:
               print('Overdue check disabled in settings, skipping')
               sys.exit(0)
 
-          topic = ns.get('ntfyTopic') or os.environ.get('NTFY_TOPIC', 'Calendar_Remastered')
+          topic = ns.get('ntfyTopic') or os.environ.get('NTFY_TOPIC')
           tasks = tasks_data.get('tasks', [])
 
           msk = timezone(timedelta(hours=3))

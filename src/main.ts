@@ -346,7 +346,7 @@ export default class CalendarPlugin extends Plugin {
     await syncNotificationSettingsOnLoad(this.app, {
       syncToVault: !!this.options.syncToVault,
       overdueCheckEnabled: !!this.options.overdueCheckEnabled,
-      ntfyTopic: this.options.ntfyTopic || "Calendar_Remastered",
+      ntfyTopic: this.options.ntfyTopic,
     }).catch((e) => console.warn("[Calendar] Failed to sync notification settings to vault:", e));
 
     // Migrate legacy calendar-data.json to per-module files (one-time, idempotent)

@@ -91,14 +91,6 @@ export class NotificationService {
   }
 
   private check(): void {
-    // DEBUG: log environment for tests
-    // eslint-disable-next-line no-console
-    console.log('NotificationService.check', {
-      notificationsEnabled: this.getSettings().notificationsEnabled,
-      hasNotificationOnWindow: ("Notification" in window),
-      permission: (typeof Notification !== 'undefined' ? (Notification as any).permission : undefined),
-    });
-
     if (!this.getSettings().notificationsEnabled) return;
     if ("Notification" in window && (Notification as any).permission !== "granted") return;
 
@@ -111,15 +103,6 @@ export class NotificationService {
       // Scheduled time reminders
       if (task.scheduledTime && task.dateUID) {
         const scheduledMoment = this.getScheduledMoment(task);
-        // DEBUG: log scheduled moment info
-        // eslint-disable-next-line no-console
-        console.log('scheduled check', {
-          id: task.id,
-          title: task.title,
-          scheduledTime: task.scheduledTime,
-          dateUID: task.dateUID,
-          scheduledMomentValid: scheduledMoment ? scheduledMoment.isValid() : null,
-        });
         if (scheduledMoment && scheduledMoment.isValid()) {
           const fireAt = scheduledMoment.valueOf();
           const reminderKey = `${task.id}:reminder`;
@@ -128,8 +111,6 @@ export class NotificationService {
           const reminderMs = this.getSettings().reminderMinutesBefore * 60_000;
           if (this.getSettings().notifyReminders && now >= fireAt - reminderMs && now < fireAt && !this.firedReminders.has(reminderKey)) {
             this.firedReminders.add(reminderKey);
-            // eslint-disable-next-line no-console
-            console.log('notify: reminder', { id: task.id, title: task.title });
             this.notify(
               `📅 Calendar Remastered`,
               `⏱️ Напоминание: ${task.title}\nЗадача через ${this.getSettings().reminderMinutesBefore} мин (${task.scheduledTime})`
@@ -139,8 +120,6 @@ export class NotificationService {
           // Просрочка — сразу при наступлении запланированного времени
           if (this.getSettings().notifyOverdue && task.status === "todo" && now >= fireAt && !this.firedOverdue.has(overdueKey)) {
             this.firedOverdue.add(overdueKey);
-            // eslint-disable-next-line no-console
-            console.log('notify: overdue', { id: task.id, title: task.title });
             this.notify(
               `📅 Calendar Remastered`,
               `‼️ Просрочено: ${task.title}\nЗапланировано на ${task.scheduledTime}`
@@ -236,9 +215,6 @@ export class NotificationService {
 
   private notify(title: string, body: string): void {
     if (!("Notification" in window) || (Notification as any).permission !== "granted") return;
-
-    // eslint-disable-next-line no-console
-    console.log('About to new Notification', Notification);
 
     const notification = new (Notification as any)(title, {
       body,

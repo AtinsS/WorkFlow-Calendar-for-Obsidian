@@ -69,7 +69,9 @@ const moduleQueues: Map<string, Promise<void>> = new Map();
 function enqueueModuleWrite(moduleName: string, fn: () => Promise<void>): Promise<void> {
   const current = moduleQueues.get(moduleName) || Promise.resolve();
   const next = current.then(fn, fn);
-  moduleQueues.set(moduleName, next.catch(() => { /* swallow per-module errors */ }));
+  moduleQueues.set(moduleName, next.catch((e) => {
+    console.error(`[vaultStorage] Write failed for module "${moduleName}":`, e);
+  }));
   return next;
 }
 
@@ -338,6 +340,6 @@ export async function syncNotificationSettingsOnLoad(app: App, options: {
   if (!options.syncToVault) return;
   await saveNotificationSyncSettings(app, {
     overdueCheckEnabled: options.overdueCheckEnabled,
-    ntfyTopic: options.ntfyTopic || "Calendar_Remastered",
+    ntfyTopic: options.ntfyTopic,
   });
 }

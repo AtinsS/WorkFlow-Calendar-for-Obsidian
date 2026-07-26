@@ -37,27 +37,11 @@ class MockNotification {
     this.body = opts.body;
     this.close = jest.fn();
     this.onclick = null as any;
-    // Prefer global mock helper to ensure visibility from all modules
+    // Call mockNotify once (via global reference to avoid module-scope duplication)
     const g = global as any;
-    // debug
-    // eslint-disable-next-line no-console
-    console.log('MockNotification constructed', title, opts && opts.body);
-    // eslint-disable-next-line no-console
-    console.log('mock identity', {
-      hasGlobal: typeof g.mockNotify === 'function',
-      equalsLocal: g.mockNotify === mockNotify,
-      localType: typeof mockNotify,
-      globalType: typeof g.mockNotify,
-    });
     if (typeof g.mockNotify === "function") {
-      try { g.mockNotify(title, opts.body); } catch { /* ignore */ }
+      g.mockNotify(title, opts.body);
     }
-    try { mockNotify(title, opts.body); } catch { /* ignore */ }
-    // eslint-disable-next-line no-console
-    console.log('mock counts', {
-      local: mockNotify && (mockNotify as any).mock ? (mockNotify as any).mock.calls.length : undefined,
-      global: g.mockNotify && g.mockNotify.mock ? g.mockNotify.mock.calls.length : undefined,
-    });
     mockNotificationInstances.push({ close: this.close, onclick: this.onclick });
   }
 }
@@ -121,6 +105,11 @@ function makeSettings(overrides: Partial<ISettings> = {}): ISettings {
     scheduleShowDescription: true,
     scheduleShowNowIndicator: true,
     scheduleShowDeadlineEvents: true,
+    weatherEnabled: false,
+    weatherLatitude: 55.75,
+    weatherLongitude: 37.62,
+    showStatusBar: true,
+    dtwShowOnAllPages: false,
     ...overrides,
   };
 }
@@ -169,7 +158,7 @@ describe("NotificationService", () => {
   });
 
   describe("overdue detection — immediate (no 30-min delay)", () => {
-    it("fires overdue immediately when scheduled time has passed", () => {
+    it("fires overdue immediately when scheduled time has passed", async () => {
       const now = Date.now();
       // Task scheduled 10 minutes ago
       const scheduledMoment = moment(now - 10 * 60_000);
@@ -186,19 +175,15 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
-      // Should fire overdue immediately (not after 30 min)
-      // debug: print calls count before assertion
-      // eslint-disable-next-line no-console
-      console.log('before assert mockNotify calls', (mockNotify as any).mock.calls.length);
       expect(mockNotify).toHaveBeenCalledWith(
         "📅 Calendar Remastered",
         expect.stringContaining("Просрочено")
       );
     });
 
-    it("does NOT fire overdue if scheduled time is in the future", () => {
+    it("does NOT fire overdue if scheduled time is in the future", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now + 10 * 60_000); // 10 min from now
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -214,7 +199,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -222,7 +207,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire overdue if task is in progress", () => {
+    it("does NOT fire overdue if task is in progress", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now - 10 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -238,7 +223,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -246,7 +231,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire overdue if task is done", () => {
+    it("does NOT fire overdue if task is done", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now - 10 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -263,7 +248,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -271,7 +256,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire overdue twice for the same task", () => {
+    it("does NOT fire overdue twice for the same task", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now - 10 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -288,7 +273,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
       service.stop();
 
       const overdueCalls = mockNotify.mock.calls.filter(
@@ -299,7 +284,7 @@ describe("NotificationService", () => {
   });
 
   describe("reminder notifications", () => {
-    it("fires reminder 5 min before scheduled time", () => {
+    it("fires reminder 5 min before scheduled time", async () => {
       const now = Date.now();
       // Task scheduled 3 min from now (within 5-min reminder window)
       const scheduledMoment = moment(now + 3 * 60_000);
@@ -316,7 +301,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings({ reminderMinutesBefore: 5 });
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -324,7 +309,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire reminder if more than N min before scheduled", () => {
+    it("does NOT fire reminder if more than N min before scheduled", async () => {
       const now = Date.now();
       // Task scheduled 10 min from now (outside 5-min window)
       const scheduledMoment = moment(now + 10 * 60_000);
@@ -341,7 +326,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings({ reminderMinutesBefore: 5 });
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -351,7 +336,7 @@ describe("NotificationService", () => {
   });
 
   describe("estimate exceeded notifications", () => {
-    it("fires when work time exceeds estimate", () => {
+    it("fires when work time exceeds estimate", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now + 60 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -369,7 +354,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -377,7 +362,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire when work time is within estimate", () => {
+    it("does NOT fire when work time is within estimate", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now + 60 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -395,7 +380,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -403,7 +388,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("fires when current running session pushes total over estimate", () => {
+    it("fires when current running session pushes total over estimate", async () => {
       const { getActiveTimer } = jest.requireMock("src/task-tracker/TimerManager");
       getActiveTimer.mockReturnValue(15 * 60_000); // 15 min current session
 
@@ -425,7 +410,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -435,7 +420,7 @@ describe("NotificationService", () => {
   });
 
   describe("deadline notifications", () => {
-    it("fires 'deadline tomorrow' 1 day before deadline", () => {
+    it("fires 'deadline tomorrow' 1 day before deadline", async () => {
       const now = new Date();
       const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
       const y = tomorrow.getFullYear();
@@ -452,7 +437,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -460,7 +445,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("fires 'deadline today' on deadline day at 9 AM+", () => {
+    it("fires 'deadline today' on deadline day at 9 AM+", async () => {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const y = today.getFullYear();
@@ -492,7 +477,7 @@ describe("NotificationService", () => {
 
       const settings = makeSettings();
       service = new NotificationService(makePlugin(settings));
-      service.start();
+      await service.start();
 
       (global as any).Date = RealDate;
 
@@ -504,7 +489,7 @@ describe("NotificationService", () => {
   });
 
   describe("notification type toggles", () => {
-    it("does NOT fire reminders when notifyReminders is false", () => {
+    it("does NOT fire reminders when notifyReminders is false", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now + 3 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -516,7 +501,7 @@ describe("NotificationService", () => {
       service = new NotificationService(
         makePlugin(makeSettings({ notifyReminders: false }))
       );
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -524,7 +509,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire overdue when notifyOverdue is false", () => {
+    it("does NOT fire overdue when notifyOverdue is false", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now - 10 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -536,7 +521,7 @@ describe("NotificationService", () => {
       service = new NotificationService(
         makePlugin(makeSettings({ notifyOverdue: false }))
       );
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -544,7 +529,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire estimate exceeded when notifyEstimateExceeded is false", () => {
+    it("does NOT fire estimate exceeded when notifyEstimateExceeded is false", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now + 60 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -562,7 +547,7 @@ describe("NotificationService", () => {
       service = new NotificationService(
         makePlugin(makeSettings({ notifyEstimateExceeded: false }))
       );
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -570,7 +555,7 @@ describe("NotificationService", () => {
       );
     });
 
-    it("does NOT fire deadline when notifyDeadlines is false", () => {
+    it("does NOT fire deadline when notifyDeadlines is false", async () => {
       const now = new Date();
       const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
       const y = tomorrow.getFullYear();
@@ -584,7 +569,7 @@ describe("NotificationService", () => {
       service = new NotificationService(
         makePlugin(makeSettings({ notifyDeadlines: false }))
       );
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
         "📅 Calendar Remastered",
@@ -594,7 +579,7 @@ describe("NotificationService", () => {
   });
 
   describe("notification service lifecycle", () => {
-    it("does nothing when notifications are disabled", () => {
+    it("does nothing when notifications are disabled", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now - 10 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -606,12 +591,12 @@ describe("NotificationService", () => {
       service = new NotificationService(
         makePlugin(makeSettings({ notificationsEnabled: false }))
       );
-      service.start();
+      await service.start();
 
       expect(mockNotify).not.toHaveBeenCalled();
     });
 
-    it("cleans up fired sets on stop", () => {
+    it("cleans up fired sets on stop", async () => {
       const now = Date.now();
       const scheduledMoment = moment(now - 10 * 60_000);
       const dateUID = `day-${scheduledMoment.format("YYYY-MM-DD")}`;
@@ -621,14 +606,14 @@ describe("NotificationService", () => {
       getMock.mockReturnValue([task]);
 
       service = new NotificationService(makePlugin(makeSettings()));
-      service.start();
+      await service.start();
       service.stop();
 
       // After restart, same task should fire again
       mockNotify.mockClear();
       service = new NotificationService(makePlugin(makeSettings()));
       getMock.mockReturnValue([task]);
-      service.start();
+      await service.start();
 
       const overdueCalls = mockNotify.mock.calls.filter(
         ([, body]) => typeof body === "string" && body.includes("Просрочено")
