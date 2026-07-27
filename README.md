@@ -11,8 +11,7 @@
 
 </div>
 
-![alt text](animate.gif)
-
+![alt text](animat1.gif)
 ---
 
 ## 💡 Почему этот плагин существует
