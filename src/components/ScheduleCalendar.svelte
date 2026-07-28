@@ -17,15 +17,20 @@
     addTask,
     resetTaskTimer,
   } from "../task-tracker/stores";
-  import { createNoteTask, deleteNoteTask, shouldSyncTaskToNote, syncTaskToNote } from "../task-tracker/noteTasks";
+  import {
+    createNoteTask,
+    deleteNoteTask,
+    shouldSyncTaskToNote,
+    syncTaskToNote,
+  } from "../task-tracker/noteTasks";
   import { TaskModal } from "../task-tracker/TaskModal";
   import { getDateUID } from "obsidian-daily-notes-interface";
+  import { tasksToEvents } from "./scheduleUtils";
   import {
-    tasksToEvents,
-  } from "./scheduleUtils";
-  import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
+    fetchWeekWeather,
+    type DayWeather,
+  } from "../services/weatherService";
   import { app } from "../stores/appStore";
-  ;
   // holidays —暂时隐藏
   export let plugin: CalendarPlugin;
   export let scheduleDisplay: {
@@ -65,15 +70,22 @@
       ariaLiveEl.setAttribute("role", "status");
       ariaLiveEl.setAttribute("aria-live", "polite");
       ariaLiveEl.setAttribute("aria-atomic", "true");
-      ariaLiveEl.style.cssText = "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;";
+      ariaLiveEl.style.cssText =
+        "position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;";
       document.body.appendChild(ariaLiveEl);
     }
     ariaLiveEl.textContent = text;
   }
 
   // Мобильное определение — реактивное через matchMedia
-  const mqlMobile = typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)") : null;
-  const mqlSmallPhone = typeof window !== "undefined" ? window.matchMedia("(max-width: 480px)") : null;
+  const mqlMobile =
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 768px)")
+      : null;
+  const mqlSmallPhone =
+    typeof window !== "undefined"
+      ? window.matchMedia("(max-width: 480px)")
+      : null;
   let isMobile = mqlMobile?.matches ?? false;
   let isSmallPhone = mqlSmallPhone?.matches ?? false;
 
@@ -96,7 +108,10 @@
     if (destroyed) return;
     if (isDragging) return;
     if (suppressRefetch) return;
-    if (skipNextRefetch) { skipNextRefetch = false; return; }
+    if (skipNextRefetch) {
+      skipNextRefetch = false;
+      return;
+    }
     if (refetchTimer) clearTimeout(refetchTimer);
     refetchTimer = setTimeout(() => {
       refetchTimer = null;
@@ -106,12 +121,20 @@
     }, 150);
   }
 
-  async function loadWeather(startDate: string, endDate: string): Promise<void> {
+  async function loadWeather(
+    startDate: string,
+    endDate: string,
+  ): Promise<void> {
     if (!weatherEnabled) return;
     if (destroyed || weatherLoading) return;
     weatherLoading = true;
     try {
-      const days = await fetchWeekWeather(weatherLatitude, weatherLongitude, startDate, endDate);
+      const days = await fetchWeekWeather(
+        weatherLatitude,
+        weatherLongitude,
+        startDate,
+        endDate,
+      );
       if (destroyed) return;
       const map = new Map<string, DayWeather>();
       for (const d of days) {
@@ -185,18 +208,29 @@
       if (ev.allDay || !ev.start) continue;
       const s = ev.start.getTime();
       const e = ev.end?.getTime() ?? s;
-      if (s <= nowMs && nowMs < e && e < currentEnd) { current = ev.id; currentEnd = e; }
-      if (s > nowMs && s < nextStart) { next = ev.id; nextStart = s; }
+      if (s <= nowMs && nowMs < e && e < currentEnd) {
+        current = ev.id;
+        currentEnd = e;
+      }
+      if (s > nowMs && s < nextStart) {
+        next = ev.id;
+        nextStart = s;
+      }
     }
 
     const active = current ?? next;
     const nextIds = active ? new Set([active]) : new Set<string>();
 
     for (const id of currentHighlightIds) {
-      if (!nextIds.has(id)) calendarEl?.querySelectorAll(`[data-event-id="${CSS.escape(id)}"]`).forEach(el => el.classList.remove("sch-event-active"));
+      if (!nextIds.has(id))
+        calendarEl
+          ?.querySelectorAll(`[data-event-id="${CSS.escape(id)}"]`)
+          .forEach((el) => el.classList.remove("sch-event-active"));
     }
     for (const id of nextIds) {
-      calendarEl?.querySelectorAll(`[data-event-id="${CSS.escape(id)}"]`).forEach(el => el.classList.add("sch-event-active"));
+      calendarEl
+        ?.querySelectorAll(`[data-event-id="${CSS.escape(id)}"]`)
+        .forEach((el) => el.classList.add("sch-event-active"));
     }
     currentHighlightIds = nextIds;
   }
@@ -205,7 +239,12 @@
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
     if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
     const target = e.target as HTMLElement;
-    if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA" || target?.isContentEditable) return;
+    if (
+      target?.tagName === "INPUT" ||
+      target?.tagName === "TEXTAREA" ||
+      target?.isContentEditable
+    )
+      return;
     e.preventDefault();
     if (e.key === "ArrowLeft") calendar?.prev();
     else calendar?.next();
@@ -220,7 +259,9 @@
 
   function handleDeadlineClick(e: MouseEvent) {
     const target = e.target as HTMLElement;
-    const deadlineSpan = target.closest(".sch-deadline[data-deadline-date]") as HTMLElement | null;
+    const deadlineSpan = target.closest(
+      ".sch-deadline[data-deadline-date]",
+    ) as HTMLElement | null;
     if (!deadlineSpan) return;
     e.stopPropagation();
     const dateStr = deadlineSpan.dataset.deadlineDate;
@@ -234,10 +275,15 @@
     // Blink the day cell after navigation
     requestAnimationFrame(() => {
       setTimeout(() => {
-        const dayCell = document.querySelector(`#calendar-container .day[data-date="${dateStr}"]`);
+        const dayCell = document.querySelector(
+          `#calendar-container .day[data-date="${dateStr}"]`,
+        );
         if (dayCell) {
           dayCell.classList.add("deadline-highlight");
-          setTimeout(() => dayCell.classList.remove("deadline-highlight"), 5000);
+          setTimeout(
+            () => dayCell.classList.remove("deadline-highlight"),
+            5000,
+          );
         }
       }, 150);
     });
@@ -254,7 +300,10 @@
     if (calendarEl && !calendarEl.hasAttribute("tabindex")) {
       calendarEl.setAttribute("tabindex", "0");
       calendarEl.setAttribute("role", "application");
-      calendarEl.setAttribute("aria-label", "Расписание — используйте стрелки для навигации");
+      calendarEl.setAttribute(
+        "aria-label",
+        "Расписание — используйте стрелки для навигации",
+      );
     }
     // Delegate deadline click → navigate to month view + blink
     calendarEl?.addEventListener("click", handleDeadlineClick);
@@ -285,7 +334,10 @@
     if (highlightInterval) clearInterval(highlightInterval);
     document.removeEventListener("visibilitychange", updateEventHighlight);
     closeContextMenu();
-    if (ariaLiveEl) { ariaLiveEl.remove(); ariaLiveEl = null; }
+    if (ariaLiveEl) {
+      ariaLiveEl.remove();
+      ariaLiveEl = null;
+    }
     if (calendarEl) {
       calendarEl.removeEventListener("touchstart", handleTouchStart);
       calendarEl.removeEventListener("touchmove", handleTouchMove);
@@ -300,8 +352,12 @@
   function setupTouchNavigation(): void {
     if (!calendarEl) return;
 
-    calendarEl.addEventListener("touchstart", handleTouchStart, { passive: true });
-    calendarEl.addEventListener("touchmove", handleTouchMove, { passive: true });
+    calendarEl.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    calendarEl.addEventListener("touchmove", handleTouchMove, {
+      passive: true,
+    });
     calendarEl.addEventListener("touchend", handleTouchEnd, { passive: true });
   }
 
@@ -341,15 +397,15 @@
 
   function initCalendar(): void {
     const initialView = isSmallPhone ? "timeGridDay" : "timeGridWeek";
-    const headerToolbar = { left: "prev,next", center: "title", right: "dayGridMonth,timeGridWeek,timeGridDay" };
+    const headerToolbar = {
+      left: "prev,next",
+      center: "title",
+      right: "dayGridMonth,timeGridWeek,timeGridDay",
+    };
     const mirrorParent = document.body;
 
     calendar = new Calendar(calendarEl, {
-      plugins: [
-        dayGridPlugin,
-        timeGridPlugin,
-        interactionPlugin,
-      ],
+      plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
       initialView,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       locale: "ru",
@@ -365,7 +421,9 @@
       fixedMirrorParent: mirrorParent,
       longPressDelay: 250,
       selectable: true,
-      selectAllow: (selectInfo) => !selectInfo.end.getTime || (selectInfo.end.getTime() - selectInfo.start.getTime()) < 86400000 * 7,
+      selectAllow: (selectInfo) =>
+        !selectInfo.end.getTime ||
+        selectInfo.end.getTime() - selectInfo.start.getTime() < 86400000 * 7,
       selectMirror: true,
       select: handleCalendarSelect,
       dayMaxEvents: true,
@@ -412,11 +470,22 @@
         };
       },
       // На телефоне — list view по умолчанию не используем
-      views: isSmallPhone ? {
-        timeGridDay: { titleFormat: { day: "numeric", month: "short" }, buttonText: "День" },
-        timeGridWeek: { titleFormat: { day: "numeric", month: "short" }, buttonText: "Неделя" },
-        dayGridMonth: { titleFormat: { month: "long", year: "numeric" }, buttonText: "Месяц" },
-      } : {},
+      views: isSmallPhone
+        ? {
+            timeGridDay: {
+              titleFormat: { day: "numeric", month: "short" },
+              buttonText: "День",
+            },
+            timeGridWeek: {
+              titleFormat: { day: "numeric", month: "short" },
+              buttonText: "Неделя",
+            },
+            dayGridMonth: {
+              titleFormat: { month: "long", year: "numeric" },
+              buttonText: "Месяц",
+            },
+          }
+        : {},
       eventSources: [
         {
           events: fetchEvents,
@@ -425,7 +494,9 @@
       ],
       eventContent: renderEventContent,
       eventClick: handleEventClick,
-      eventDragStart: () => { isDragging = true; },
+      eventDragStart: () => {
+        isDragging = true;
+      },
       eventDragStop: () => {
         isDragging = false;
       },
@@ -451,16 +522,24 @@
           const rect = el.getBoundingClientRect();
           tooltip.style.left = `${rect.left + rect.width / 2}px`;
           tooltip.style.top = `${rect.bottom + 4}px`;
-          el.addEventListener("mouseleave", () => tooltip.remove(), { once: true });
+          el.addEventListener("mouseleave", () => tooltip.remove(), {
+            once: true,
+          });
         });
       },
       eventClassNames: (arg: any) => {
-        if (arg.event.extendedProps?.isDeadlineEvent) return ["sch-event-deadline-marker"];
+        if (arg.event.extendedProps?.isDeadlineEvent)
+          return ["sch-event-deadline-marker"];
         return [];
       },
       datesSet: (info: any) => {
         const view = info.view;
-        const viewType = view.type === "dayGridMonth" ? "Месяц" : view.type === "timeGridWeek" ? "Неделя" : "День";
+        const viewType =
+          view.type === "dayGridMonth"
+            ? "Месяц"
+            : view.type === "timeGridWeek"
+              ? "Неделя"
+              : "День";
         announceView(`${viewType}: ${view.title}`);
 
         // Load weather for the visible date range
@@ -481,7 +560,7 @@
 
   async function fetchEvents(
     fetchInfo: { start: Date; end: Date },
-    successCallback: (events: any[]) => void
+    successCallback: (events: any[]) => void,
   ): Promise<void> {
     try {
       const allTasks = get(tasks);
@@ -519,7 +598,9 @@
 
     const task = resolveTask(event);
     if (!task) {
-      return { html: `<div class="sch-event sch-event-compact"><span class="sch-event-title">${event.title || "?"}</span></div>` };
+      return {
+        html: `<div class="sch-event sch-event-compact"><span class="sch-event-title">${event.title || "?"}</span></div>`,
+      };
     }
     const isDeadlineEvent = event.extendedProps?.isDeadlineEvent as boolean;
 
@@ -543,25 +624,34 @@
     const showOverdue = scheduleDisplay.scheduleShowOverdue !== false;
     const showDescription = scheduleDisplay.scheduleShowDescription !== false;
 
-    const displayTime = showTime ? (time || (task.scheduledTime || "")) : "";
-    const statusLabel =
-      showStatus ? (
-        task.status === "progress" ? "В работе" :
-        task.status === "paused" ? "На паузе" :
-        task.status === "done" ? "Готово" : ""
-      ) : "";
+    const displayTime = showTime ? time || task.scheduledTime || "" : "";
+    const statusLabel = showStatus
+      ? task.status === "progress"
+        ? "В работе"
+        : task.status === "paused"
+          ? "На паузе"
+          : task.status === "done"
+            ? "Готово"
+            : ""
+      : "";
     const statusHtml = statusLabel
       ? `<span class="sch-event-status sch-status-${task.status}" data-action="toggle-status" title="${"Нажмите для смены статуса"}">${statusLabel}</span>`
       : "";
     const priorityBadge = showPriority
-      ? (task.priority === "high" ? '<span class="sch-priority sch-priority-high">!</span>' :
-         task.priority === "medium" ? '<span class="sch-priority sch-priority-mid">~</span>' : "")
+      ? task.priority === "high"
+        ? '<span class="sch-priority sch-priority-high">!</span>'
+        : task.priority === "medium"
+          ? '<span class="sch-priority sch-priority-mid">~</span>'
+          : ""
       : "";
-    const workBadge = (showWorkBadge && task.isWorkTask)
-      ? `<span class="sch-work-badge" title="${"Рабочая задача"}">&#128188;</span>` : "";
-    const noteBadge = (showNoteBadge && task.boundNotePath)
-      ? `<span class="sch-note-badge" data-action="open-note" title="${"Открыть заметку"}">&#128279;</span>`
-      : "";
+    const workBadge =
+      showWorkBadge && task.isWorkTask
+        ? `<span class="sch-work-badge" title="${"Рабочая задача"}">&#128188;</span>`
+        : "";
+    const noteBadge =
+      showNoteBadge && task.boundNotePath
+        ? `<span class="sch-note-badge" data-action="open-note" title="${"Открыть заметку"}">&#128279;</span>`
+        : "";
 
     let deadlineHtml = "";
     if (showDeadline && task.deadline && task.status !== "done") {
@@ -570,8 +660,14 @@
         const [, y, m, d] = match;
         const now = new Date();
         const dl = new Date(`${y}-${m}-${d}T00:00:00`);
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const diffDays = Math.round((dl.getTime() - today.getTime()) / 86400000);
+        const today = new Date(
+          now.getFullYear(),
+          now.getMonth(),
+          now.getDate(),
+        );
+        const diffDays = Math.round(
+          (dl.getTime() - today.getTime()) / 86400000,
+        );
         let dlLabel = "";
         if (diffDays < 0) dlLabel = `${Math.abs(diffDays)}д просрочено`;
         else if (diffDays === 0) dlLabel = "Сегодня";
@@ -579,17 +675,24 @@
         else dlLabel = `${diffDays}д`;
         if (task.deadlineTime) dlLabel += ` ${task.deadlineTime}`;
         const isOverdue = diffDays < 0;
-        deadlineHtml = `<span class="sch-deadline sch-deadline-transparent ${isOverdue ? 'sch-deadline-overdue' : ''}" title="Показать в календаре" data-deadline-date="${y}-${m}-${d}" style="cursor:pointer">${dlLabel}</span>`;
+        deadlineHtml = `<span class="sch-deadline sch-deadline-transparent ${isOverdue ? "sch-deadline-overdue" : ""}" title="Показать в календаре" data-deadline-date="${y}-${m}-${d}" style="cursor:pointer">${dlLabel}</span>`;
       }
     }
 
     let overdueHtml = "";
-    if (showOverdue && task.status === "todo" && task.scheduledTime && task.dateUID) {
+    if (
+      showOverdue &&
+      task.status === "todo" &&
+      task.scheduledTime &&
+      task.dateUID
+    ) {
       const dateMatch = task.dateUID.match(/^day-(\d{4})-(\d{2})-(\d{2})/);
       if (dateMatch) {
         const [, dy, dm, dd] = dateMatch;
         const [sh, sm] = task.scheduledTime.split(":").map(Number);
-        const scheduledStart = new Date(`${dy}-${dm}-${dd}T${String(sh).padStart(2,"0")}:${String(sm).padStart(2,"0")}:00`);
+        const scheduledStart = new Date(
+          `${dy}-${dm}-${dd}T${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}:00`,
+        );
         const now = new Date();
         if (now.getTime() > scheduledStart.getTime()) {
           const diffMs = now.getTime() - scheduledStart.getTime();
@@ -605,15 +708,16 @@
       }
     }
 
-    const descriptionHtml = (showDescription && task.description)
-      ? `<span class="sch-event-description">${task.description}</span>`
-      : "";
+    const descriptionHtml =
+      showDescription && task.description
+        ? `<span class="sch-event-description">${task.description}</span>`
+        : "";
 
     return {
       html: `
         <div class="sch-event sch-event-compact">
           <div class="sch-event-header">
-            ${displayTime ? `<span class="sch-event-time${overdueHtml ? ' sch-time-overdue' : ''}">${displayTime}</span>` : ""}
+            ${displayTime ? `<span class="sch-event-time${overdueHtml ? " sch-time-overdue" : ""}">${displayTime}</span>` : ""}
             <span class="sch-event-title">${event.title}</span>
             ${statusHtml}
             ${workBadge}
@@ -633,14 +737,20 @@
     el.setAttribute("data-event-id", info.event.id);
     const task = resolveTask(info.event);
     if (!task) return;
-    const projectColor = info.event.extendedProps?.projectColor as string | null;
-    const isDeadlineEvent = info.event.extendedProps?.isDeadlineEvent as boolean;
+    const projectColor = info.event.extendedProps?.projectColor as
+      | string
+      | null;
+    const isDeadlineEvent = info.event.extendedProps
+      ?.isDeadlineEvent as boolean;
 
     if (isDeadlineEvent) {
       const deadlineDateStr = info.event.start
-        ? `${info.event.start.getFullYear()}-${String(info.event.start.getMonth()+1).padStart(2,"0")}-${String(info.event.start.getDate()).padStart(2,"0")}`
+        ? `${info.event.start.getFullYear()}-${String(info.event.start.getMonth() + 1).padStart(2, "0")}-${String(info.event.start.getDate()).padStart(2, "0")}`
         : "";
-      el.setAttribute("title", `Дедлайн задачи: ${task.title}\nДата: ${deadlineDateStr}${task.deadlineTime ? ' ' + task.deadlineTime : ''}\nНажмите, чтобы найти задачу`);
+      el.setAttribute(
+        "title",
+        `Дедлайн задачи: ${task.title}\nДата: ${deadlineDateStr}${task.deadlineTime ? " " + task.deadlineTime : ""}\nНажмите, чтобы найти задачу`,
+      );
       return;
     }
 
@@ -661,7 +771,11 @@
       lines.push(task.description);
     }
     if (task.recurrence) {
-      const recMap: Record<string, string> = { daily: "Ежедневно", weekly: "Еженедельно", monthly: "Ежемесячно" };
+      const recMap: Record<string, string> = {
+        daily: "Ежедневно",
+        weekly: "Еженедельно",
+        monthly: "Ежемесячно",
+      };
       let recText = `Повторение: ${recMap[task.recurrence.type] || task.recurrence.type}`;
       if (task.recurrence.until) {
         const untilDate = task.recurrence.until.replace(/^day-/, "");
@@ -672,7 +786,7 @@
     if (task.estimatedTime) {
       const h = Math.floor(task.estimatedTime / 60);
       const m = task.estimatedTime % 60;
-      lines.push(`Ожидаемое: ${h > 0 ? h + 'ч ' : ''}${m > 0 ? m + 'м' : ''}`);
+      lines.push(`Ожидаемое: ${h > 0 ? h + "ч " : ""}${m > 0 ? m + "м" : ""}`);
     }
     if (lines.length > 0) {
       el.setAttribute("title", lines.join("\n"));
@@ -693,7 +807,9 @@
       // Find the parent task's event element in the calendar and blink it
       requestAnimationFrame(() => {
         setTimeout(() => {
-          const taskEl = calendarEl?.querySelector(`[data-event-id="${CSS.escape(task.id)}"]`);
+          const taskEl = calendarEl?.querySelector(
+            `[data-event-id="${CSS.escape(task.id)}"]`,
+          );
           if (taskEl) {
             taskEl.classList.add("sch-event-blink");
             setTimeout(() => taskEl.classList.remove("sch-event-blink"), 3000);
@@ -741,7 +857,12 @@
   }
 
   function cycleTaskStatus(task: ITask): void {
-    const statusOrder: Array<"todo" | "progress" | "paused" | "done"> = ["todo", "progress", "paused", "done"];
+    const statusOrder: Array<"todo" | "progress" | "paused" | "done"> = [
+      "todo",
+      "progress",
+      "paused",
+      "done",
+    ];
     const currentStatus = task.status === "all" ? "todo" : task.status;
     const currentIdx = statusOrder.indexOf(currentStatus);
     const nextStatus = statusOrder[(currentIdx + 1) % statusOrder.length];
@@ -790,7 +911,9 @@
       }
 
       if (info.end && info.start.getTime() !== info.end.getTime()) {
-        const durationMin = Math.round((info.end.getTime() - info.start.getTime()) / 1000 / 60);
+        const durationMin = Math.round(
+          (info.end.getTime() - info.start.getTime()) / 1000 / 60,
+        );
         if (durationMin > 0) {
           estimatedTime = Math.max(15, durationMin);
         }
@@ -806,10 +929,16 @@
   function handleEventDrop(info: any): void {
     if (info.event.extendedProps?.isDeadlineEvent) return;
     const task = resolveTask(info.event);
-    if (!task) { info.revert(); return; }
+    if (!task) {
+      info.revert();
+      return;
+    }
 
     const startStr = info.event.startStr as string;
-    if (!startStr) { info.revert(); return; }
+    if (!startStr) {
+      info.revert();
+      return;
+    }
 
     const allDay = info.event.allDay;
     let dateStr: string | null = null;
@@ -818,20 +947,32 @@
     if (allDay) {
       // Dragged to "Без времени" — startStr is just "YYYY-MM-DD"
       const dayMatch = startStr.match(/^(\d{4}-\d{2}-\d{2})$/);
-      if (!dayMatch) { info.revert(); return; }
+      if (!dayMatch) {
+        info.revert();
+        return;
+      }
       dateStr = dayMatch[1];
       newTime = undefined;
     } else {
       // Dragged within time grid — startStr is "YYYY-MM-DDTHH:MM..."
       const match = startStr.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-      if (!match) { info.revert(); return; }
+      if (!match) {
+        info.revert();
+        return;
+      }
       dateStr = match[1];
       newTime = match[2];
     }
 
-    if (!dateStr) { info.revert(); return; }
+    if (!dateStr) {
+      info.revert();
+      return;
+    }
     const m = window.moment(dateStr, "YYYY-MM-DD", true);
-    if (!m.isValid()) { info.revert(); return; }
+    if (!m.isValid()) {
+      info.revert();
+      return;
+    }
 
     const newDateUID = getDateUID(m, "day");
 
@@ -848,18 +989,25 @@
         });
         const updatedTask = get(tasks).find((t) => t.id === task.id);
         if (updatedTask) syncTaskToNote(updatedTask, plugin.app);
-      } catch (e) { /* ignore */ }
+      } catch (e) {
+        /* ignore */
+      }
     }, 100);
   }
 
   function handleEventResize(info: any): void {
     const task = resolveTask(info.event);
-    if (!task) { info.revert(); return; }
+    if (!task) {
+      info.revert();
+      return;
+    }
     const start = info.event.start as Date;
     const end = info.event.end as Date;
 
     if (start && end) {
-      const durationMin = Math.round((end.getTime() - start.getTime()) / 1000 / 60);
+      const durationMin = Math.round(
+        (end.getTime() - start.getTime()) / 1000 / 60,
+      );
       if (dropDebounceTimer) clearTimeout(dropDebounceTimer);
       dropDebounceTimer = setTimeout(() => {
         dropDebounceTimer = null;
@@ -868,35 +1016,45 @@
           updateTask(task.id, { estimatedTime: Math.max(15, durationMin) });
           const updatedTask = get(tasks).find((t) => t.id === task.id);
           if (updatedTask) syncTaskToNote(updatedTask, plugin.app);
-        } catch (e) { /* ignore */ }
+        } catch (e) {
+          /* ignore */
+        }
       }, 100);
     }
   }
 
   async function openTaskEditor(task: ITask): Promise<void> {
     suppressRefetch = true;
-    new TaskModal(plugin.app, async (updates) => {
-      updateTask(task.id, updates);
-      // Получаем обновлённую задачу
-      const updatedTask = get(tasks).find((t) => t.id === task.id);
-      if (!updatedTask) return;
+    new TaskModal(
+      plugin.app,
+      async (updates) => {
+        updateTask(task.id, updates);
+        // Получаем обновлённую задачу
+        const updatedTask = get(tasks).find((t) => t.id === task.id);
+        if (!updatedTask) return;
 
-      // Если нет Task заметки — создаём
-      if (!updatedTask.notePath && shouldSyncTaskToNote(updatedTask)) {
-        const project = get(projects).find((p) => p.id === updatedTask.projectId);
-        const file = await createNoteTask(updatedTask, project, plugin.app);
-        if (file) {
-          updateTask(updatedTask.id, { notePath: file.path });
+        // Если нет Task заметки — создаём
+        if (!updatedTask.notePath && shouldSyncTaskToNote(updatedTask)) {
+          const project = get(projects).find(
+            (p) => p.id === updatedTask.projectId,
+          );
+          const file = await createNoteTask(updatedTask, project, plugin.app);
+          if (file) {
+            updateTask(updatedTask.id, { notePath: file.path });
+          }
         }
-      }
 
-      // Синхронизируем Task заметку
-      await syncTaskToNote(updatedTask, plugin.app);
-      suppressRefetch = false;
-      scheduleRefetch();
-    }, task).open();
+        // Синхронизируем Task заметку
+        await syncTaskToNote(updatedTask, plugin.app);
+        suppressRefetch = false;
+        scheduleRefetch();
+      },
+      task,
+    ).open();
     // If modal is closed without submitting, restore refetch
-    setTimeout(() => { suppressRefetch = false; }, 500);
+    setTimeout(() => {
+      suppressRefetch = false;
+    }, 500);
   }
 
   async function deleteNoteFileIfNeeded(task: ITask): Promise<void> {
@@ -904,7 +1062,11 @@
     await deleteNoteTask(task.notePath, plugin.app);
   }
 
-  async function openTaskCreator(dateStr: string, timeStr?: string, prefillEstimatedTime?: number): Promise<void> {
+  async function openTaskCreator(
+    dateStr: string,
+    timeStr?: string,
+    prefillEstimatedTime?: number,
+  ): Promise<void> {
     const moment = window.moment(dateStr, "YYYY-MM-DD", true);
     if (!moment.isValid()) return;
 
@@ -917,44 +1079,56 @@
     const initialTime = isTimeView ? timeStr : undefined;
 
     suppressRefetch = true;
-    new TaskModal(plugin.app, async (data) => {
-      const task = addTask({
-        title: data.title || "Новая задача",
-        description: data.description,
-        completed: false,
-        status: "todo",
-        dateUID: data.dateUID || dateUID,
-        projectId: data.projectId || null,
-        notePath: null,
-        boundNotePath: data.boundNotePath || null,
-        priority: data.priority || "medium",
-        tags: [],
-        sortOrder: 0,
-        recurrence: data.recurrence,
-        estimatedTime: data.estimatedTime || prefillEstimatedTime,
-        scheduledTime: data.scheduledTime || initialTime,
-      });
+    new TaskModal(
+      plugin.app,
+      async (data) => {
+        const task = addTask({
+          title: data.title || "Новая задача",
+          description: data.description,
+          completed: false,
+          status: "todo",
+          dateUID: data.dateUID || dateUID,
+          projectId: data.projectId || null,
+          notePath: null,
+          boundNotePath: data.boundNotePath || null,
+          priority: data.priority || "medium",
+          tags: [],
+          sortOrder: 0,
+          recurrence: data.recurrence,
+          estimatedTime: data.estimatedTime || prefillEstimatedTime,
+          scheduledTime: data.scheduledTime || initialTime,
+        });
 
-      // Всегда создаём Task заметку в Tasks/ если включена синхронизация
-      if (shouldSyncTaskToNote(task)) {
-        const project = get(projects).find((p) => p.id === data.projectId);
-        try {
-          const file = await createNoteTask(task, project, plugin.app);
-          if (file) {
-            updateTask(task.id, { notePath: file.path });
+        // Всегда создаём Task заметку в Tasks/ если включена синхронизация
+        if (shouldSyncTaskToNote(task)) {
+          const project = get(projects).find((p) => p.id === data.projectId);
+          try {
+            const file = await createNoteTask(task, project, plugin.app);
+            if (file) {
+              updateTask(task.id, { notePath: file.path });
+            }
+          } catch (error) {
+            console.error(
+              "[ScheduleCalendar] failed to create note task:",
+              error,
+            );
           }
-        } catch (error) {
-          console.error("[ScheduleCalendar] failed to create note task:", error);
         }
-      }
 
-      suppressRefetch = false;
-      if (!destroyed && calendar) {
-        calendar.refetchEvents();
-      }
-    }, undefined, initialDate, initialTime, prefillEstimatedTime).open();
+        suppressRefetch = false;
+        if (!destroyed && calendar) {
+          calendar.refetchEvents();
+        }
+      },
+      undefined,
+      initialDate,
+      initialTime,
+      prefillEstimatedTime,
+    ).open();
     // If modal is closed without submitting, restore refetch
-    setTimeout(() => { suppressRefetch = false; }, 500);
+    setTimeout(() => {
+      suppressRefetch = false;
+    }, 500);
   }
 
   // Контекстное меню задачи — рендерим в document.body,
@@ -985,26 +1159,55 @@
     const items = [
       // Редактирование только для незавершённых задач
       ...(task.status !== "done"
-        ? [{ label: `📝 ${"📝 Редактировать"}`, action: () => contextEditTask() }]
+        ? [{ label: ` ${"📝 Редактировать"}`, action: () => contextEditTask() }]
         : []),
       ...(task.boundNotePath
-        ? [{ label: `📄 ${"📄 Открыть заметку"}`, action: () => contextOpenNote() }]
+        ? [
+            {
+              label: `${"📄 Открыть заметку"}`,
+              action: () => contextOpenNote(),
+            },
+          ]
         : []),
       { label: "Перевести статус:", disabled: true },
       ...(task.status !== "todo"
-        ? [{ label: `🟢 ${"🟢 Сделать"}`, action: () => contextChangeStatus("todo") }]
+        ? [
+            {
+              label: ` ${"🟢 Сделать"}`,
+              action: () => contextChangeStatus("todo"),
+            },
+          ]
         : []),
       ...(task.status !== "progress"
-        ? [{ label: `▶️ ${"▶️ В работу"}`, action: () => contextChangeStatus("progress") }]
+        ? [
+            {
+              label: ` ${"▶️ В работу"}`,
+              action: () => contextChangeStatus("progress"),
+            },
+          ]
         : []),
       ...(task.status !== "paused"
-        ? [{ label: `⏸️ ${"⏸️ На паузу"}`, action: () => contextChangeStatus("paused") }]
+        ? [
+            {
+              label: `${"⏸️ На паузу"}`,
+              action: () => contextChangeStatus("paused"),
+            },
+          ]
         : []),
       ...(task.status !== "done"
-        ? [{ label: `✅ ${"✅ Готово"}`, action: () => contextChangeStatus("done") }]
+        ? [
+            {
+              label: ` ${"✅ Готово"}`,
+              action: () => contextChangeStatus("done"),
+            },
+          ]
         : []),
       { divider: true },
-      { label: `🗑️ ${"🗑️ Удалить"}`, action: () => contextDeleteTask(), danger: true },
+      {
+        label: ` ${"🗑️ Удалить"}`,
+        action: () => contextDeleteTask(),
+        danger: true,
+      },
     ];
 
     for (const item of items) {
@@ -1019,7 +1222,9 @@
         menu.appendChild(lbl);
       } else if ("action" in item) {
         const btn = document.createElement("button");
-        btn.className = "sch-context-item" + ("danger" in item && item.danger ? " sch-context-danger" : "");
+        btn.className =
+          "sch-context-item" +
+          ("danger" in item && item.danger ? " sch-context-danger" : "");
         btn.innerHTML = item.label;
         btn.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -1064,14 +1269,20 @@
   async function contextOpenNote(): Promise<void> {
     if (!contextMenuTask?.boundNotePath) return;
     try {
-      plugin.app.workspace.openLinkText(contextMenuTask.boundNotePath, "", false);
+      plugin.app.workspace.openLinkText(
+        contextMenuTask.boundNotePath,
+        "",
+        false,
+      );
     } catch (error) {
       console.error("[ScheduleCalendar] failed to open note:", error);
     }
     closeContextMenu();
   }
 
-  function contextChangeStatus(newStatus: "todo" | "progress" | "done" | "paused"): void {
+  function contextChangeStatus(
+    newStatus: "todo" | "progress" | "done" | "paused",
+  ): void {
     if (contextMenuTask) {
       updateTaskStatus(contextMenuTask.id, newStatus);
       if (newStatus === "todo") {
@@ -1101,8 +1312,14 @@
 
 <div class="schedule-calendar-wrapper">
   {#if isSwiping}
-    <div class="swipe-indicator" class:swipe-left={touchEndX < touchStartX} class:swipe-right={touchEndX > touchStartX}>
-      <span class="swipe-arrow">{touchEndX < touchStartX ? '&#8250;' : '&#8249;'}</span>
+    <div
+      class="swipe-indicator"
+      class:swipe-left={touchEndX < touchStartX}
+      class:swipe-right={touchEndX > touchStartX}
+    >
+      <span class="swipe-arrow"
+        >{touchEndX < touchStartX ? "&#8250;" : "&#8249;"}</span
+      >
     </div>
   {/if}
   <div bind:this={calendarEl} class="schedule-calendar"></div>
@@ -1153,9 +1370,17 @@
   }
 
   @keyframes swipeHint {
-    0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
-    50% { opacity: 0.8; }
-    100% { opacity: 0; transform: translateY(-50%) scale(1); }
+    0% {
+      opacity: 0;
+      transform: translateY(-50%) scale(0.8);
+    }
+    50% {
+      opacity: 0.8;
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-50%) scale(1);
+    }
   }
 
   /* Контекстное меню задачи — global, т.к. рендерится в document.body */
@@ -1171,7 +1396,8 @@
     z-index: 9999;
     min-width: 200px;
     background: var(--background-primary, #1e1e2e);
-    border: 1px solid var(--background-modifier-border, rgba(255, 255, 255, 0.08));
+    border: 1px solid
+      var(--background-modifier-border, rgba(255, 255, 255, 0.08));
     border-radius: 8px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
     padding: 4px;
@@ -1228,20 +1454,41 @@
     font-family: var(--font-interface);
     /* Obsidian theme variable mapping (reference pattern) */
     --fc-button-text-color: var(--text-normal);
-    --fc-button-bg-color: var(--interactive-normal, rgba(255,255,255,0.05));
-    --fc-button-border-color: var(--interactive-normal, rgba(255,255,255,0.08));
-    --fc-button-hover-bg-color: var(--interactive-hover, rgba(255,255,255,0.10));
-    --fc-button-hover-border-color: var(--interactive-hover, rgba(255,255,255,0.14));
-    --fc-button-active-bg-color: var(--interactive-accent, rgba(95,153,225,0.5));
-    --fc-button-active-border-color: var(--interactive-accent, rgba(95,153,225,0.5));
+    --fc-button-bg-color: var(--interactive-normal, rgba(255, 255, 255, 0.05));
+    --fc-button-border-color: var(
+      --interactive-normal,
+      rgba(255, 255, 255, 0.08)
+    );
+    --fc-button-hover-bg-color: var(
+      --interactive-hover,
+      rgba(255, 255, 255, 0.1)
+    );
+    --fc-button-hover-border-color: var(
+      --interactive-hover,
+      rgba(255, 255, 255, 0.14)
+    );
+    --fc-button-active-bg-color: var(
+      --interactive-accent,
+      rgba(95, 153, 225, 0.5)
+    );
+    --fc-button-active-border-color: var(
+      --interactive-accent,
+      rgba(95, 153, 225, 0.5)
+    );
     --fc-event-text-color: var(--text-on-accent, #fff);
-    --fc-border-color: var(--background-modifier-border, rgba(255,255,255,0.06));
+    --fc-border-color: var(
+      --background-modifier-border,
+      rgba(255, 255, 255, 0.06)
+    );
     --fc-today-bg-color: transparent;
     --fc-page-bg-color: transparent;
-    --fc-neutral-bg-color: rgba(255,255,255,0.03);
-    --fc-list-event-hover-bg-color: var(--background-secondary, rgba(255,255,255,0.04));
+    --fc-neutral-bg-color: rgba(255, 255, 255, 0.03);
+    --fc-list-event-hover-bg-color: var(
+      --background-secondary,
+      rgba(255, 255, 255, 0.04)
+    );
     --fc-now-indicator-color: var(--text-error, #ef4444);
-    --fc-highlight-color: var(--text-highlight-bg, rgba(95,153,225,0.08));
+    --fc-highlight-color: var(--text-highlight-bg, rgba(95, 153, 225, 0.08));
   }
 
   /* Контейнер расписания — стеклянная панель */
@@ -1254,7 +1501,7 @@
     border: 1px solid var(--mcp-glass-border, rgba(255, 255, 255, 0.06));
     border-radius: var(--mcp-radius, 14px);
     box-shadow: var(--mcp-shadow, 0 8px 32px rgba(0, 0, 0, 0.15)),
-                var(--mcp-shadow-glow, 0 0 40px rgba(80, 170, 210, 0.06));
+      var(--mcp-shadow-glow, 0 0 40px rgba(80, 170, 210, 0.06));
   }
 
   /* Тулбар — стекло */
@@ -1353,7 +1600,6 @@
     text-transform: capitalize;
   }
 
-
   :global(.fc .fc-day-header-weather) {
     display: flex;
     align-items: center;
@@ -1363,7 +1609,9 @@
     opacity: 0.85;
   }
 
-  :global(.fc .fc-day-header-content.fc-day-header-today .fc-day-header-weather) {
+  :global(
+      .fc .fc-day-header-content.fc-day-header-today .fc-day-header-weather
+    ) {
     opacity: 1;
   }
 
@@ -1524,18 +1772,33 @@
     cursor: pointer;
     border: none !important;
     border-radius: 8px !important;
-    transition: background-color 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
-    box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)), 0 2px 8px rgba(0, 0, 0, 0.12);
+    transition:
+      background-color 0.2s ease,
+      box-shadow 0.2s ease,
+      filter 0.2s ease;
+    box-shadow:
+      inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)),
+      0 2px 8px rgba(0, 0, 0, 0.12);
   }
 
   :global(.fc .fc-event:has(.sch-event)) {
-    background-color: var(--event-project-color, rgba(110, 130, 160, 0.8)) !important;
-    box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)), 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    background-color: var(
+      --event-project-color,
+      rgba(110, 130, 160, 0.8)
+    ) !important;
+    box-shadow:
+      inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)),
+      0 2px 8px rgba(0, 0, 0, 0.12) !important;
   }
 
   :global(.fc .fc-event:has(.sch-event-compact)) {
-    background-color: var(--event-project-color, rgba(110, 130, 160, 0.8)) !important;
-    box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)), 0 2px 8px rgba(0, 0, 0, 0.12) !important;
+    background-color: var(
+      --event-project-color,
+      rgba(110, 130, 160, 0.8)
+    ) !important;
+    box-shadow:
+      inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)),
+      0 2px 8px rgba(0, 0, 0, 0.12) !important;
   }
 
   :global(.sch-event) {
@@ -1562,12 +1825,15 @@
 
   :global(.fc .fc-event:hover) {
     transform: scale(1.01);
-    box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)), 0 4px 16px rgba(0, 0, 0, 0.25);
+    box-shadow:
+      inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)),
+      0 4px 16px rgba(0, 0, 0, 0.25);
   }
 
   /* Active/current event highlight — multi-layered glow (reference pattern) */
   :global(.fc .fc-event.sch-event-active) {
-    box-shadow: 0 0 0 2px rgba(255,255,255,0.85),
+    box-shadow:
+      0 0 0 2px rgba(255, 255, 255, 0.85),
       0 0 24px 8px var(--mcp-accent-faint),
       0 0 56px 24px var(--mcp-accent-dim);
     outline: none;
@@ -1577,8 +1843,9 @@
     filter: none;
   }
   :global(.fc .fc-timegrid-event.sch-event-active) {
-    box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120,145,175,1)),
-      0 0 0 2px rgba(255,255,255,0.85),
+    box-shadow:
+      inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)),
+      0 0 0 2px rgba(255, 255, 255, 0.85),
       0 0 24px 8px var(--mcp-accent-faint);
   }
   :global(.fc .fc-daygrid-event.sch-event-active) {
@@ -1665,7 +1932,9 @@
     color: rgba(255, 230, 150, 0.95);
     flex-shrink: 0;
     white-space: nowrap;
-    transition: background 0.15s ease, transform 0.15s ease;
+    transition:
+      background 0.15s ease,
+      transform 0.15s ease;
   }
 
   :global(.sch-deadline:hover) {
@@ -1713,8 +1982,15 @@
   }
 
   @keyframes sch-blink {
-    0%, 100% { opacity: 1; box-shadow: none; }
-    50% { opacity: 0.5; box-shadow: 0 0 12px 2px rgba(251, 191, 36, 0.6); }
+    0%,
+    100% {
+      opacity: 1;
+      box-shadow: none;
+    }
+    50% {
+      opacity: 0.5;
+      box-shadow: 0 0 12px 2px rgba(251, 191, 36, 0.6);
+    }
   }
 
   :global(.sch-overdue) {
@@ -1824,7 +2100,9 @@
     font-weight: 500;
     letter-spacing: 0.02em;
     cursor: pointer;
-    transition: filter 0.15s ease, transform 0.15s ease;
+    transition:
+      filter 0.15s ease,
+      transform 0.15s ease;
   }
 
   :global(.sch-event-status:hover) {
@@ -1894,7 +2172,9 @@
     opacity: 0.85;
     flex-shrink: 0;
     cursor: pointer;
-    transition: opacity 0.15s ease, transform 0.15s ease;
+    transition:
+      opacity 0.15s ease,
+      transform 0.15s ease;
   }
 
   :global(.sch-note-badge:hover) {
@@ -2362,9 +2642,10 @@
     gap: 4px;
     padding: 5px 10px;
     background: var(--background-primary, #1e1e2e);
-    border: 1px solid var(--background-modifier-border, rgba(255,255,255,0.1));
+    border: 1px solid
+      var(--background-modifier-border, rgba(255, 255, 255, 0.1));
     border-radius: 8px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     font-size: 12px;
     font-weight: 500;
     color: var(--text-normal, #e8ecf0);
