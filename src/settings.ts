@@ -236,6 +236,7 @@ export function appHasPeriodicNotesPluginLoaded(): boolean {
 
 export class CalendarSettingsTab extends PluginSettingTab {
   private plugin: CalendarPlugin;
+  private activeTab = "general";
 
   constructor(app: App, plugin: CalendarPlugin) {
     super(app, plugin);
@@ -278,71 +279,105 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
     }
 
-    this.containerEl.createEl("h3", {
-      text: "Расположение",
-    });
-    this.addCalendarInMainViewSetting();
-    this.addShowStatusBarSetting();
-    this.addDtwShowOnAllPagesSetting();
+    // Tab bar
+    const tabBar = this.containerEl.createDiv({ cls: "settings-tab-bar" });
+    const tabs: { key: string; label: string }[] = [
+      { key: "general", label: "Общее" },
+      { key: "schedule", label: "Расписание" },
+      { key: "sync", label: "Синхронизация" },
+      { key: "notifications", label: "Уведомления" },
+      { key: "work", label: "Рабочие" },
+      { key: "nav", label: "Навигация" },
+    ];
 
-    this.containerEl.createEl("h3", {
-      text: "Панели",
-    });
-    this.addShowTaskTrackerSetting();
-    this.addShowHabitTrackerSetting();
+    const tabButtons: Record<string, HTMLButtonElement> = {};
+    const tabContainers: Record<string, HTMLDivElement> = {};
 
-    this.containerEl.createEl("h3", {
-      text: "Внешний вид",
-    });
-    this.addAccentColorSetting();
-    this.addGlassBgColorSetting();
+    for (const tab of tabs) {
+      const btn = tabBar.createEl("button", {
+        cls: "settings-tab-btn",
+        text: tab.label,
+      });
+      tabButtons[tab.key] = btn;
+      btn.addEventListener("click", () => this.switchTab(tab.key));
+    }
 
-    this.containerEl.createEl("h3", {
-      text: "Расписание — отображаемые элементы",
-    });
-    this.addScheduleDisplaySettings();
+    // Tab content containers
+    for (const tab of tabs) {
+      const container = this.containerEl.createDiv({
+        cls: "settings-tab-content",
+      });
+      container.style.display = tab.key === this.activeTab ? "" : "none";
+      tabContainers[tab.key] = container;
+    }
 
-    this.containerEl.createEl("h3", {
-      text: "Погода",
-    });
-    this.addWeatherSettings();
+    // Highlight active tab
+    tabButtons[this.activeTab]?.addClass("active");
 
-    this.containerEl.createEl("h3", {
-      text: "Синхронизация",
-    });
-    this.addSyncToVaultSetting();
-    this.addSyncAdvice();
+    // General tab
+    const general = tabContainers["general"];
+    general.createEl("h3", { text: "Расположение" });
+    this.addCalendarInMainViewSetting(general);
+    this.addShowStatusBarSetting(general);
+    this.addDtwShowOnAllPagesSetting(general);
+    general.createEl("h3", { text: "Панели" });
+    this.addShowTaskTrackerSetting(general);
+    this.addShowHabitTrackerSetting(general);
+    general.createEl("h3", { text: "Внешний вид" });
+    this.addAccentColorSetting(general);
+    this.addGlassBgColorSetting(general);
 
-    this.containerEl.createEl("h3", {
-      text: "Синхронизация задач с заметками",
-    });
-    this.addTaskNoteSyncSettings();
+    // Schedule tab
+    const schedule = tabContainers["schedule"];
+    schedule.createEl("h3", { text: "Отображаемые элементы" });
+    this.addScheduleDisplaySettings(schedule);
+    schedule.createEl("h3", { text: "Погода" });
+    this.addWeatherSettings(schedule);
 
-    this.containerEl.createEl("h3", {
-      text: "Уведомления",
-    });
-    this.addNotificationSettings();
+    // Sync tab
+    const sync = tabContainers["sync"];
+    sync.createEl("h3", { text: "Синхронизация" });
+    this.addSyncToVaultSetting(sync);
+    this.addSyncAdvice(sync);
+    sync.createEl("h3", { text: "Синхронизация задач с заметками" });
+    this.addTaskNoteSyncSettings(sync);
+    this.addGitHubGistSettings(sync);
 
-    this.containerEl.createEl("h3", {
-      text: "Рабочие задачи",
-    });
-    this.addWorkTaskSettings();
+    // Notifications tab
+    const notif = tabContainers["notifications"];
+    this.addNotificationSettings(notif);
 
-    this.addGitHubGistSettings();
+    // Work tab
+    const work = tabContainers["work"];
+    this.addWorkTaskSettings(work);
 
-    this.containerEl.createEl("h3", {
-      text: "Панель навигации в заметках",
-    });
-    this.addNavPanelInstructions();
+    // Nav tab
+    const nav = tabContainers["nav"];
+    nav.createEl("h3", { text: "Панель навигации в заметках" });
+    this.addNavPanelInstructions(nav);
+    nav.createEl("h3", { text: "Стиль кнопок" });
+    this.addNavBtnStyleSettings(nav);
 
-    this.containerEl.createEl("h3", {
-      text: "Стиль кнопок навигации",
-    });
-    this.addNavBtnStyleSettings();
+    // Store references for switchTab
+    this._tabButtons = tabButtons;
+    this._tabContainers = tabContainers;
   }
 
-  addCalendarInMainViewSetting(): void {
-    new Setting(this.containerEl)
+  private _tabButtons: Record<string, HTMLButtonElement> = {};
+  private _tabContainers: Record<string, HTMLDivElement> = {};
+
+  private switchTab(key: string): void {
+    this.activeTab = key;
+    for (const [k, btn] of Object.entries(this._tabButtons)) {
+      btn.toggleClass("active", k === key);
+    }
+    for (const [k, container] of Object.entries(this._tabContainers)) {
+      container.style.display = k === key ? "" : "none";
+    }
+  }
+
+  addCalendarInMainViewSetting(container: HTMLElement): void {
+    new Setting(container)
       .setName("Календарь в основной вкладке")
       .setDesc(
         "Отображать календарь по центру основного окна вместо правого сайдбара. Требуется перезапуск для применения.",
@@ -355,8 +390,8 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addShowStatusBarSetting(): void {
-    new Setting(this.containerEl)
+  addShowStatusBarSetting(container: HTMLElement): void {
+    new Setting(container)
       .setName("Панель информации")
       .setDesc(
         "Отображать панель с датой, временем, погодой и задачами под вкладками",
@@ -372,8 +407,8 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addDtwShowOnAllPagesSetting(): void {
-    new Setting(this.containerEl)
+  addDtwShowOnAllPagesSetting(container: HTMLElement): void {
+    new Setting(container)
       .setName("Панель на всех страницах")
       .setDesc(
         "Показывать панель информации на каждой открытой вкладке (иначе — только на первой)",
@@ -386,8 +421,8 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addShowTaskTrackerSetting(): void {
-    new Setting(this.containerEl)
+  addShowTaskTrackerSetting(container: HTMLElement): void {
+    new Setting(container)
       .setName("Показывать трекер задач")
       .setDesc("Отображать панель трекера задач под календарём")
       .addToggle((toggle) => {
@@ -413,8 +448,8 @@ export class CalendarSettingsTab extends PluginSettingTab {
     return folders.sort();
   }
 
-  addShowHabitTrackerSetting(): void {
-    new Setting(this.containerEl)
+  addShowHabitTrackerSetting(container: HTMLElement): void {
+    new Setting(container)
       .setName("Показывать трекер привычек")
       .setDesc("Отображать панель трекера привычек под календарём")
       .addToggle((toggle) => {
@@ -424,7 +459,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Лимит логов привычек")
       .setDesc(
         "Максимальное количество записей логов привычек. При превышении старые записи удаляются автоматически.",
@@ -448,7 +483,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addScheduleDisplaySettings(): void {
+  addScheduleDisplaySettings(container: HTMLElement): void {
     const opts = this.plugin.options;
     const items: { key: string; name: string; desc: string }[] = [
       {
@@ -503,7 +538,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
       },
     ];
     for (const item of items) {
-      new Setting(this.containerEl)
+      new Setting(container)
         .setName(item.name)
         .setDesc(item.desc)
         .addToggle((toggle) => {
@@ -515,10 +550,10 @@ export class CalendarSettingsTab extends PluginSettingTab {
     }
   }
 
-  addWeatherSettings(): void {
+  addWeatherSettings(container: HTMLElement): void {
     const opts = this.plugin.options;
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Показывать погоду")
       .setDesc(
         "Отображать прогноз погоды в заголовках дней недели (Open-Meteo)",
@@ -530,7 +565,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Широта")
       .setDesc("Широта вашего местоположения (например: 55.75 для Москвы)")
       .addText((text) => {
@@ -550,7 +585,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.style.maxWidth = "120px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Долгота")
       .setDesc("Долгота вашего местоположения (например: 37.62 для Москвы)")
       .addText((text) => {
@@ -571,10 +606,10 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addAccentColorSetting(): void {
+  addAccentColorSetting(container: HTMLElement): void {
     const currentColor = this.plugin.options.accentColor || "#5f99e1";
 
-    const setting = new Setting(this.containerEl)
+    const setting = new Setting(container)
       .setName("Акцентный цвет")
       .setDesc("Основной цвет подсветки кнопок, выделений и активных элементов")
       .addColorPicker((picker) => {
@@ -598,11 +633,11 @@ export class CalendarSettingsTab extends PluginSettingTab {
     );
   }
 
-  addGlassBgColorSetting(): void {
+  addGlassBgColorSetting(container: HTMLElement): void {
     const currentColor = this.plugin.options.glassBgColor || "#1e2332";
     const currentOpacity = this.plugin.options.glassOpacity ?? 55;
 
-    const setting = new Setting(this.containerEl)
+    const setting = new Setting(container)
       .setName("Фон стеклянных панелей")
       .setDesc("Цвет фона панелей задач, привычек, расписания и модальных окон")
       .addColorPicker((picker) => {
@@ -627,7 +662,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         }),
     );
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Прозрачность панелей")
       .setDesc(`Непрозрачность фона стеклянных панелей: ${currentOpacity}%`)
       .addSlider((slider) => {
@@ -650,8 +685,8 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addSyncToVaultSetting(): void {
-    new Setting(this.containerEl)
+  addSyncToVaultSetting(container: HTMLElement): void {
+    new Setting(container)
       .setName("Синхронизация в корень хранилища")
       .setDesc(
         "Сохранять данные в папку calendar-data/ в корне хранилища вместо папки плагина. Позволяет синхронизировать задачи и привычки через Obsidian Sync, iCloud или Git.",
@@ -664,7 +699,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addSyncAdvice(): void {
+  addSyncAdvice(container: HTMLElement): void {
     const desc = document.createElement("div");
     desc.addClass("setting-item-description");
     desc.style.marginTop = "8px";
@@ -679,11 +714,11 @@ export class CalendarSettingsTab extends PluginSettingTab {
         <b>iCloud / Google Drive:</b> Убедитесь, что хранилище синхронизируется полностью.
       </p>
     `;
-    this.containerEl.appendChild(desc);
+    container.appendChild(desc);
   }
 
-  addTaskNoteSyncSettings(): void {
-    new Setting(this.containerEl)
+  addTaskNoteSyncSettings(container: HTMLElement): void {
+    new Setting(container)
       .setName("Создавать Task заметку для каждой задачи")
       .setDesc(
         "При создании задачи автоматически создавать .md файл в папке Tasks/ в формате Tasks плагина.",
@@ -745,7 +780,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
           }),
       );
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Папка для задач")
       .setDesc("Папка, где будут храниться .md файлы задач")
       .addDropdown((dropdown) => {
@@ -772,7 +807,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Лимит выполненных задач")
       .setDesc(
         "Максимальное количество выполненных задач. При превышении старые задачи и их заметки удаляются автоматически.",
@@ -793,7 +828,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.style.maxWidth = "100px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Лимит логов времени")
       .setDesc(
         "Максимальное количество записей логов времени. При превышении старые логи удаляются автоматически.",
@@ -841,21 +876,22 @@ priority: medium
         <b>Автоочистка:</b> при достижении лимита старые выполненные задачи и их заметки удаляются автоматически.
       </p>
     `;
-    this.containerEl.appendChild(formatInfo);
+    container.appendChild(formatInfo);
   }
 
-  addNotificationSettings(): void {
-    new Setting(this.containerEl)
+  addNotificationSettings(container: HTMLElement): void {
+    new Setting(container)
       .setName("Включить уведомления")
       .setDesc("Показывать уведомления о запланированных задачах")
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.notificationsEnabled);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ notificationsEnabled: value });
+          await this.plugin.writeOptions({ notificationsEnabled: value });
+          this.plugin.notificationService?.restart();
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Напоминание за (минут)")
       .setDesc(
         "За сколько минут до запланированного времени показывать напоминание",
@@ -873,11 +909,11 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Типы уведомлений")
       .setDesc("Выберите, какие типы уведомлений включить");
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Напоминания")
       .setDesc("Напоминание за N минут до запланированного времени")
       .addToggle((toggle) => {
@@ -887,7 +923,7 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Просроченные задачи")
       .setDesc("Уведомление, когда задача становится просроченной")
       .addToggle((toggle) => {
@@ -897,7 +933,7 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Превышение лимита времени")
       .setDesc("Уведомление, когда время работы превышает оценку")
       .addToggle((toggle) => {
@@ -907,7 +943,7 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Дедлайны")
       .setDesc("Уведомления о дедлайнах (завтра, сегодня, истёк)")
       .addToggle((toggle) => {
@@ -917,18 +953,19 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Отправлять в ntfy.sh")
       .setDesc("Дублировать уведомления на смартфон через ntfy.sh")
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.ntfyEnabled);
         toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ ntfyEnabled: value });
+          await this.plugin.writeOptions({ ntfyEnabled: value });
           this.syncNotificationSettingsToVault();
+          this.plugin.notificationService?.restart();
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Topic для ntfy.sh")
       .setDesc("Имя топика для получения уведомлений в приложении ntfy")
       .addText((text) => {
@@ -942,7 +979,7 @@ priority: medium
         text.inputEl.style.maxWidth = "250px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Тест ntfy.sh")
       .setDesc("Отправить тестовое уведомление на указанный топик")
       .addButton((btn) =>
@@ -964,7 +1001,7 @@ priority: medium
           }),
       );
 
-    this.containerEl.createEl("h4", {
+    container.createEl("h4", {
       text: "GitHub Actions",
     });
 
@@ -983,9 +1020,9 @@ priority: medium
         4. Вставьте токен в поле ниже
       </p>
     `;
-    this.containerEl.appendChild(ghDesc);
+    container.appendChild(ghDesc);
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Проверка просроченных (GitHub Actions)")
       .setDesc(
         "Проверять просроченные задачи и дедлайны каждые 30 мин, когда компьютер выключен",
@@ -998,7 +1035,7 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Vault репозиторий")
       .setDesc("GitHub репозиторий с vault (формат: owner/repo)")
       .addText((text) => {
@@ -1011,7 +1048,7 @@ priority: medium
         text.inputEl.style.maxWidth = "300px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("GitHub токен для Actions")
       .setDesc(
         "Personal access token с правами repo/public_repo + actions:write",
@@ -1038,8 +1075,8 @@ priority: medium
     await saveNotificationSyncSettings(this.app, payload);
   }
 
-  addWorkTaskSettings(): void {
-    new Setting(this.containerEl)
+  addWorkTaskSettings(container: HTMLElement): void {
+    new Setting(container)
       .setName("Тип оплаты по умолчанию")
       .setDesc("Тип оплаты для новых рабочих задач")
       .addDropdown((dropdown) => {
@@ -1053,7 +1090,7 @@ priority: medium
         });
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Ставка по умолчанию")
       .setDesc("Ставка для новых рабочих задач (в рублях)")
       .addText((text) => {
@@ -1069,8 +1106,8 @@ priority: medium
       });
   }
 
-  addGitHubGistSettings(): void {
-    this.containerEl.createEl("h3", {
+  addGitHubGistSettings(container: HTMLElement): void {
+    container.createEl("h3", {
       text: "GitHub Gist — синхронизация календаря",
     });
 
@@ -1090,9 +1127,9 @@ priority: medium
         4. Скопируйте токен и вставьте ниже
       </p>
     `;
-    this.containerEl.appendChild(desc);
+    container.appendChild(desc);
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("GitHub токен для Gist")
       .setDesc("Personal access token с правами gist")
       .addText((text) => {
@@ -1106,7 +1143,7 @@ priority: medium
         text.inputEl.style.maxWidth = "300px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Синхронизировать с Gist")
       .setDesc("Экспортировать задачи в .ics файл на GitHub Gist")
       .addButton((btn) =>
@@ -1148,7 +1185,7 @@ priority: medium
           }),
       );
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Автоматическая синхронизация")
       .setDesc(
         "Автоматически обновлять Gist при изменении задач (debounce 5 сек)",
@@ -1176,12 +1213,12 @@ priority: medium
     statusDesc.textContent = this.plugin.options.gistAutoSync
       ? "✓ Автосинхронизация включена."
       : "Выключена. Включите для автоматического обновления календаря.";
-    this.containerEl
+    container
       .querySelector(".setting-item:last-child")
       ?.appendChild(statusDesc);
 
     if (this.plugin.options.gistRawUrl) {
-      new Setting(this.containerEl)
+      new Setting(container)
         .setName("URL календаря")
         .setDesc("Добавьте этот URL в Google Calendar или другой календарь")
         .addText((text) => {
@@ -1191,7 +1228,7 @@ priority: medium
     }
   }
 
-  addNavPanelInstructions(): void {
+  addNavPanelInstructions(container: HTMLElement): void {
     const desc = document.createDocumentFragment();
 
     const p1 = document.createElement("p");
@@ -1229,13 +1266,13 @@ priority: medium
       "Параметры стиля: color (текст), bg (фон), radius (скругление), size (размер шрифта), accent (цвет при наведении)";
     desc.appendChild(p4);
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Инструкция по панели навигации")
       .setDesc(desc);
   }
 
-  addNavBtnStyleSettings(): void {
-    new Setting(this.containerEl)
+  addNavBtnStyleSettings(container: HTMLElement): void {
+    new Setting(container)
       .setName("Цвет текста кнопок")
       .setDesc("Цвет текста на кнопках навигации (hex, например #ffffff)")
       .addText((text) => {
@@ -1248,7 +1285,7 @@ priority: medium
         text.inputEl.style.maxWidth = "120px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Фон кнопок")
       .setDesc("Цвет фона кнопок (hex, например #333333)")
       .addText((text) => {
@@ -1261,7 +1298,7 @@ priority: medium
         text.inputEl.style.maxWidth = "120px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Скругление кнопок")
       .setDesc("Радиус скругления (например 12px, 50%)")
       .addText((text) => {
@@ -1274,7 +1311,7 @@ priority: medium
         text.inputEl.style.maxWidth = "120px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Размер шрифта кнопок")
       .setDesc("Размер шрифта (например 13px)")
       .addText((text) => {
@@ -1287,7 +1324,7 @@ priority: medium
         text.inputEl.style.maxWidth = "120px";
       });
 
-    new Setting(this.containerEl)
+    new Setting(container)
       .setName("Цвет акцента при наведении")
       .setDesc("Цвет границы при hover (hex, например #5f99e1)")
       .addText((text) => {

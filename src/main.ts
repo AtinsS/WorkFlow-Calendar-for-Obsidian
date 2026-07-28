@@ -59,7 +59,7 @@ export default class CalendarPlugin extends Plugin {
   public options: ISettings;
   private view: CalendarView;
   private syncReloadTimer: ReturnType<typeof setTimeout> | null = null;
-  private notificationService: NotificationService;
+  public notificationService: NotificationService;
   private dtwPanel: DateTimeWeather | null = null;
   private dtwContainer: HTMLElement | null = null;
 

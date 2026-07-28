@@ -6169,3 +6169,48 @@ content: attr(data-task-count);
   background: rgba(255, 255, 255, 0.03);
   border-color: rgba(255, 255, 255, 0.02);
 }
+
+/* ============================================
+   SETTINGS TABS
+   ============================================ */
+
+.settings-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.settings-tab-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.settings-tab-btn:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.settings-tab-btn.active {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border-color: var(--interactive-accent);
+}
+
+.settings-tab-content {
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

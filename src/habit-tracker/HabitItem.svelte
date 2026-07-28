@@ -4,6 +4,7 @@
   import { habitLogs, isHabitCompletedOnDate, calculateStreak, getHabitCountOnDate } from "./stores";
 
   export let habit: IHabit;
+
   export let date: string;
 
   const dispatch = createEventDispatcher();

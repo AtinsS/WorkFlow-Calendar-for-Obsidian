@@ -11,6 +11,7 @@
   let timer: ReturnType<typeof setInterval>;
   let completedToday = 0;
   let totalToday = 0;
+  let inProgressCount = 0;
   let weather: DayWeather | null = null;
   let unsubTasks: (() => void) | null = null;
 
@@ -31,6 +32,7 @@
     const todayTasks = all.filter((t) => t.dateUID === todayUID);
     totalToday = todayTasks.length;
     completedToday = todayTasks.filter((t) => t.status === "done").length;
+    inProgressCount = all.filter((t) => t.status === "progress").length;
   }
 
   async function loadWeather() {
@@ -84,6 +86,13 @@
     <span class="dtw-item">
       <span class="dtw-icon">✅</span>
       <span>Задачи: {completedToday} / {totalToday}</span>
+    </span>
+  {/if}
+  {#if inProgressCount > 0}
+    <span class="dtw-sep"></span>
+    <span class="dtw-item">
+      <span class="dtw-icon">▶️</span>
+      <span>В работе: {inProgressCount}</span>
     </span>
   {/if}
 </div>

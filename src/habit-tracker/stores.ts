@@ -24,9 +24,7 @@ export function rebuildLogsCache(): void {
   cachedLogs = current;
   logsByHabitDate = new Map();
   for (const log of current) {
-    if (log.completed) {
-      logsByHabitDate.set(`${log.habitId}::${log.date}`, log);
-    }
+    logsByHabitDate.set(`${log.habitId}::${log.date}`, log);
   }
 }
 
@@ -131,10 +129,11 @@ export function toggleHabitCompletion(
   if (existing) {
     if (existing.count < targetCount) {
       // Increment count
+      const newCount = existing.count + 1;
       habitLogs.update((current) =>
         current.map((l) =>
           l.id === existing.id
-            ? { ...l, count: l.count + 1, completedAt: Date.now() }
+            ? { ...l, count: newCount, completed: newCount >= targetCount, completedAt: Date.now() }
             : l
         )
       );
@@ -148,7 +147,7 @@ export function toggleHabitCompletion(
       id: generateId(),
       habitId,
       date,
-      completed: true,
+      completed: targetCount <= 1,
       count: 1,
       completedAt: Date.now(),
     };
@@ -165,7 +164,8 @@ export function getHabitCountOnDate(habitId: string, date: string): number {
 }
 
 export function isHabitCompletedOnDate(habitId: string, date: string): boolean {
-  return logsByHabitDate.has(`${habitId}::${date}`);
+  const log = logsByHabitDate.get(`${habitId}::${date}`);
+  return log ? log.completed : false;
 }
 
 export function calculateStreak(habitId: string): number {

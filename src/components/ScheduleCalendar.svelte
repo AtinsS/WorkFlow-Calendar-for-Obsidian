@@ -25,6 +25,7 @@
   } from "./scheduleUtils";
   import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
   import { app } from "../stores/appStore";
+  ;
   // holidays —暂时隐藏
   export let plugin: CalendarPlugin;
   export let scheduleDisplay: {
@@ -49,6 +50,7 @@
   let destroyed = false;
   let skipNextRefetch = false;
   let isDragging = false;
+  let suppressRefetch = false;
 
   // Weather state
   let weatherByDate: Map<string, DayWeather> = new Map();
@@ -93,34 +95,30 @@
   function scheduleRefetch(): void {
     if (destroyed) return;
     if (isDragging) return;
+    if (suppressRefetch) return;
     if (skipNextRefetch) { skipNextRefetch = false; return; }
     if (refetchTimer) clearTimeout(refetchTimer);
     refetchTimer = setTimeout(() => {
       refetchTimer = null;
-      if (!destroyed && calendar) {
+      if (!destroyed && calendar && !suppressRefetch) {
         calendar.refetchEvents();
       }
     }, 150);
   }
 
   async function loadWeather(startDate: string, endDate: string): Promise<void> {
-    if (!weatherEnabled) { console.log("[Weather] loadWeather: disabled"); return; }
-    if (destroyed || weatherLoading) { console.log("[Weather] loadWeather: skip (destroyed/loading)"); return; }
+    if (!weatherEnabled) return;
+    if (destroyed || weatherLoading) return;
     weatherLoading = true;
-    console.log("[Weather] loadWeather: fetching", { startDate, endDate, lat: weatherLatitude, lon: weatherLongitude });
     try {
       const days = await fetchWeekWeather(weatherLatitude, weatherLongitude, startDate, endDate);
-      console.log("[Weather] loadWeather: got", days.length, "days", days);
       if (destroyed) return;
       const map = new Map<string, DayWeather>();
       for (const d of days) {
         map.set(d.date, d);
       }
       weatherByDate = map;
-      console.log("[Weather] loadWeather: weatherByDate updated, map size:", map.size);
-      // Force FullCalendar to re-render day headers with weather data
       if (calendar) {
-        console.log("[Weather] loadWeather: calling calendar.render()");
         requestAnimationFrame(() => calendar.render());
       }
     } catch (e) {
@@ -430,11 +428,32 @@
       eventDragStart: () => { isDragging = true; },
       eventDragStop: () => {
         isDragging = false;
-        scheduleRefetch();
       },
       eventDrop: handleEventDrop,
       eventResize: handleEventResize,
       eventDidMount: handleEventDidMount,
+      dayHeaderDidMount: (info: any) => {
+        // Add weather tooltip on hover for day headers in time-based views
+        if (!weatherEnabled) return;
+        const el = info.el as HTMLElement;
+        const date = info.date as Date;
+        if (!date) return;
+        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+
+        el.style.cursor = "default";
+        el.addEventListener("mouseenter", (e: MouseEvent) => {
+          const weather = weatherByDate.get(dateKey);
+          if (!weather) return;
+          const tooltip = document.createElement("div");
+          tooltip.className = "sch-weather-tooltip";
+          tooltip.innerHTML = `<span>${weather.icon}</span> <span>${weather.tempMin}°..${weather.tempMax}°</span> ${weather.label ? `<span style="opacity:0.7">${weather.label}</span>` : ""}`;
+          document.body.appendChild(tooltip);
+          const rect = el.getBoundingClientRect();
+          tooltip.style.left = `${rect.left + rect.width / 2}px`;
+          tooltip.style.top = `${rect.bottom + 4}px`;
+          el.addEventListener("mouseleave", () => tooltip.remove(), { once: true });
+        });
+      },
       eventClassNames: (arg: any) => {
         if (arg.event.extendedProps?.isDeadlineEvent) return ["sch-event-deadline-marker"];
         return [];
@@ -452,7 +471,6 @@
           const endStr = info.endStr
             ? info.endStr.slice(0, 10)
             : `${info.end.getFullYear()}-${String(info.end.getMonth() + 1).padStart(2, "0")}-${String(info.end.getDate()).padStart(2, "0")}`;
-          console.log("[Weather] datesSet:", { startStr, endStr, weatherEnabled, lat: weatherLatitude, lon: weatherLongitude });
           loadWeather(startStr, endStr);
         }
       },
@@ -533,16 +551,16 @@
         task.status === "done" ? "Готово" : ""
       ) : "";
     const statusHtml = statusLabel
-      ? `<span class="sch-event-status sch-status-${task.status}" data-action="toggle-status" title="Нажмите для смены статуса">${statusLabel}</span>`
+      ? `<span class="sch-event-status sch-status-${task.status}" data-action="toggle-status" title="${"Нажмите для смены статуса"}">${statusLabel}</span>`
       : "";
     const priorityBadge = showPriority
       ? (task.priority === "high" ? '<span class="sch-priority sch-priority-high">!</span>' :
          task.priority === "medium" ? '<span class="sch-priority sch-priority-mid">~</span>' : "")
       : "";
     const workBadge = (showWorkBadge && task.isWorkTask)
-      ? '<span class="sch-work-badge" title="Рабочая задача">&#128188;</span>' : "";
+      ? `<span class="sch-work-badge" title="${"Рабочая задача"}">&#128188;</span>` : "";
     const noteBadge = (showNoteBadge && task.boundNotePath)
-      ? `<span class="sch-note-badge" data-action="open-note" title="Открыть заметку">&#128279;</span>`
+      ? `<span class="sch-note-badge" data-action="open-note" title="${"Открыть заметку"}">&#128279;</span>`
       : "";
 
     let deadlineHtml = "";
@@ -735,7 +753,6 @@
     if (updatedTask) {
       syncTaskToNote(updatedTask, plugin.app);
     }
-    scheduleRefetch();
   }
 
   function handleCalendarSelect(info: any): void {
@@ -857,6 +874,7 @@
   }
 
   async function openTaskEditor(task: ITask): Promise<void> {
+    suppressRefetch = true;
     new TaskModal(plugin.app, async (updates) => {
       updateTask(task.id, updates);
       // Получаем обновлённую задачу
@@ -874,7 +892,11 @@
 
       // Синхронизируем Task заметку
       await syncTaskToNote(updatedTask, plugin.app);
+      suppressRefetch = false;
+      scheduleRefetch();
     }, task).open();
+    // If modal is closed without submitting, restore refetch
+    setTimeout(() => { suppressRefetch = false; }, 500);
   }
 
   async function deleteNoteFileIfNeeded(task: ITask): Promise<void> {
@@ -894,6 +916,7 @@
     const initialDate = dateStr;
     const initialTime = isTimeView ? timeStr : undefined;
 
+    suppressRefetch = true;
     new TaskModal(plugin.app, async (data) => {
       const task = addTask({
         title: data.title || "Новая задача",
@@ -925,10 +948,13 @@
         }
       }
 
+      suppressRefetch = false;
       if (!destroyed && calendar) {
         calendar.refetchEvents();
       }
     }, undefined, initialDate, initialTime, prefillEstimatedTime).open();
+    // If modal is closed without submitting, restore refetch
+    setTimeout(() => { suppressRefetch = false; }, 500);
   }
 
   // Контекстное меню задачи — рендерим в document.body,
@@ -939,6 +965,7 @@
 
   function openContextMenu(task: ITask, x: number, y: number): void {
     closeContextMenu(); // убираем предыдущее, если есть
+    suppressRefetch = true;
     contextMenuTask = task;
 
     // Создаём DOM-элемент в document.body, минуя backdrop-filter containing block
@@ -958,28 +985,26 @@
     const items = [
       // Редактирование только для незавершённых задач
       ...(task.status !== "done"
-        ? [{ label: "📝 Редактировать", action: () => contextEditTask() }]
+        ? [{ label: `📝 ${"📝 Редактировать"}`, action: () => contextEditTask() }]
         : []),
-      // Открыть заметку — только если есть привязанная заметка
       ...(task.boundNotePath
-        ? [{ label: "📄 Открыть заметку", action: () => contextOpenNote() }]
+        ? [{ label: `📄 ${"📄 Открыть заметку"}`, action: () => contextOpenNote() }]
         : []),
-      // Смена статуса — доступна всегда, включая из "done"
       { label: "Перевести статус:", disabled: true },
       ...(task.status !== "todo"
-        ? [{ label: "🟢 Сделать", action: () => contextChangeStatus("todo") }]
+        ? [{ label: `🟢 ${"🟢 Сделать"}`, action: () => contextChangeStatus("todo") }]
         : []),
       ...(task.status !== "progress"
-        ? [{ label: "▶️ В работу", action: () => contextChangeStatus("progress") }]
+        ? [{ label: `▶️ ${"▶️ В работу"}`, action: () => contextChangeStatus("progress") }]
         : []),
       ...(task.status !== "paused"
-        ? [{ label: "⏸️ На паузу", action: () => contextChangeStatus("paused") }]
+        ? [{ label: `⏸️ ${"⏸️ На паузу"}`, action: () => contextChangeStatus("paused") }]
         : []),
       ...(task.status !== "done"
-        ? [{ label: "✅ Готово", action: () => contextChangeStatus("done") }]
+        ? [{ label: `✅ ${"✅ Готово"}`, action: () => contextChangeStatus("done") }]
         : []),
       { divider: true },
-      { label: "🗑️ Удалить", action: () => contextDeleteTask(), danger: true },
+      { label: `🗑️ ${"🗑️ Удалить"}`, action: () => contextDeleteTask(), danger: true },
     ];
 
     for (const item of items) {
@@ -1026,6 +1051,7 @@
       contextMenuEl = null;
     }
     contextMenuTask = null;
+    suppressRefetch = false;
   }
 
   function contextEditTask(): void {
@@ -1537,7 +1563,6 @@
   :global(.fc .fc-event:hover) {
     transform: scale(1.01);
     box-shadow: inset 3px 0 0 var(--event-project-color, rgba(120, 145, 175, 1)), 0 4px 16px rgba(0, 0, 0, 0.25);
-    filter: brightness(1.15);
   }
 
   /* Active/current event highlight — multi-layered glow (reference pattern) */
@@ -2326,6 +2351,26 @@
     :global(.sch-event-title) {
       font-size: 10px;
     }
+  }
+
+  /* Weather tooltip on day header hover */
+  :global(.sch-weather-tooltip) {
+    position: fixed;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: var(--background-primary, #1e1e2e);
+    border: 1px solid var(--background-modifier-border, rgba(255,255,255,0.1));
+    border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-normal, #e8ecf0);
+    pointer-events: none;
+    white-space: nowrap;
+    transform: translateX(-50%);
   }
 
   /* ===== Альбомная ориентация ===== */

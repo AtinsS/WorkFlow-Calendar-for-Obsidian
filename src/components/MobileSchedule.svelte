@@ -48,6 +48,68 @@
   $: timedTasks = dayTasks.filter((t) => t.scheduledTime);
   $: untimedTasks = dayTasks.filter((t) => !t.scheduledTime);
 
+  // Compute overlap layout for timed tasks
+  $: taskLayoutMap = (() => {
+    const map = new Map<string, { col: number; totalCols: number }>();
+    if (timedTasks.length === 0) return map;
+
+    // Build intervals: [startMin, endMin] for each task
+    const intervals = timedTasks.map((t) => {
+      const [h, m] = t.scheduledTime.split(":").map(Number);
+      const adjustedH = h < 6 ? h + 24 : h;
+      const start = adjustedH * 60 + m;
+      const end = start + (t.estimatedTime || 60);
+      return { task: t, start, end };
+    });
+
+    // Greedy column assignment
+    const columns: { end: number }[][] = [];
+    for (const iv of intervals) {
+      let placed = false;
+      for (let c = 0; c < columns.length; c++) {
+        const lastEnd = columns[c][columns[c].length - 1].end;
+        if (iv.start >= lastEnd) {
+          columns[c].push(iv);
+          map.set(iv.task.id, { col: c, totalCols: 0 });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push([iv]);
+        map.set(iv.task.id, { col: columns.length - 1, totalCols: 0 });
+      }
+    }
+
+    // Set totalCols for all tasks in overlapping groups
+    // Find groups of overlapping tasks and set their totalCols
+    for (let i = 0; i < intervals.length; i++) {
+      let maxCol = intervals[i].task.id ? (map.get(intervals[i].task.id)?.col ?? 0) : 0;
+      let minStart = intervals[i].start;
+      let maxEnd = intervals[i].end;
+      // Expand to find all overlapping tasks
+      for (let j = 0; j < intervals.length; j++) {
+        if (i === j) continue;
+        if (intervals[j].start < maxEnd && intervals[j].end > minStart) {
+          const jCol = map.get(intervals[j].task.id)?.col ?? 0;
+          maxCol = Math.max(maxCol, jCol);
+          maxEnd = Math.max(maxEnd, intervals[j].end);
+          minStart = Math.min(minStart, intervals[j].start);
+        }
+      }
+      // Now set totalCols for all tasks in this overlap group
+      const totalCols = maxCol + 1;
+      for (let j = 0; j < intervals.length; j++) {
+        if (intervals[j].start < maxEnd && intervals[j].end > minStart) {
+          const entry = map.get(intervals[j].task.id);
+          if (entry) entry.totalCols = Math.max(entry.totalCols, totalCols);
+        }
+      }
+    }
+
+    return map;
+  })();
+
   // Week strip
   $: weekStart = currentDate.clone().startOf("week");
   $: weekDays = Array.from({ length: 7 }, (_, i) => weekStart.clone().add(i, "days"));
@@ -144,6 +206,13 @@
     const project = $projects.find((p) => p.id === task.projectId);
     const color = project?.color || "var(--mcp-accent)";
 
+    const layout = taskLayoutMap.get(task.id);
+    if (layout && layout.totalCols > 1) {
+      const widthPercent = 100 / layout.totalCols;
+      const leftPercent = layout.col * widthPercent;
+      return `top: ${top}px; height: ${height}px; background: ${color}; left: calc(4px + ${leftPercent}%); width: calc(${widthPercent}% - 4px);`;
+    }
+
     return `top: ${top}px; height: ${height}px; background: ${color};`;
   }
 
@@ -174,16 +243,16 @@
     menu.className = "ms-context-menu";
 
     const items = [
-      { label: "📝 Редактировать", action: () => contextEditTask() },
-      ...(task.notePath ? [{ label: "📄 Открыть заметку", action: () => contextOpenNote() }] : []),
+      { label: `📝 ${"📝 Редактировать"}`, action: () => contextEditTask() },
+      ...(task.notePath ? [{ label: `📄 ${"📄 Открыть заметку"}`, action: () => contextOpenNote() }] : []),
       { divider: true },
       { label: "Перевести статус:", disabled: true },
-      { label: "🟢 Сделать", action: () => contextChangeStatus("todo") },
-      { label: "▶️ В работу", action: () => contextChangeStatus("progress") },
-      { label: "⏸️ На паузу", action: () => contextChangeStatus("paused") },
-      { label: "✅ Готово", action: () => contextChangeStatus("done") },
+      { label: `🟢 ${"🟢 Сделать"}`, action: () => contextChangeStatus("todo") },
+      { label: `▶️ ${"▶️ В работу"}`, action: () => contextChangeStatus("progress") },
+      { label: `⏸️ ${"⏸️ На паузу"}`, action: () => contextChangeStatus("paused") },
+      { label: `✅ ${"✅ Готово"}`, action: () => contextChangeStatus("done") },
       { divider: true },
-      { label: "🗑️ Удалить", action: () => contextDeleteTask(), danger: true },
+      { label: `🗑️ ${"🗑️ Удалить"}`, action: () => contextDeleteTask(), danger: true },
     ];
 
     for (const item of items) {
@@ -223,8 +292,9 @@
   }
 
   function contextEditTask() {
-    if (contextMenuTask) {
-      new TaskModal(plugin.app, (updates) => updateTask(contextMenuTask.id, updates), contextMenuTask).open();
+    const task = contextMenuTask;
+    if (task) {
+      new TaskModal(plugin.app, (updates) => updateTask(task.id, updates), task).open();
     }
     closeContextMenu();
   }
@@ -267,15 +337,15 @@
 <div class="mobile-schedule" bind:this={containerEl}>
   <!-- Header -->
   <div class="ms-header">
-    <button class="ms-nav-btn" on:click={viewMode === "day" ? prevDay : prevMonth} aria-label="Назад">‹</button>
+    <button class="ms-nav-btn" on:click={viewMode === "day" ? prevDay : prevMonth} aria-label={"Назад"}>‹</button>
     <button class="ms-title" on:click={viewMode === "day" ? goToday : toggleViewMode}>
       {viewMode === "day" ? dayLabel : monthLabel}
     </button>
-    <button class="ms-nav-btn" on:click={viewMode === "day" ? nextDay : nextMonth} aria-label="Вперёд">›</button>
-    <button class="ms-view-toggle" on:click={toggleViewMode} aria-label="Переключить вид">
+    <button class="ms-nav-btn" on:click={viewMode === "day" ? nextDay : nextMonth} aria-label={"Вперёд"}>›</button>
+    <button class="ms-view-toggle" on:click={toggleViewMode} aria-label={"Переключить вид"}>
       {viewMode === "day" ? "📅" : "📋"}
     </button>
-    <button class="ms-close-btn" on:click={onClose} aria-label="Закрыть">✕</button>
+    <button class="ms-close-btn" on:click={onClose} aria-label={"Закрыть"}>✕</button>
   </div>
 
   <!-- Week strip (only in day mode) -->
@@ -402,11 +472,11 @@
             {/if}
             <span class="ms-task-title">{task.title}</span>
             {#if task.status === "progress"}
-              <span class="ms-task-status ms-status-progress">В работе</span>
+              <span class="ms-task-status ms-status-progress">{"В работе"}</span>
             {:else if task.status === "paused"}
-              <span class="ms-task-status ms-status-paused">На паузе</span>
+              <span class="ms-task-status ms-status-paused">{"На паузе"}</span>
             {:else if task.status === "done"}
-              <span class="ms-task-status ms-status-done">Готово</span>
+              <span class="ms-task-status ms-status-done">{"Готово"}</span>
             {/if}
           </div>
           {#if task.description}
@@ -420,7 +490,7 @@
     {#if untimedTasks.length > 0}
       <div class="ms-untimed-section">
         <div class="ms-untimed-header">
-          <span class="ms-untimed-title">Без времени</span>
+          <span class="ms-untimed-title">{"Без времени"}</span>
         </div>
         <div class="ms-untimed-list">
           {#each untimedTasks as task (task.id)}
@@ -436,11 +506,11 @@
                 <span class="ms-task-work-icon">💼</span>
               {/if}
               {#if task.status === "progress"}
-                <span class="ms-task-status ms-status-progress">В работе</span>
+                <span class="ms-task-status ms-status-progress">{"В работе"}</span>
               {:else if task.status === "paused"}
-                <span class="ms-task-status ms-status-paused">На паузе</span>
+                <span class="ms-task-status ms-status-paused">{"На паузе"}</span>
               {:else if task.status === "done"}
-                <span class="ms-task-status ms-status-done">Готово</span>
+                <span class="ms-task-status ms-status-done">{"Готово"}</span>
               {/if}
             </div>
           {/each}
