@@ -17,7 +17,7 @@ const DEFAULT_AUTO_CLEANUP_THRESHOLD = 180;
 
 function notifyStatusChange(taskTitle: string, statusLabel: string): void {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  const n = new Notification(`📅 Calendar Remastered`, {
+  const n = new Notification(`📅 WorkLIfe Calendar`, {
     body: `🔄 ${taskTitle}\nСтатус: ${statusLabel}`,
   });
   n.onclick = () => { window.focus(); n.close(); };

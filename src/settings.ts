@@ -992,7 +992,7 @@ priority: medium
               await requestUrl({
                 url: `https://ntfy.sh/${topic}`,
                 method: "POST",
-                body: "Тестовое уведомление из Calendar Remastered",
+                body: "Тестовое уведомление из WorkLife Calendar",
               });
               alert(`Тестовое уведомление отправлено в ${topic}`);
             } catch (e) {

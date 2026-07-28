@@ -112,7 +112,7 @@ export class NotificationService {
           if (this.getSettings().notifyReminders && now >= fireAt - reminderMs && now < fireAt && !this.firedReminders.has(reminderKey)) {
             this.firedReminders.add(reminderKey);
             this.notify(
-              `📅 Calendar Remastered`,
+              `📅 WorkLIfe Calendar`,
               `⏱️ Напоминание: ${task.title}\nЗадача через ${this.getSettings().reminderMinutesBefore} мин (${task.scheduledTime})`
             );
           }
@@ -121,7 +121,7 @@ export class NotificationService {
           if (this.getSettings().notifyOverdue && task.status === "todo" && now >= fireAt && !this.firedOverdue.has(overdueKey)) {
             this.firedOverdue.add(overdueKey);
             this.notify(
-              `📅 Calendar Remastered`,
+              `📅 WorkLIfe Calendar`,
               `‼️ Просрочено: ${task.title}\nЗапланировано на ${task.scheduledTime}`
             );
           }
@@ -144,7 +144,7 @@ export class NotificationService {
             const actM = Math.floor((totalMs % 3_600_000) / 60_000);
             const actStr = actH > 0 ? `${actH}ч ${actM > 0 ? actM + 'м' : ''}` : `${actM}м`;
             this.notify(
-              `📅 Calendar Remastered`,
+              `📅 WorkLIfe Calendar`,
               `⏰ Превышен лимит: ${task.title}\nОжидается: ${estStr} · Факт: ${actStr}`
             );
           }
@@ -168,7 +168,7 @@ export class NotificationService {
             this.firedDeadline.add(deadlineStartKey);
             const timeStr = task.deadlineTime ? ` в ${task.deadlineTime}` : "";
             this.notify(
-              `📅 Calendar Remastered`,
+              `📅 WorkLIfe Calendar`,
               `🎯 Дедлайн сегодня: ${task.title}${timeStr}`
             );
           }
@@ -181,7 +181,7 @@ export class NotificationService {
               if (now >= deadlineDateTime.getTime()) {
                 this.firedDeadline.add(deadlineEndKey);
                 this.notify(
-                  `📅 Calendar Remastered`,
+                  `📅 WorkLIfe Calendar`,
                   `🔴 Дедлайн истёк: ${task.title}\nВремя: ${task.deadlineTime}`
                 );
               }
@@ -194,7 +194,7 @@ export class NotificationService {
             this.firedDeadline.add(deadlineKey);
             const timeStr = task.deadlineTime ? ` в ${task.deadlineTime}` : "";
             this.notify(
-              `📅 Calendar Remastered`,
+              `📅 WorkLIfe Calendar`,
               `⏰ Дедлайн завтра: ${task.title}${timeStr}`
             );
           }

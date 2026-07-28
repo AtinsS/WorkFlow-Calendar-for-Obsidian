@@ -1,4 +1,4 @@
-# 🗓️ Obsidian Calendar Plugin Remastered
+# WorkLife Calendar for Obsidian
 
 > **Всё в одном:** умный календарь, трекер задач и привычек, учёт времени и финансовый планировщик, связанные в единую экосистему внутри Obsidian.
 

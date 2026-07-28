@@ -178,7 +178,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Просрочено")
       );
     });
@@ -202,7 +202,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Просрочено")
       );
     });
@@ -226,7 +226,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Просрочено")
       );
     });
@@ -251,7 +251,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Просрочено")
       );
     });
@@ -304,7 +304,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Напоминание")
       );
     });
@@ -329,7 +329,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Напоминание")
       );
     });
@@ -357,7 +357,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Превышен лимит")
       );
     });
@@ -383,7 +383,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Превышен лимит")
       );
     });
@@ -413,7 +413,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Превышен лимит")
       );
     });
@@ -440,7 +440,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Дедлайн завтра")
       );
     });
@@ -482,7 +482,7 @@ describe("NotificationService", () => {
       (global as any).Date = RealDate;
 
       expect(mockNotify).toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Дедлайн сегодня")
       );
     });
@@ -504,7 +504,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Напоминание")
       );
     });
@@ -524,7 +524,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Просрочено")
       );
     });
@@ -550,7 +550,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Превышен лимит")
       );
     });
@@ -572,7 +572,7 @@ describe("NotificationService", () => {
       await service.start();
 
       expect(mockNotify).not.toHaveBeenCalledWith(
-        "📅 Calendar Remastered",
+        "📅 WorkLIfe Calendar",
         expect.stringContaining("Дедлайн завтра")
       );
     });

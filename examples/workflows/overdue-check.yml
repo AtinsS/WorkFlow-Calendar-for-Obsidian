@@ -113,7 +113,7 @@ jobs:
               print(msg)
               subprocess.run([
                   'curl', '-s', '-d', msg,
-                  '-H', 'Title: Calendar Remastered',
+                  '-H', 'Title: WorkLIfe Calendar',
                   '-H', 'Priority: high',
                   '-H', 'Tags: warning',
                   f'https://ntfy.sh/{topic}'
