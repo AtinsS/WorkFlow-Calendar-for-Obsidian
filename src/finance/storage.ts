@@ -9,10 +9,13 @@ export const financeData = writable<IFinanceData>({});
 let pluginInstance: CalendarPlugin = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
+let storeIsDirty = false; // true when store has unsaved local edits
+let isSaving = false; // true while a write to vault is in-flight
 
 export async function initFinanceStores(plugin: CalendarPlugin): Promise<void> {
   pluginInstance = plugin;
-  await loadFinanceData();
+  // Always load from vault on init — ignore dirty/saving state
+  await loadFinanceDataFromVault();
 }
 
 export async function reloadFinanceStores(): Promise<void> {
@@ -20,6 +23,19 @@ export async function reloadFinanceStores(): Promise<void> {
 }
 
 async function loadFinanceData(): Promise<void> {
+  if (!pluginInstance) return;
+
+  // Skip reload if there are unsaved local edits or a write is in-flight —
+  // otherwise the vault sync would overwrite the user's pending changes.
+  if (storeIsDirty || isSaving) {
+    loaded = true;
+    return;
+  }
+
+  await loadFinanceDataFromVault();
+}
+
+async function loadFinanceDataFromVault(): Promise<void> {
   if (!pluginInstance) return;
 
   // Finance always uses vaultStorage (split-file format)
@@ -32,12 +48,17 @@ async function loadFinanceData(): Promise<void> {
 
 async function debouncedSave(): Promise<void> {
   if (!loaded) return;
+  storeIsDirty = true;
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
     if (!pluginInstance) return;
-
-    // Use queued save to prevent race conditions with other modules
-    await saveModuleData(pluginInstance.app, "finance", get(financeData) as unknown as Record<string, unknown>);
+    isSaving = true;
+    try {
+      await saveModuleData(pluginInstance.app, "finance", get(financeData) as unknown as Record<string, unknown>);
+    } finally {
+      isSaving = false;
+      storeIsDirty = false;
+    }
   }, 300);
 }
 
@@ -47,7 +68,13 @@ export async function immediateFinanceSave(): Promise<void> {
     clearTimeout(saveTimeout);
     saveTimeout = null;
   }
-  await saveModuleData(pluginInstance.app, "finance", get(financeData) as unknown as Record<string, unknown>);
+  isSaving = true;
+  try {
+    await saveModuleData(pluginInstance.app, "finance", get(financeData) as unknown as Record<string, unknown>);
+  } finally {
+    isSaving = false;
+    storeIsDirty = false;
+  }
 }
 
 export function getCurrentMonthKey(): string {

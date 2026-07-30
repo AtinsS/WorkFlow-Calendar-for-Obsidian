@@ -60,13 +60,16 @@
   }
 
   // ── Load data from store when monthKey or financeData changes ──
+  // Skip while user is actively editing to prevent input fields from resetting
   $: {
     $financeData;
-    const newData = getMonthData(monthKey);
-    if (newData) {
-      monthData = newData;
-      incomeSource = normalizeIncomeSource(monthData.incomeSource);
-      manualIncome = monthData.monthlyIncome;
+    if (!editingMainCatId && !editingGoalId && !editingSavingsId) {
+      const newData = getMonthData(monthKey);
+      if (newData) {
+        monthData = newData;
+        incomeSource = normalizeIncomeSource(monthData.incomeSource);
+        manualIncome = monthData.monthlyIncome;
+      }
     }
   }
 

@@ -24,10 +24,13 @@ export const financialAnalyticsData = writable<IFinancialAnalyticsData>({
 let pluginInstance: CalendarPlugin = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
+let storeIsDirty = false;
+let isSaving = false;
 
 export async function initFinancialAnalyticsStores(plugin: CalendarPlugin): Promise<void> {
   pluginInstance = plugin;
-  await loadFinancialAnalyticsData();
+  // Always load from vault on init — ignore dirty/saving state
+  await loadFinancialAnalyticsDataFromVault();
 }
 
 export async function reloadFinancialAnalyticsStores(): Promise<void> {
@@ -35,6 +38,18 @@ export async function reloadFinancialAnalyticsStores(): Promise<void> {
 }
 
 async function loadFinancialAnalyticsData(): Promise<void> {
+  if (!pluginInstance) return;
+
+  // Skip reload if there are unsaved local edits or a write is in-flight
+  if (storeIsDirty || isSaving) {
+    loaded = true;
+    return;
+  }
+
+  await loadFinancialAnalyticsDataFromVault();
+}
+
+async function loadFinancialAnalyticsDataFromVault(): Promise<void> {
   if (!pluginInstance) return;
 
   // Always uses vaultStorage (split-file format)
@@ -52,12 +67,17 @@ async function loadFinancialAnalyticsData(): Promise<void> {
 
 async function debouncedSave(): Promise<void> {
   if (!loaded) return;
+  storeIsDirty = true;
   if (saveTimeout) clearTimeout(saveTimeout);
   saveTimeout = setTimeout(async () => {
     if (!pluginInstance) return;
-
-    // Use queued save to prevent race conditions with other modules
-    await saveModuleData(pluginInstance.app, "financialAnalytics", get(financialAnalyticsData) as unknown as Record<string, unknown>);
+    isSaving = true;
+    try {
+      await saveModuleData(pluginInstance.app, "financialAnalytics", get(financialAnalyticsData) as unknown as Record<string, unknown>);
+    } finally {
+      isSaving = false;
+      storeIsDirty = false;
+    }
   }, 300);
 }
 
@@ -67,7 +87,13 @@ export async function immediateAnalyticsSave(): Promise<void> {
     clearTimeout(saveTimeout);
     saveTimeout = null;
   }
-  await saveModuleData(pluginInstance.app, "financialAnalytics", get(financialAnalyticsData) as unknown as Record<string, unknown>);
+  isSaving = true;
+  try {
+    await saveModuleData(pluginInstance.app, "financialAnalytics", get(financialAnalyticsData) as unknown as Record<string, unknown>);
+  } finally {
+    isSaving = false;
+    storeIsDirty = false;
+  }
 }
 
 let idCounter = 0;
