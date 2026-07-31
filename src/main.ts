@@ -2,6 +2,12 @@ import moment from "moment";
 import type { Moment, WeekSpec } from "moment";
 import { App, Plugin, WorkspaceLeaf } from "obsidian";
 
+const registeredMarkdownCodeBlocks = new Set<string>();
+
+// Track current plugin instance so view factories always reference the live plugin
+// (avoids stale closures after hot-reload)
+let currentPluginInstance: CalendarPlugin | null = null;
+
 import {
   VIEW_TYPE_CALENDAR,
   VIEW_TYPE_SCHEDULE,
@@ -30,14 +36,12 @@ import FinanceView from "./views/FinanceView";
 import FinancialAnalyticsView from "./views/FinancialAnalyticsView";
 import { initTaskStores, reloadTaskStores, immediateSave as immediateTaskSave } from "./task-tracker/stores";
 import { cleanupTimers } from "./task-tracker/TimerManager";
-import { setSyncEnabled as setTaskSync } from "./task-tracker/storage";
 import {
   setupNoteTaskSync,
   setupNoteRenameSync,
   setupNoteDeleteSync,
 } from "./task-tracker/noteTasks";
 import { initHabitStores, reloadHabitStores, immediateSave as immediateHabitSave } from "./habit-tracker/stores";
-import { setSyncEnabled as setHabitSync } from "./habit-tracker/storage";
 import { initFinanceStores, reloadFinanceStores, immediateFinanceSave } from "./finance/storage";
 import { initFinancialAnalyticsStores, reloadFinancialAnalyticsStores, immediateAnalyticsSave } from "./finance/financialAnalyticsStorage";
 import CalendarNav from "./components/CalendarNav.svelte";
@@ -45,7 +49,7 @@ import DateTimeWeather from "./components/DateTimeWeather.svelte";
 import Dashboard from "./dashboard/Dashboard.svelte";
 import { NotificationService } from "./services/NotificationService";
 import { initGistSync } from "./services/GistSyncService";
-import { syncNotificationSettingsOnLoad, migrateFromSingleFile, VAULT_DATA_DIR } from "./io/vaultStorage";
+import { syncNotificationSettingsOnLoad, migrateFromSingleFile, migrateRootModuleFiles, VAULT_DATA_DIR } from "./io/vaultStorage";
 
 declare global {
   interface Window {
@@ -58,6 +62,8 @@ declare global {
 export default class CalendarPlugin extends Plugin {
   public options: ISettings;
   private view: CalendarView;
+  private ribbonIconsRegistered = false;
+  private ribbonIcons: HTMLElement[] = [];
   private syncReloadTimer: ReturnType<typeof setTimeout> | null = null;
   public notificationService: NotificationService;
   private dtwPanel: DateTimeWeather | null = null;
@@ -104,9 +110,22 @@ export default class CalendarPlugin extends Plugin {
     this.app.workspace
       .getLeavesOfType(VIEW_TYPE_FINANCIAL_ANALYTICS)
       .forEach((leaf) => leaf.detach());
+
+    registeredMarkdownCodeBlocks.clear();
+
+    // Remove ribbon icons explicitly (hot-reload safety)
+    for (const icon of this.ribbonIcons) {
+      icon.remove();
+    }
+    this.ribbonIcons = [];
+    document.querySelectorAll("[data-mcp-ribbon]").forEach(el => el.remove());
+    this.ribbonIconsRegistered = false;
   }
 
   async onload(): Promise<void> {
+    // Track current instance so view factories reference the live plugin after hot-reload
+    currentPluginInstance = this;
+
     // Set Russian locale for month names
     moment.locale("ru");
 
@@ -116,46 +135,71 @@ export default class CalendarPlugin extends Plugin {
     this.register(
       settings.subscribe((value) => {
         this.options = value;
-        setTaskSync(!!value.syncToVault);
-        setHabitSync(!!value.syncToVault);
-
         this.notificationService?.restart();
       })
     );
 
-    this.registerView(
+    const safeRegisterView = (type: string, factory: (leaf: WorkspaceLeaf) => any) => {
+      try {
+        this.registerView(type, factory);
+      } catch (e) {
+        // View type already registered (hot-reload / double-load) — safe to ignore
+      }
+    };
+
+    const safeRegisterMarkdownCodeBlockProcessor = (
+      lang: string,
+      processor: (source: string, el: HTMLElement) => void
+    ) => {
+      if (registeredMarkdownCodeBlocks.has(lang)) {
+        return;
+      }
+      try {
+        this.registerMarkdownCodeBlockProcessor(lang, processor);
+        registeredMarkdownCodeBlocks.add(lang);
+      } catch (e) {
+        // Code block processor already registered (hot-reload / double-load) — safe to ignore
+        registeredMarkdownCodeBlocks.add(lang);
+      }
+    };
+
+    safeRegisterView(
       VIEW_TYPE_CALENDAR,
-      (leaf: WorkspaceLeaf) => (this.view = new CalendarView(leaf, this))
+      (leaf: WorkspaceLeaf) => {
+        const p = currentPluginInstance!;
+        p.view = new CalendarView(leaf, p);
+        return p.view;
+      }
     );
 
-    this.registerView(
+    safeRegisterView(
       VIEW_TYPE_SCHEDULE,
-      (leaf: WorkspaceLeaf) => new ScheduleView(leaf, this)
+      (leaf: WorkspaceLeaf) => new ScheduleView(leaf, currentPluginInstance!)
     );
 
-    this.registerView(
+    safeRegisterView(
       VIEW_TYPE_MOBILE_SCHEDULE,
-      (leaf: WorkspaceLeaf) => new MobileScheduleView(leaf, this)
+      (leaf: WorkspaceLeaf) => new MobileScheduleView(leaf, currentPluginInstance!)
     );
 
-    this.registerView(
+    safeRegisterView(
       VIEW_TYPE_MOBILE_TASKS,
-      (leaf: WorkspaceLeaf) => new MobileTaskTrackerView(leaf, this)
+      (leaf: WorkspaceLeaf) => new MobileTaskTrackerView(leaf, currentPluginInstance!)
     );
 
-    this.registerView(
+    safeRegisterView(
       VIEW_TYPE_HABIT_ANALYTICS,
-      (leaf: WorkspaceLeaf) => new HabitAnalyticsView(leaf, this)
+      (leaf: WorkspaceLeaf) => new HabitAnalyticsView(leaf, currentPluginInstance!)
     );
 
-    this.registerView(
+    safeRegisterView(
       VIEW_TYPE_FINANCE,
-      (leaf: WorkspaceLeaf) => new FinanceView(leaf, this)
+      (leaf: WorkspaceLeaf) => new FinanceView(leaf, currentPluginInstance!)
     );
 
-    this.registerView(
+    safeRegisterView(
       VIEW_TYPE_FINANCIAL_ANALYTICS,
-      (leaf: WorkspaceLeaf) => new FinancialAnalyticsView(leaf, this)
+      (leaf: WorkspaceLeaf) => new FinancialAnalyticsView(leaf, currentPluginInstance!)
     );
 
     this.addCommand({
@@ -208,30 +252,39 @@ export default class CalendarPlugin extends Plugin {
       callback: () => this.activateFinanceView(),
     });
 
-    this.addCommand({
-      id: "open-analytics",
-      name: "Открыть аналитику",
-      callback: () => this.activateHabitAnalyticsView(),
-    });
+    // Remove orphaned ribbon icons from previous instance (hot-reload safety)
+    document.querySelectorAll("[data-mcp-ribbon]").forEach(el => el.remove());
 
-    this.addRibbonIcon("calendar-range", "Расписание", () => {
-      this.activateScheduleView();
-    });
+    if (!this.ribbonIconsRegistered) {
+      const scheduleIcon = this.addRibbonIcon("calendar-range", "Расписание", () => {
+        this.activateScheduleView();
+      });
+      scheduleIcon.dataset.mcpRibbon = "true";
+      this.ribbonIcons.push(scheduleIcon);
 
-    this.addRibbonIcon("calendar-with-checkmark", "Календарь", () => {
-      this.initLeaf();
-    });
+      const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", "Календарь", () => {
+        this.initLeaf();
+      });
+      calendarIcon.dataset.mcpRibbon = "true";
+      this.ribbonIcons.push(calendarIcon);
 
-    this.addRibbonIcon("bar-chart", "Аналитика", () => {
-      this.activateHabitAnalyticsView();
-    });
+      const analyticsIcon = this.addRibbonIcon("bar-chart", "Аналитика", () => {
+        this.activateHabitAnalyticsView();
+      });
+      analyticsIcon.dataset.mcpRibbon = "true";
+      this.ribbonIcons.push(analyticsIcon);
 
-    this.addRibbonIcon("coins", "Финансы", () => {
-      this.activateFinanceView();
-    });
+      const financeIcon = this.addRibbonIcon("coins", "Финансы", () => {
+        this.activateFinanceView();
+      });
+      financeIcon.dataset.mcpRibbon = "true";
+      this.ribbonIcons.push(financeIcon);
+
+      this.ribbonIconsRegistered = true;
+    }
 
     // Register calendar-nav code block processor
-    this.registerMarkdownCodeBlockProcessor("calendar-nav", (source, el) => {
+    safeRegisterMarkdownCodeBlockProcessor("calendar-nav", (source, el) => {
       const lines = source.split("\n").filter((l) => l.trim());
       const items = lines.map((line) => {
         const [key, ...rest] = line.split(":");
@@ -289,12 +342,12 @@ export default class CalendarPlugin extends Plugin {
     });
 
     // Register datetime-weather code block processor
-    this.registerMarkdownCodeBlockProcessor("datetime-weather", (_source, el) => {
+    safeRegisterMarkdownCodeBlockProcessor("datetime-weather", (_source, el) => {
       new DateTimeWeather({ target: el });
     });
 
     // Register dashboard code block processor
-    this.registerMarkdownCodeBlockProcessor("dashboard", (_source, el) => {
+    safeRegisterMarkdownCodeBlockProcessor("dashboard", (_source, el) => {
       new Dashboard({ target: el, props: { appInstance: this.app } });
     });
 
@@ -352,14 +405,17 @@ export default class CalendarPlugin extends Plugin {
     // Migrate legacy calendar-data.json to per-module files (one-time, idempotent)
     await migrateFromSingleFile(this.app);
 
-    // Initialize task tracker
-    initTaskStores(this);
+    // Migrate root-level module files to calendar-data/ (one-time, idempotent)
+    await migrateRootModuleFiles(this.app);
+
+    // Initialize task tracker (must await to prevent empty data from overwriting vault)
+    await initTaskStores(this);
     setupNoteTaskSync(this.app, this);
     setupNoteRenameSync(this.app, this);
     setupNoteDeleteSync(this.app, this);
 
-    // Initialize habit tracker
-    initHabitStores(this);
+    // Initialize habit tracker (must await to prevent empty data from overwriting vault)
+    await initHabitStores(this);
 
     // Initialize finance tracker (must await to prevent race condition where empty data overwrites vault)
     await initFinanceStores(this);
@@ -436,6 +492,9 @@ export default class CalendarPlugin extends Plugin {
     // If container still exists in DOM, don't re-inject
     if (this.dtwContainer && document.body.contains(this.dtwContainer)) return;
 
+    // Clean up any orphaned dtw-bar elements from previous plugin loads
+    document.querySelectorAll(".mcp-dtw-global").forEach((el) => el.remove());
+
     this.createDateTimeWeatherPanel();
   }
 
@@ -454,8 +513,11 @@ export default class CalendarPlugin extends Plugin {
     );
     if (isSidebar) return;
 
-    // Destroy old panel if it exists
+    // Always destroy old panel first to prevent duplicates
     this.removeDateTimeWeather();
+    // Also clean up any orphaned elements
+    document.querySelectorAll(".mcp-dtw-global").forEach((el) => el.remove());
+
     this.createDateTimeWeatherPanel();
   }
 
@@ -503,7 +565,12 @@ export default class CalendarPlugin extends Plugin {
   }
 
   initLeaf(): void {
-    if (this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR).length) {
+    const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
+    if (existingLeaves.length) {
+      // Clean up duplicate leaves (keep only the first one)
+      if (existingLeaves.length > 1) {
+        existingLeaves.slice(1).forEach((leaf) => leaf.detach());
+      }
       return;
     }
     // On mobile, open calendar in the main content area (right sidebar is hidden by default)
@@ -522,6 +589,10 @@ export default class CalendarPlugin extends Plugin {
     const { workspace } = this.app;
     const existing = workspace.getLeavesOfType(viewType);
     if (existing.length) {
+      // Clean up duplicate leaves (keep only the first one)
+      if (existing.length > 1) {
+        existing.slice(1).forEach((leaf) => leaf.detach());
+      }
       workspace.revealLeaf(existing[0]);
       return;
     }
@@ -556,8 +627,66 @@ export default class CalendarPlugin extends Plugin {
     return this.activateView(VIEW_TYPE_FINANCIAL_ANALYTICS);
   }
 
+  /**
+   * Find the actual plugin directory path inside .obsidian/plugins/.
+   * The folder name may differ from manifest.id (e.g. "WorkLife Calendar" vs "calendar-plugin-remastered").
+   */
+  private async findPluginDir(): Promise<string | null> {
+    const configDir = this.app.vault.configDir || ".obsidian";
+    const pluginsDir = `${configDir}/plugins`;
+    try {
+      const entries = await this.app.vault.adapter.list(pluginsDir);
+      for (const dir of entries.folders) {
+        try {
+          const manifestPath = `${dir}/manifest.json`;
+          if (await this.app.vault.adapter.exists(manifestPath)) {
+            const raw = await this.app.vault.adapter.read(manifestPath);
+            const manifest = JSON.parse(raw);
+            if (manifest.id === this.manifest.id) {
+              return dir;
+            }
+          }
+        } catch {
+          // skip broken manifest
+        }
+      }
+    } catch {
+      // list failed
+    }
+    return null;
+  }
+
+  /**
+   * loadData with adapter fallback for Obsidian ≥1.13 where Plugin.loadData()
+   * may return empty even when data.json exists on disk.
+   */
+  async loadDataSafe(): Promise<Record<string, unknown>> {
+    let data: Record<string, unknown> | null = null;
+    try {
+      data = await this.loadData();
+    } catch {
+      // base loadData failed
+    }
+    if (!data || typeof data !== "object" || Object.keys(data).length === 0) {
+      try {
+        // Find actual plugin dir (folder name may differ from manifest.id)
+        const pluginDir = await this.findPluginDir();
+        if (pluginDir) {
+          const dataPath = `${pluginDir}/data.json`;
+          if (await this.app.vault.adapter.exists(dataPath)) {
+            const content = await this.app.vault.adapter.read(dataPath);
+            if (content) data = JSON.parse(content);
+          }
+        }
+      } catch {
+        // adapter fallback failed
+      }
+    }
+    return data || {};
+  }
+
   async loadOptions(): Promise<void> {
-    const options = await this.loadData();
+    const options = await this.loadDataSafe();
     const old = { ...this.options };
     settings.update((current) => {
       return {
@@ -566,7 +695,11 @@ export default class CalendarPlugin extends Plugin {
       };
     });
 
-    if (JSON.stringify(old) !== JSON.stringify(this.options)) {
+    // Always save if data.json doesn't exist (first run / fresh install)
+    // This ensures the file is created so settings persist across restarts.
+    if (Object.keys(options).length === 0) {
+      await this.saveData(this.options);
+    } else if (JSON.stringify(old) !== JSON.stringify(this.options)) {
       await this.saveData(this.options);
     }
   }

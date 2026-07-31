@@ -6,36 +6,26 @@ import { generateId } from "../utils/id";
 
 export { generateId };
 
-const HABIT_TRACKER_KEY = "habitTracker";
-
-// Cache the full plugin data to avoid re-reading on every save
-let cachedRawData: Record<string, unknown> | null = null;
-let syncEnabled = false;
-
-export function setSyncEnabled(enabled: boolean): void {
-  syncEnabled = enabled;
-}
-
 export async function loadHabitData(
   plugin: CalendarPlugin
 ): Promise<IHabitTrackerData> {
-  if (syncEnabled) {
-    const moduleData = await loadModuleData(plugin.app, "habitTracker");
-    if (moduleData && Object.keys(moduleData).length > 0) {
-      return moduleData as unknown as IHabitTrackerData;
-    }
-    return {
-      habits: [],
-      habitLogs: [],
-      version: HABIT_TRACKER_DATA_VERSION,
-    };
+  // 1. Always try vault files first (primary storage)
+  const moduleData = await loadModuleData(plugin.app, "habitTracker");
+  if (moduleData && Object.keys(moduleData).length > 0) {
+    const data = moduleData as unknown as IHabitTrackerData;
+    console.log(`[Habit] vault: ${data.habits?.length ?? 0} habits`);
+    return data;
   }
+  console.log(`[Habit] vault empty, trying data.json...`);
 
-  const raw = await plugin.loadData();
-  cachedRawData = raw || {};
-  if (raw && raw[HABIT_TRACKER_KEY]) {
-    return raw[HABIT_TRACKER_KEY] as IHabitTrackerData;
+  // 2. Fallback: try plugin data.json (legacy format)
+  const raw = await plugin.loadDataSafe();
+  if (raw && raw["habitTracker"]) {
+    const data = raw["habitTracker"] as IHabitTrackerData;
+    console.log(`[Habit] data.json: ${data.habits?.length ?? 0} habits`);
+    return data;
   }
+  console.log(`[Habit] NO DATA`);
   return {
     habits: [],
     habitLogs: [],
@@ -47,12 +37,6 @@ export async function saveHabitData(
   plugin: CalendarPlugin,
   data: IHabitTrackerData
 ): Promise<void> {
-  if (syncEnabled) {
-    await saveModuleData(plugin.app, "habitTracker", data as unknown as Record<string, unknown>);
-    return;
-  }
-
-  const raw = cachedRawData || (await plugin.loadData()) || {};
-  cachedRawData = { ...raw, [HABIT_TRACKER_KEY]: data };
-  await plugin.saveData(cachedRawData);
+  // Always save to vault files (primary storage)
+  await saveModuleData(plugin.app, "habitTracker", data as unknown as Record<string, unknown>);
 }

@@ -1,4 +1,5 @@
-import { App, PluginSettingTab, Setting, TFolder, requestUrl } from "obsidian";
+import { App, PluginSettingTab, Setting, TFolder, TextComponent, requestUrl } from "obsidian";
+import { generateId } from "./utils/id";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 import type { ILocaleOverride } from "obsidian-calendar-ui";
 import { get } from "svelte/store";
@@ -237,6 +238,7 @@ export function appHasPeriodicNotesPluginLoaded(): boolean {
 export class CalendarSettingsTab extends PluginSettingTab {
   private plugin: CalendarPlugin;
   private activeTab = "general";
+  private ntfyTopicText: TextComponent | null = null;
 
   constructor(app: App, plugin: CalendarPlugin) {
     super(app, plugin);
@@ -959,7 +961,14 @@ priority: medium
       .addToggle((toggle) => {
         toggle.setValue(this.plugin.options.ntfyEnabled);
         toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ ntfyEnabled: value });
+          // Auto-generate UUID topic on first enable if empty
+          if (value && !this.plugin.options.ntfyTopic) {
+            const uuid = generateId();
+            await this.plugin.writeOptions({ ntfyEnabled: value, ntfyTopic: uuid });
+            this.ntfyTopicText?.setValue(uuid);
+          } else {
+            await this.plugin.writeOptions({ ntfyEnabled: value });
+          }
           this.syncNotificationSettingsToVault();
           this.plugin.notificationService?.restart();
         });
@@ -969,8 +978,9 @@ priority: medium
       .setName("Topic для ntfy.sh")
       .setDesc("Имя топика для получения уведомлений в приложении ntfy")
       .addText((text) => {
+        this.ntfyTopicText = text;
         text
-          .setPlaceholder("Calendar_Remastered")
+          .setPlaceholder("a7f9b2c4-8e1d-4f3a-9c5b-2d6e8f0a1b3c")
           .setValue(this.plugin.options.ntfyTopic)
           .onChange(async (value) => {
             await this.plugin.writeOptions({ ntfyTopic: value });

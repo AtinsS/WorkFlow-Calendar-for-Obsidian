@@ -8,41 +8,32 @@ export { generateId };
 
 const TASK_TRACKER_KEY = "taskTracker";
 
-// Cache the full plugin data to avoid re-reading on every save
-let cachedRawData: Record<string, unknown> | null = null;
-let syncEnabled = false;
-
-export function setSyncEnabled(enabled: boolean): void {
-  if (syncEnabled !== enabled) {
-    cachedRawData = null;
-  }
-  syncEnabled = enabled;
-}
-
 export async function loadTaskData(
   plugin: CalendarPlugin
 ): Promise<ITaskTrackerData> {
-  if (syncEnabled) {
-    const moduleData = await loadModuleData(plugin.app, "taskTracker");
-    if (moduleData && Object.keys(moduleData).length > 0) {
-      const data = moduleData as unknown as ITaskTrackerData;
-      if (data.version < TASK_TRACKER_DATA_VERSION) {
-        return migrateData(data);
-      }
-      return data;
-    }
-    return { tasks: [], projects: [], timeLogs: [], version: TASK_TRACKER_DATA_VERSION };
-  }
-
-  const raw = await plugin.loadData();
-  cachedRawData = raw || {};
-  if (raw && raw[TASK_TRACKER_KEY]) {
-    const data = raw[TASK_TRACKER_KEY] as ITaskTrackerData;
+  // 1. Always try vault files first (they work reliably across Obsidian versions)
+  const moduleData = await loadModuleData(plugin.app, "taskTracker");
+  if (moduleData && Object.keys(moduleData).length > 0) {
+    const data = moduleData as unknown as ITaskTrackerData;
+    console.log(`[Task] vault: ${data.tasks?.length ?? 0} tasks`);
     if (data.version < TASK_TRACKER_DATA_VERSION) {
       return migrateData(data);
     }
     return data;
   }
+  console.log(`[Task] vault empty, trying data.json...`);
+
+  // 2. Fallback: try plugin data.json (legacy format)
+  const raw = await plugin.loadDataSafe();
+  if (raw && raw[TASK_TRACKER_KEY]) {
+    const data = raw[TASK_TRACKER_KEY] as ITaskTrackerData;
+    console.log(`[Task] data.json: ${data.tasks?.length ?? 0} tasks`);
+    if (data.version < TASK_TRACKER_DATA_VERSION) {
+      return migrateData(data);
+    }
+    return data;
+  }
+  console.log(`[Task] NO DATA`);
   return { tasks: [], projects: [], timeLogs: [], version: TASK_TRACKER_DATA_VERSION };
 }
 
@@ -50,14 +41,8 @@ export async function saveTaskData(
   plugin: CalendarPlugin,
   data: ITaskTrackerData
 ): Promise<void> {
-  if (syncEnabled) {
-    await saveModuleData(plugin.app, "taskTracker", data as unknown as Record<string, unknown>);
-    return;
-  }
-
-  const raw = cachedRawData || (await plugin.loadData()) || {};
-  cachedRawData = { ...raw, [TASK_TRACKER_KEY]: data };
-  await plugin.saveData(cachedRawData);
+  // Always save to vault files (primary storage across Obsidian versions)
+  await saveModuleData(plugin.app, "taskTracker", data as unknown as Record<string, unknown>);
 }
 
 function migrateData(data: ITaskTrackerData): ITaskTrackerData {

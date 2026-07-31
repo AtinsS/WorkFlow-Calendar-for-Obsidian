@@ -117,6 +117,25 @@
     ? monthData.monthlyIncome - mainTotal - goalsTotal
     : 0;
 
+  // Recalculate savings amounts from percentages when balance changes
+  // (e.g. after duplicating from previous month or when income source updates)
+  let lastCalcBalance = -1;
+  $: monthKey, (lastCalcBalance = -1);
+  $: if (monthData && balance > 0 && balance !== lastCalcBalance) {
+    const needsRecalc = monthData.savingsCategories.some(
+      (c) => c.percent > 0 && c.amount === 0
+    );
+    if (needsRecalc) {
+      lastCalcBalance = balance;
+      const updated = monthData.savingsCategories.map((c) =>
+        c.percent > 0 && c.amount === 0
+          ? { ...c, amount: Math.round((balance * c.percent) / 100) }
+          : c
+      );
+      updateMonthData(monthKey, { savingsCategories: updated });
+    }
+  }
+
   // Previous month data for deltas
   $: prevMonthData = (() => {
     const d = new Date(displayYear, displayMonth - 2, 1);

@@ -15,6 +15,56 @@
   let weather: DayWeather | null = null;
   let unsubTasks: (() => void) | null = null;
 
+  interface TaskItem {
+    title: string;
+    status: string;
+  }
+  let todayTaskList: TaskItem[] = [];
+  let inProgressTaskList: TaskItem[] = [];
+
+  let activeTooltip: HTMLDivElement | null = null;
+
+  function showTooltip(target: EventTarget | null, title: string, rows: { status: string; name: string }[]) {
+    removeTooltip();
+    const el = target as HTMLElement;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const tooltip = document.createElement("div");
+    tooltip.className = "dtw-tooltip";
+
+    let html = `<div class="dtw-tooltip-title">${title}</div>`;
+    for (const r of rows) {
+      const statusClass = r.status === "done" ? " done" : r.status === "progress" ? " progress" : "";
+      const nameClass = r.status === "done" ? " done-name" : "";
+      const icon = r.status === "done" ? "✓" : r.status === "progress" ? "▶" : "○";
+      html += `<div class="dtw-tooltip-row"><span class="dtw-tooltip-status${statusClass}">${icon}</span><span class="dtw-tooltip-name${nameClass}">${r.name}</span></div>`;
+    }
+    tooltip.innerHTML = html;
+
+    document.body.appendChild(tooltip);
+    const tooltipWidth = tooltip.offsetWidth || 260;
+    let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tooltipWidth - 8));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${rect.bottom + 4}px`;
+
+    requestAnimationFrame(() => {
+      const cr = tooltip.getBoundingClientRect();
+      if (cr.bottom > window.innerHeight) {
+        tooltip.style.top = `${rect.top - cr.height - 4}px`;
+      }
+    });
+
+    activeTooltip = tooltip;
+  }
+
+  function removeTooltip() {
+    if (activeTooltip) {
+      activeTooltip.remove();
+      activeTooltip = null;
+    }
+  }
+
   $: dateStr = now.toLocaleDateString("ru-RU", {
     weekday: "long",
     day: "numeric",
@@ -33,6 +83,10 @@
     totalToday = todayTasks.length;
     completedToday = todayTasks.filter((t) => t.status === "done").length;
     inProgressCount = all.filter((t) => t.status === "progress").length;
+    todayTaskList = todayTasks.map((t) => ({ title: t.title, status: t.status }));
+    inProgressTaskList = all
+      .filter((t) => t.status === "progress")
+      .map((t) => ({ title: t.title, status: t.status }));
   }
 
   async function loadWeather() {
@@ -61,6 +115,7 @@
   onDestroy(() => {
     if (timer) clearInterval(timer);
     unsubTasks?.();
+    removeTooltip();
   });
 </script>
 
@@ -83,14 +138,28 @@
   {/if}
   {#if totalToday > 0}
     <span class="dtw-sep"></span>
-    <span class="dtw-item">
+    <span
+      class="dtw-item dtw-hoverable"
+      on:mouseenter={(e) => {
+        if (todayTaskList.length > 0)
+          showTooltip(e.currentTarget, "Задачи на сегодня", todayTaskList.map(t => ({ status: t.status, name: t.title })));
+      }}
+      on:mouseleave={removeTooltip}
+    >
       <span class="dtw-icon">✅</span>
       <span>Задачи: {completedToday} / {totalToday}</span>
     </span>
   {/if}
   {#if inProgressCount > 0}
     <span class="dtw-sep"></span>
-    <span class="dtw-item">
+    <span
+      class="dtw-item dtw-hoverable"
+      on:mouseenter={(e) => {
+        if (inProgressTaskList.length > 0)
+          showTooltip(e.currentTarget, "В работе", inProgressTaskList.map(t => ({ status: t.status, name: t.title })));
+      }}
+      on:mouseleave={removeTooltip}
+    >
       <span class="dtw-icon">▶️</span>
       <span>В работе: {inProgressCount}</span>
     </span>
@@ -131,6 +200,17 @@
     height: 16px;
     background: var(--background-modifier-border);
     flex-shrink: 0;
+  }
+
+  .dtw-hoverable {
+    position: relative;
+    cursor: default;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+  }
+
+  .dtw-hoverable:hover {
+    background: var(--background-modifier-hover);
   }
 
   @media (max-width: 600px) {

@@ -996,6 +996,14 @@ export default class CalendarView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    // Clean up any previous content (prevents duplicates on re-open / hot-reload)
+    this.contentEl.empty();
+
+    // Destroy stale Svelte components from prior open
+    if (this.calendar) { this.calendar.$destroy(); this.calendar = null; }
+    if (this.taskPanel) { this.taskPanel.$destroy(); this.taskPanel = null; }
+    if (this.habitPanel) { this.habitPanel.$destroy(); this.habitPanel = null; }
+
     // Initialize selected date with today
     selectedDate.set(getDateUID(moment(), "day"));
 

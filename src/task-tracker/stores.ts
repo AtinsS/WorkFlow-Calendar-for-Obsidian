@@ -12,6 +12,7 @@ import { settings } from "../ui/stores";
 
 let pluginInstance: CalendarPlugin = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+let loaded = false;
 
 const DEFAULT_AUTO_CLEANUP_THRESHOLD = 180;
 
@@ -69,6 +70,7 @@ export const taskFilter = writable<{
 export const timeLogs = writable<TimeLog[]>([]);
 
 function debouncedSave(): void {
+  if (!loaded) return;
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
@@ -86,11 +88,11 @@ function debouncedSave(): void {
 }
 
 export function immediateSave(): void {
+  if (!loaded || !pluginInstance) return;
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
   }
-  if (!pluginInstance) return;
   const data: ITaskTrackerData = {
     tasks: get(tasks),
     projects: get(projects),
@@ -100,13 +102,21 @@ export function immediateSave(): void {
   saveTaskData(pluginInstance, data);
 }
 
-export function initTaskStores(plugin: CalendarPlugin): void {
+export async function initTaskStores(plugin: CalendarPlugin): Promise<void> {
   pluginInstance = plugin;
-  loadTaskData(plugin).then((data) => {
+
+  async function doLoad(): Promise<void> {
+    const data = await loadTaskData(plugin);
     tasks.set(data.tasks);
     projects.set(data.projects);
     timeLogs.set(data.timeLogs || []);
-    autoCleanupCompleted();
+    loaded = true;
+
+    // Only run cleanup if we actually loaded data (prevents overwriting vault with empty arrays
+    // if vault wasn't ready yet during load)
+    if (data.tasks.length > 0) {
+      autoCleanupCompleted();
+    }
 
     // Auto-resume timers for tasks that were in "progress" when Obsidian closed
     const inProgress = data.tasks.filter(
@@ -118,7 +128,17 @@ export function initTaskStores(plugin: CalendarPlugin): void {
 
     // Генерируем повторяющиеся задачи до конца месяца
     setTimeout(() => generateAllMonthlyRecurringTasks(), 100);
-  });
+  }
+
+  await doLoad();
+
+  // Retry after 2s if initial load returned empty (vault cache may not have been ready)
+  setTimeout(() => {
+    if (get(tasks).length === 0) {
+      loaded = false;
+      doLoad();
+    }
+  }, 2000);
 }
 
 export function reloadTaskStores(plugin: CalendarPlugin): void {
@@ -126,7 +146,9 @@ export function reloadTaskStores(plugin: CalendarPlugin): void {
     tasks.set(data.tasks);
     projects.set(data.projects);
     timeLogs.set(data.timeLogs || []);
-    autoCleanupCompleted();
+    if (data.tasks.length > 0) {
+      autoCleanupCompleted();
+    }
 
     // Auto-resume timers for tasks in "progress" that don't have an active timer yet
     const inProgress = data.tasks.filter(

@@ -254,6 +254,12 @@
     opacity: 1;
   }
 
+  @media (max-width: 768px) {
+    .dashboard-card__actions {
+      opacity: 1;
+    }
+  }
+
   .dash-btn {
     cursor: pointer;
     border: none;
@@ -293,6 +299,12 @@
 
   .dashboard-card__item:hover .dash-btn--sm {
     opacity: 1;
+  }
+
+  @media (max-width: 768px) {
+    .dash-btn--sm {
+      opacity: 0.6;
+    }
   }
 
   .dash-link-label {
@@ -448,5 +460,39 @@
 
   .dash-btn--save:hover {
     opacity: 0.9;
+  }
+
+  @media (max-width: 480px) {
+    .dash-modal {
+      min-width: 0;
+      width: calc(100vw - 32px);
+      padding: 18px;
+    }
+
+    .dash-modal__input {
+      padding: 10px 12px;
+      font-size: 16px;
+    }
+
+    .dash-modal__input-row {
+      flex-direction: column;
+    }
+
+    .dash-btn--browse {
+      align-self: flex-end;
+    }
+
+    .dashboard-card__links {
+      gap: 6px;
+    }
+
+    .dashboard-card__item {
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+
+    .dashboard-card--add {
+      min-height: 120px;
+    }
   }
 </style>

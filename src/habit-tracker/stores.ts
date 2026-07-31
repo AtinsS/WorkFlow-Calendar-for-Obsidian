@@ -10,6 +10,7 @@ import { settings } from "../ui/stores";
 
 let pluginInstance: CalendarPlugin = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+let loaded = false;
 
 export const habits = writable<IHabit[]>([]);
 export const habitLogs = writable<IHabitLog[]>([]);
@@ -40,6 +41,7 @@ function cleanupOldHabitLogs(): void {
 }
 
 function debouncedSave(): void {
+  if (!loaded) return;
   if (saveTimeout) {
     clearTimeout(saveTimeout);
   }
@@ -56,11 +58,11 @@ function debouncedSave(): void {
 }
 
 export function immediateSave(): void {
+  if (!loaded || !pluginInstance) return;
   if (saveTimeout) {
     clearTimeout(saveTimeout);
     saveTimeout = null;
   }
-  if (!pluginInstance) return;
   const data: IHabitTrackerData = {
     habits: get(habits),
     habitLogs: get(habitLogs),
@@ -69,14 +71,29 @@ export function immediateSave(): void {
   saveHabitData(pluginInstance, data);
 }
 
-export function initHabitStores(plugin: CalendarPlugin): void {
+export async function initHabitStores(plugin: CalendarPlugin): Promise<void> {
   pluginInstance = plugin;
-  loadHabitData(plugin).then((data) => {
+
+  async function doLoad(): Promise<void> {
+    const data = await loadHabitData(plugin);
     habits.set(data.habits);
     habitLogs.set(data.habitLogs);
     rebuildLogsCache();
-    cleanupOldHabitLogs();
-  });
+    loaded = true;
+    if (data.habits.length > 0) {
+      cleanupOldHabitLogs();
+    }
+  }
+
+  await doLoad();
+
+  // Retry after 2s if initial load returned empty (vault cache may not have been ready)
+  setTimeout(() => {
+    if (get(habits).length === 0) {
+      loaded = false;
+      doLoad();
+    }
+  }, 2000);
 }
 
 export function reloadHabitStores(plugin: CalendarPlugin): void {

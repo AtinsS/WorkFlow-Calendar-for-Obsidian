@@ -5986,6 +5986,71 @@ content: attr(data-task-count);
   box-sizing: border-box;
 }
 
+/* DTW tooltip — rendered in document.body via JS */
+.dtw-tooltip {
+  position: fixed;
+  min-width: 200px;
+  max-width: 320px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  padding: 8px 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  z-index: 10000;
+  animation: dtwTooltipIn 0.15s ease;
+}
+@keyframes dtwTooltipIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.dtw-tooltip-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 4px 14px 8px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 4px;
+}
+.dtw-tooltip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 14px;
+  font-size: 12px;
+  color: var(--text-normal);
+  transition: background 0.1s ease;
+}
+.dtw-tooltip-row:hover {
+  background: var(--background-modifier-hover);
+}
+.dtw-tooltip-status {
+  width: 16px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.dtw-tooltip-status.done {
+  color: var(--mcp-success, rgba(80, 200, 160, 0.85));
+}
+.dtw-tooltip-status.progress {
+  color: var(--mcp-accent, rgba(95, 153, 225, 0.55));
+}
+.dtw-tooltip-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dtw-tooltip-name.done-name {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
 /* ============================================
    DASHBOARD — Velocity Style
    ============================================ */

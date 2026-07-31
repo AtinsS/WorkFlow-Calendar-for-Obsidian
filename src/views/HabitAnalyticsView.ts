@@ -28,6 +28,7 @@ export default class HabitAnalyticsView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    if (this.svelteComponent) { this.svelteComponent.$destroy(); this.svelteComponent = null; }
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("habit-analytics-view-container");

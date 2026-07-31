@@ -29,6 +29,12 @@ export default class ScheduleView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    // Destroy stale component if onOpen is called again (hot-reload / workspace restore)
+    if (this.svelteComponent) {
+      this.svelteComponent.$destroy();
+      this.svelteComponent = null;
+    }
+
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("schedule-view-container");

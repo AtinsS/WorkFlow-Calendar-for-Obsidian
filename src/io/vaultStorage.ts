@@ -78,17 +78,55 @@ function enqueueModuleWrite(moduleName: string, fn: () => Promise<void>): Promis
 // --- Read / Write primitives ---
 
 async function readFileContent(app: App, path: string): Promise<string | null> {
+  // Try vault API first (works when file cache is populated)
   const file = app.vault.getAbstractFileByPath(path);
-  if (!isTFile(file)) return null;
-  return app.vault.read(file);
+  if (isTFile(file)) {
+    const c = await app.vault.read(file);
+    return c;
+  }
+  // Fallback: direct adapter read (bypasses vault cache — needed for Obsidian ≥1.13
+  // where file cache may not be populated when plugin loads)
+  try {
+    const ex = await app.vault.adapter.exists(path);
+    if (ex) {
+      const c = await app.vault.adapter.read(path);
+      return c;
+    }
+  } catch (e) {
+    console.error(`[VS] readFileContent(${path}) adapter error:`, e);
+  }
+  return null;
 }
 
 async function writeFileContent(app: App, path: string, content: string): Promise<void> {
+  // Try vault API first
   const file = app.vault.getAbstractFileByPath(path);
   if (isTFile(file)) {
     await app.vault.modify(file, content);
-  } else {
+    return;
+  }
+
+  // Ensure parent directory exists
+  const dir = path.substring(0, path.lastIndexOf("/"));
+  if (dir) {
+    try {
+      await app.vault.createFolder(dir);
+    } catch {
+      // Folder already exists on disk or vault cache not populated (Obsidian ≥1.13)
+    }
+  }
+
+  try {
     await app.vault.create(path, content);
+  } catch (e) {
+    // Race condition or "File already exists" — try vault modify, then adapter fallback
+    const existing = app.vault.getAbstractFileByPath(path);
+    if (isTFile(existing)) {
+      await app.vault.modify(existing, content);
+    } else {
+      // Direct adapter write (always overwrites, works even if vault cache is stale)
+      await app.vault.adapter.write(path, content);
+    }
   }
 }
 
@@ -105,7 +143,9 @@ export async function loadModuleData(
   const primaryPath = moduleFilePath(moduleName);
   const backupPath = backupFilePath(moduleName);
 
+  console.log(`[VS] loadModule(${moduleName}): start`);
   const data = await tryLoadJson(app, primaryPath);
+  console.log(`[VS] loadModule(${moduleName}): primary=${data ? Object.keys(data).length + 'k' : 'null'}`);
   if (data !== null) {
     // Verify checksum if meta exists
     const meta = await loadMeta(app);
@@ -210,22 +250,30 @@ let migrationDone = false;
 export async function migrateFromSingleFile(app: App): Promise<void> {
   if (migrationDone) return;
 
+  // Check legacy file — use adapter.exists as fallback for Obsidian ≥1.13
+  // where vault cache may not be populated yet
   const legacyFile = app.vault.getAbstractFileByPath(VAULT_DATA_FILE);
-  if (!isTFile(legacyFile)) {
+  const legacyExists = isTFile(legacyFile) || await app.vault.adapter.exists(VAULT_DATA_FILE);
+  if (!legacyExists) {
     migrationDone = true;
     return;
   }
 
   // Check if new format already has data (partial migration)
   const dir = app.vault.getAbstractFileByPath(VAULT_DATA_DIR);
-  if (isTFile(dir) || (!isTFile(dir) && app.vault.getAbstractFileByPath(moduleFilePath("taskTracker")))) {
+  const dirExists = !!dir || await app.vault.adapter.exists(VAULT_DATA_DIR);
+  const moduleExists = !!app.vault.getAbstractFileByPath(moduleFilePath("taskTracker"))
+    || await app.vault.adapter.exists(moduleFilePath("taskTracker"));
+  if (dirExists || moduleExists) {
     // Directory or at least one module file exists — skip migration
     migrationDone = true;
     return;
   }
 
   try {
-    const content = await app.vault.read(legacyFile);
+    const content = isTFile(legacyFile)
+      ? await app.vault.read(legacyFile)
+      : await app.vault.adapter.read(VAULT_DATA_FILE);
     const data = JSON.parse(content) as VaultData;
 
     // Map legacy keys to module file names
@@ -247,7 +295,14 @@ export async function migrateFromSingleFile(app: App): Promise<void> {
 
     // Rename legacy file to .migrated (keep for safety)
     const migratedPath = `${VAULT_DATA_FILE}.migrated`;
-    await app.vault.rename(legacyFile, migratedPath);
+    if (isTFile(legacyFile)) {
+      await app.vault.rename(legacyFile, migratedPath);
+    } else {
+      // File not in vault cache — use adapter to rename
+      const content = await app.vault.adapter.read(VAULT_DATA_FILE);
+      await app.vault.adapter.write(migratedPath, content);
+      await app.vault.adapter.remove(VAULT_DATA_FILE);
+    }
     console.log(`[vaultStorage] Migrated ${VAULT_DATA_FILE} → ${migratedPath}`);
   } catch (e) {
     console.error("[vaultStorage] Migration failed:", e);
@@ -256,16 +311,51 @@ export async function migrateFromSingleFile(app: App): Promise<void> {
   migrationDone = true;
 }
 
+/**
+ * One-time migration: move per-module JSON files from vault root to calendar-data/.
+ * Handles the case where a previous version stored taskTracker.json / habitTracker.json
+ * at the vault root instead of inside calendar-data/.
+ */
+export async function migrateRootModuleFiles(app: App): Promise<void> {
+  const rootModules: ModuleName[] = ["taskTracker", "habitTracker"];
+
+  for (const moduleName of rootModules) {
+    const rootPath = `${moduleName}.json`;
+    const targetPath = moduleFilePath(moduleName);
+
+    // Skip if target already exists in calendar-data/
+    const targetExists = !!app.vault.getAbstractFileByPath(targetPath)
+      || await app.vault.adapter.exists(targetPath);
+    if (targetExists) continue;
+
+    // Check if root-level file exists
+    const rootFile = app.vault.getAbstractFileByPath(rootPath);
+    const rootExists = isTFile(rootFile) || await app.vault.adapter.exists(rootPath);
+    if (!rootExists) continue;
+
+    try {
+      const content = isTFile(rootFile)
+        ? await app.vault.read(rootFile)
+        : await app.vault.adapter.read(rootPath);
+
+      if (content) {
+        await writeFileContent(app, targetPath, content);
+        const data = JSON.parse(content);
+        await updateMeta(app, moduleName, simpleHash(JSON.stringify(data, null, 2)));
+        console.log(`[vaultStorage] Migrated ${rootPath} → ${targetPath}`);
+      }
+    } catch (e) {
+      console.error(`[vaultStorage] Failed to migrate ${rootPath}:`, e);
+    }
+  }
+}
+
 // --- Legacy single-file API (kept for backward compat during migration) ---
 
 export async function loadVaultData(app: App): Promise<VaultData> {
   try {
-    const file = app.vault.getAbstractFileByPath(VAULT_DATA_FILE);
-    if (!isTFile(file)) {
-      return {};
-    }
-
-    const content = await app.vault.read(file);
+    const content = await readFileContent(app, VAULT_DATA_FILE);
+    if (content === null || content === "") return {};
     return JSON.parse(content) as VaultData;
   } catch {
     return {};
@@ -277,13 +367,7 @@ export async function saveVaultData(
   data: VaultData
 ): Promise<void> {
   const content = JSON.stringify(data, null, 2);
-  const file = app.vault.getAbstractFileByPath(VAULT_DATA_FILE);
-
-  if (isTFile(file)) {
-    await app.vault.modify(file, content);
-  } else {
-    await app.vault.create(VAULT_DATA_FILE, content);
-  }
+  await writeFileContent(app, VAULT_DATA_FILE, content);
 }
 
 /**

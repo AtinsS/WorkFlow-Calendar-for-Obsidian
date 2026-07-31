@@ -1266,17 +1266,39 @@
 
   /* ── Mobile ─────────────────────────────────────────── */
   @media (max-width: 768px) {
+    .financial-analytics {
+      padding: 16px 10px 24px;
+    }
+
     .fa-summary {
       grid-template-columns: 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .fa-summary-card {
+      padding: 14px 12px;
+    }
+
+    .fa-summary-value {
+      font-size: 18px;
     }
 
     .fa-add-form {
       grid-template-columns: 1fr;
+      gap: 8px;
+      padding: 12px;
+    }
+
+    .fa-edit-fields {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .fa-task-item {
       flex-wrap: wrap;
       padding-left: 16px;
+      gap: 8px;
     }
 
     .fa-task-payment {
@@ -1285,10 +1307,9 @@
       margin-top: 8px;
       padding-top: 8px;
       border-top: 1px solid var(--mcp-glass-border);
-    }
-
-    .fa-summary-value {
-      font-size: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
 
     .fa-task-earning {
@@ -1297,6 +1318,83 @@
 
     .fa-project-header {
       flex-wrap: wrap;
+      gap: 6px;
+      padding: 10px 12px;
+    }
+
+    .fa-section {
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .fa-section-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .fa-tabs {
+      width: 100%;
+    }
+
+    .fa-tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 6px;
+      font-size: 11px;
+    }
+
+    .fa-month-selector {
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .fa-month-select {
+      min-width: 130px;
+      font-size: 12px;
+    }
+
+    .fa-income-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .fa-income-right {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .fa-add-category-row {
+      flex-direction: column;
+    }
+
+    .fa-category-filter {
+      gap: 4px;
+    }
+
+    .fa-cat-btn {
+      padding: 6px 10px;
+      font-size: 10px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .fa-edit-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .fa-summary-icon {
+      font-size: 18px;
+    }
+
+    .fa-summary-value {
+      font-size: 16px;
+    }
+
+    .fa-header h2 {
+      font-size: 17px;
     }
   }
 </style>
