@@ -982,11 +982,14 @@
       dropDebounceTimer = null;
       skipNextRefetch = true;
       try {
-        updateTask(task.id, {
+        const taskChanges: Record<string, any> = {
           dateUID: newDateUID,
-          scheduledTime: newTime,
-          ...(allDay ? { estimatedTime: undefined } : {}),
-        });
+          scheduledTime: newTime ?? null,
+        };
+        if (allDay) {
+          taskChanges.estimatedTime = null;
+        }
+        updateTask(task.id, taskChanges);
         const updatedTask = get(tasks).find((t) => t.id === task.id);
         if (updatedTask) syncTaskToNote(updatedTask, plugin.app);
       } catch (e) {
@@ -1079,6 +1082,7 @@
     const initialTime = isTimeView ? timeStr : undefined;
 
     suppressRefetch = true;
+    const noTimeMode = timeStr === undefined;
     new TaskModal(
       plugin.app,
       async (data) => {
@@ -1095,8 +1099,8 @@
           tags: [],
           sortOrder: 0,
           recurrence: data.recurrence,
-          estimatedTime: data.estimatedTime || prefillEstimatedTime,
-          scheduledTime: data.scheduledTime || initialTime,
+          estimatedTime: noTimeMode ? null : (data.estimatedTime || prefillEstimatedTime),
+          scheduledTime: noTimeMode ? null : (data.scheduledTime || initialTime),
         });
 
         // Всегда создаём Task заметку в Tasks/ если включена синхронизация
@@ -1123,7 +1127,7 @@
       undefined,
       initialDate,
       initialTime,
-      prefillEstimatedTime,
+      noTimeMode ? 0 : prefillEstimatedTime,
     ).open();
     // If modal is closed without submitting, restore refetch
     setTimeout(() => {

@@ -109,7 +109,7 @@ export class TaskModal extends Modal {
         this.dateValue = this.extractDateValue(this.dateUID);
       }
       if (initialTime) this.scheduledTime = initialTime;
-      if (initialEstimatedTime && initialEstimatedTime > 0) {
+      if (initialEstimatedTime !== undefined) {
         this.estimatedTimeHours = String(Math.floor(initialEstimatedTime / 60));
         this.estimatedTimeMinutes = String(initialEstimatedTime % 60);
       }
