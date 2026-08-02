@@ -29,6 +29,7 @@ export interface ITask {
   totalWorkTime?: number;
   estimatedTime?: number;
   scheduledTime?: string;
+  endTime?: string; // время окончания задачи (формат: "HH:MM")
   isRecurringInstance?: boolean;
   parentTaskId?: string;
   isWorkTask?: boolean;
@@ -39,6 +40,7 @@ export interface ITask {
   deadline?: DateUID; // deadline date (format: "day-YYYY-MM-DD")
   deadlineTime?: string; // deadline time (format: "HH:MM")
   isNoteTask?: boolean; // true = задача-заметка (файл создаётся/архивируется)
+  singularityId?: string; // SingularityApp task ID for sync linkage
 }
 
 export interface IProject {
@@ -62,16 +64,26 @@ export interface TimeLog {
   date: string;
 }
 
+export interface IChecklistItem {
+  id: string;
+  taskId: string; // parent task ID
+  title: string;
+  checked: boolean;
+  sortOrder: number;
+  updatedAt?: number; // epoch ms — last local modification
+}
+
 export interface ITaskTrackerData {
   tasks: ITask[];
   projects: IProject[];
   timeLogs: TimeLog[];
+  checklists: IChecklistItem[];
   version: number;
 }
 
 export type DateUID = string;
 
-export const TASK_TRACKER_DATA_VERSION = 6;
+export const TASK_TRACKER_DATA_VERSION = 7;
 export const MAX_TIME_LOGS = 180;
 
 export const DEFAULT_PROJECT_COLORS = [

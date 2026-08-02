@@ -2,7 +2,7 @@
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
   import type { App } from "obsidian";
   import type { ITask, TaskStatus } from "./types";
-  import { updateTask, updateTaskStatus, removeTask, resetTaskTimer, projects, activeTab, calculateTaskEarnings, tasks } from "./stores";
+  import { updateTask, updateTaskStatus, removeTask, resetTaskTimer, projects, activeTab, calculateTaskEarnings, tasks, checklists, toggleChecklistItem, addChecklistItem, removeChecklistItem } from "./stores";
   import { get } from "svelte/store";
   import { timerTick, getActiveTimer, formatDuration, formatEstimate } from "./TimerManager";
   import { TaskModal } from "./TaskModal";
@@ -12,6 +12,30 @@
   export let appInstance: App;
 
   const dispatch = createEventDispatcher();
+
+  // Checklist
+  $: taskChecklistItems = $checklists
+    .filter((c) => c.taskId === task.id)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+  $: checklistDone = taskChecklistItems.filter((c) => c.checked).length;
+  $: checklistTotal = taskChecklistItems.length;
+  let showChecklist = false;
+  let newChecklistTitle = "";
+
+  function handleToggleChecklist(id: string) {
+    toggleChecklistItem(id);
+  }
+
+  function handleAddChecklistItem() {
+    const title = newChecklistTitle.trim();
+    if (!title) return;
+    addChecklistItem(task.id, title);
+    newChecklistTitle = "";
+  }
+
+  function handleRemoveChecklistItem(id: string) {
+    removeChecklistItem(id);
+  }
 
   $: project = $projects.find((p) => p.id === task.projectId);
   $: projectColor = project?.color || "var(--text-muted)";
@@ -511,6 +535,49 @@
         {/if}
       </span>
     {/if}
+
+    <button
+      class="checklist-toggle"
+      on:click|stopPropagation={() => showChecklist = !showChecklist}
+      title="Чек-лист"
+    >
+      {#if checklistTotal > 0}
+        ☑ {checklistDone}/{checklistTotal}
+      {:else}
+        ☑ +
+      {/if}
+    </button>
   </div>
+
+  {#if showChecklist}
+    <div class="checklist-section">
+      {#each taskChecklistItems as item (item.id)}
+        <div class="checklist-item" class:checked={item.checked}>
+          <input
+            type="checkbox"
+            checked={item.checked}
+            on:change={() => handleToggleChecklist(item.id)}
+            on:click|stopPropagation
+          />
+          <span class="checklist-title">{item.title}</span>
+          <button
+            class="checklist-remove"
+            on:click|stopPropagation={() => handleRemoveChecklistItem(item.id)}
+            title="Удалить"
+          >×</button>
+        </div>
+      {/each}
+      <div class="checklist-add">
+        <input
+          type="text"
+          placeholder="Новый пункт..."
+          bind:value={newChecklistTitle}
+          on:keydown={(e) => e.key === "Enter" && handleAddChecklistItem()}
+          on:click|stopPropagation
+        />
+        <button on:click|stopPropagation={handleAddChecklistItem}>+</button>
+      </div>
+    </div>
+  {/if}
 
 </div>

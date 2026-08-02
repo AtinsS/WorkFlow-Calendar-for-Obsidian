@@ -1101,6 +1101,7 @@
           recurrence: data.recurrence,
           estimatedTime: noTimeMode ? null : (data.estimatedTime || prefillEstimatedTime),
           scheduledTime: noTimeMode ? null : (data.scheduledTime || initialTime),
+          endTime: data.endTime || null,
         });
 
         // Всегда создаём Task заметку в Tasks/ если включена синхронизация
@@ -1127,7 +1128,6 @@
       undefined,
       initialDate,
       initialTime,
-      noTimeMode ? 0 : prefillEstimatedTime,
     ).open();
     // If modal is closed without submitting, restore refetch
     setTimeout(() => {

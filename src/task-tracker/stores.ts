@@ -4,7 +4,7 @@ import moment, { type Moment } from "moment";
 import type CalendarPlugin from "src/main";
 import { getDateUID } from "obsidian-daily-notes-interface";
 
-import type { ITask, IProject, ITaskTrackerData, TimeLog, TaskStatus, DateUID } from "./types";
+import type { ITask, IProject, ITaskTrackerData, IChecklistItem, TimeLog, TaskStatus, DateUID } from "./types";
 import { TASK_TRACKER_DATA_VERSION } from "./types";
 import { loadTaskData, saveTaskData, generateId } from "./storage";
 import { startTimer, resumeTimer, stopTimer, addTimeLog } from "./TimerManager";
@@ -68,6 +68,7 @@ export const taskFilter = writable<{
 });
 
 export const timeLogs = writable<TimeLog[]>([]);
+export const checklists = writable<IChecklistItem[]>([]);
 
 function debouncedSave(): void {
   if (!loaded) return;
@@ -79,6 +80,7 @@ function debouncedSave(): void {
       tasks: get(tasks),
       projects: get(projects),
       timeLogs: get(timeLogs),
+      checklists: get(checklists),
       version: TASK_TRACKER_DATA_VERSION,
     };
     if (pluginInstance) {
@@ -97,6 +99,7 @@ export function immediateSave(): void {
     tasks: get(tasks),
     projects: get(projects),
     timeLogs: get(timeLogs),
+    checklists: get(checklists),
     version: TASK_TRACKER_DATA_VERSION,
   };
   saveTaskData(pluginInstance, data);
@@ -110,6 +113,7 @@ export async function initTaskStores(plugin: CalendarPlugin): Promise<void> {
     tasks.set(data.tasks);
     projects.set(data.projects);
     timeLogs.set(data.timeLogs || []);
+    checklists.set(data.checklists || []);
     loaded = true;
 
     // Only run cleanup if we actually loaded data (prevents overwriting vault with empty arrays
@@ -146,6 +150,7 @@ export function reloadTaskStores(plugin: CalendarPlugin): void {
     tasks.set(data.tasks);
     projects.set(data.projects);
     timeLogs.set(data.timeLogs || []);
+    checklists.set(data.checklists || []);
     if (data.tasks.length > 0) {
       autoCleanupCompleted();
     }
@@ -460,6 +465,7 @@ export function createNextRecurringInstance(taskId: string): void {
     sortOrder: 0,
     recurrence: task.recurrence,
     scheduledTime: task.scheduledTime,
+    endTime: task.endTime,
     estimatedTime: task.estimatedTime,
     totalWorkTime: 0,
     isRecurringInstance: true,
@@ -560,6 +566,7 @@ export function generateMonthlyRecurringTasks(taskId: string): void {
         sortOrder: 0,
         recurrence: task.recurrence,
         scheduledTime: task.scheduledTime,
+        endTime: task.endTime,
         estimatedTime: task.estimatedTime,
         totalWorkTime: 0,
         isRecurringInstance: true,
@@ -759,4 +766,51 @@ export function getExpectedEarningsForMonth(year: number, month: number): number
     total += calculateExpectedTaskEarnings(task, avgTime);
   }
   return total;
+}
+
+// --- Checklist CRUD ---
+
+export function addChecklistItem(taskId: string, title: string): IChecklistItem {
+  const items = get(checklists).filter((c) => c.taskId === taskId);
+  const item: IChecklistItem = {
+    id: generateId(),
+    taskId,
+    title,
+    checked: false,
+    sortOrder: items.length,
+    updatedAt: Date.now(),
+  };
+  checklists.update((current) => [...current, item]);
+  debouncedSave();
+  return item;
+}
+
+export function updateChecklistItem(id: string, changes: Partial<IChecklistItem>): void {
+  checklists.update((current) =>
+    current.map((c) => (c.id === id ? { ...c, ...changes, updatedAt: Date.now() } : c))
+  );
+  debouncedSave();
+}
+
+export function toggleChecklistItem(id: string): void {
+  checklists.update((current) =>
+    current.map((c) => (c.id === id ? { ...c, checked: !c.checked, updatedAt: Date.now() } : c))
+  );
+  debouncedSave();
+}
+
+export function removeChecklistItem(id: string): void {
+  checklists.update((current) => current.filter((c) => c.id !== id));
+  debouncedSave();
+}
+
+export function removeChecklistForTask(taskId: string): void {
+  checklists.update((current) => current.filter((c) => c.taskId !== taskId));
+  debouncedSave();
+}
+
+export function getChecklistForTask(taskId: string): IChecklistItem[] {
+  return get(checklists)
+    .filter((c) => c.taskId === taskId)
+    .sort((a, b) => a.sortOrder - b.sortOrder);
 }

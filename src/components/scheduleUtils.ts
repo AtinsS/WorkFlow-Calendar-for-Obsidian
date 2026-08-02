@@ -127,8 +127,17 @@ export function taskToEvent(
     ? localISO(dateStr, task.scheduledTime)
     : localISO(dateStr, "00:00");
 
+  // Compute duration: prefer estimatedTime, fallback to endTime - scheduledTime, default 60min
+  let durationMin = task.estimatedTime || 60;
+  if (!task.estimatedTime && task.endTime && task.scheduledTime) {
+    const [sh, sm] = task.scheduledTime.split(":").map(Number);
+    const [eh, em] = task.endTime.split(":").map(Number);
+    const diff = (eh * 60 + em) - (sh * 60 + sm);
+    if (diff > 0) durationMin = diff;
+  }
+
   const end = hasTime
-    ? addMinutesISO(dateStr, task.scheduledTime, task.estimatedTime || 60)
+    ? addMinutesISO(dateStr, task.scheduledTime, durationMin)
     : `${dateStr}T00:00:00${getLocalTzOffset()}`;
 
   const project = projects.find((p) => p.id === task.projectId);

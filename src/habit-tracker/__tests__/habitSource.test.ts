@@ -26,7 +26,7 @@ describe("habitSource", () => {
       sortOrder: 0,
     });
 
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 100%
 
     const metadata = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")
@@ -55,8 +55,8 @@ describe("habitSource", () => {
       sortOrder: 1,
     });
 
-    toggleHabitCompletion(h1.id, "2026-07-05");
-    toggleHabitCompletion(h2.id, "2026-07-05");
+    toggleHabitCompletion(h1.id, "2026-07-05"); // 100%
+    toggleHabitCompletion(h2.id, "2026-07-05"); // 100%
 
     const metadata = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")
@@ -113,7 +113,7 @@ describe("habitSource", () => {
       sortOrder: 0,
     });
 
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 100%
 
     // First call — populates cache
     const meta1 = await habitSource.getDailyMetadata(
@@ -139,14 +139,15 @@ describe("habitSource", () => {
       sortOrder: 0,
     });
 
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 100%
     const meta1 = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")
     );
     expect(meta1.dataAttributes["data-habit-count"]).toBe("🏆");
 
-    // Toggle off
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    // Toggle off (100% → 50% → 0)
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 50%
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 0
     const meta2 = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")
     );
@@ -173,8 +174,8 @@ describe("habitSource", () => {
       sortOrder: 1,
     });
 
-    toggleHabitCompletion(h1.id, "2026-07-05");
-    toggleHabitCompletion(h2.id, "2026-07-05");
+    toggleHabitCompletion(h1.id, "2026-07-05"); // 100%
+    toggleHabitCompletion(h2.id, "2026-07-05"); // 100%
 
     const meta = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")
@@ -202,7 +203,7 @@ describe("habitSource", () => {
       sortOrder: 1,
     });
 
-    toggleHabitCompletion(h1.id, "2026-07-05");
+    toggleHabitCompletion(h1.id, "2026-07-05"); // 100%
 
     const meta = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")

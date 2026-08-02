@@ -143,36 +143,135 @@ export function toggleHabitCompletion(
   const key = `${habitId}::${date}`;
   const existing = logsByHabitDate.get(key);
 
-  if (existing) {
-    if (existing.count < targetCount) {
-      // Increment count
-      const newCount = existing.count + 1;
+  if (targetCount <= 1) {
+    // SingularityApp model: 3-state cycle — 0 → 100% → 50% → 0
+    if (!existing) {
+      // 0 → 100%
+      const log: IHabitLog = {
+        id: generateId(),
+        habitId,
+        date,
+        completed: true,
+        count: 2,
+        completedAt: Date.now(),
+      };
+      habitLogs.update((current) => [...current, log]);
+      cleanupOldHabitLogs();
+    } else if (existing.completed) {
+      // 100% → 50% (partial)
       habitLogs.update((current) =>
         current.map((l) =>
           l.id === existing.id
-            ? { ...l, count: newCount, completed: newCount >= targetCount, completedAt: Date.now() }
+            ? { ...l, completed: false, count: 1, completedAt: Date.now() }
             : l
         )
       );
     } else {
-      // Reached target — toggle off (remove)
+      // 50% → 0 (remove)
       habitLogs.update((current) => current.filter((l) => l.id !== existing.id));
     }
   } else {
-    // First completion
-    const log: IHabitLog = {
-      id: generateId(),
-      habitId,
-      date,
-      completed: targetCount <= 1,
-      count: 1,
-      completedAt: Date.now(),
-    };
-    habitLogs.update((current) => [...current, log]);
-    cleanupOldHabitLogs();
+    // Multi-target: increment until target, then toggle off
+    if (existing) {
+      if (existing.count < targetCount) {
+        const newCount = existing.count + 1;
+        habitLogs.update((current) =>
+          current.map((l) =>
+            l.id === existing.id
+              ? { ...l, count: newCount, completed: newCount >= targetCount, completedAt: Date.now() }
+              : l
+          )
+        );
+      } else {
+        habitLogs.update((current) => current.filter((l) => l.id !== existing.id));
+      }
+    } else {
+      const log: IHabitLog = {
+        id: generateId(),
+        habitId,
+        date,
+        completed: false,
+        count: 1,
+        completedAt: Date.now(),
+      };
+      habitLogs.update((current) => [...current, log]);
+      cleanupOldHabitLogs();
+    }
   }
   rebuildLogsCache();
   debouncedSave();
+}
+
+/** Set habit completion directly (used by sync). progress: 0=clear, 1=50%, 2=100% */
+export function setHabitProgress(
+  habitId: string,
+  date: string,
+  progress: number
+): void {
+  const key = `${habitId}::${date}`;
+  const existing = logsByHabitDate.get(key);
+
+  if (progress === 0) {
+    // Clear
+    if (existing) {
+      habitLogs.update((current) => current.filter((l) => l.id !== existing.id));
+    }
+  } else if (progress === 1) {
+    // 50% — count=1, not completed
+    if (existing) {
+      habitLogs.update((current) =>
+        current.map((l) =>
+          l.id === existing.id
+            ? { ...l, count: 1, completed: false, completedAt: Date.now() }
+            : l
+        )
+      );
+    } else {
+      const log: IHabitLog = {
+        id: generateId(),
+        habitId,
+        date,
+        completed: false,
+        count: 1,
+        completedAt: Date.now(),
+      };
+      habitLogs.update((current) => [...current, log]);
+      cleanupOldHabitLogs();
+    }
+  } else if (progress === 2) {
+    // 100% — completed
+    if (existing) {
+      habitLogs.update((current) =>
+        current.map((l) =>
+          l.id === existing.id
+            ? { ...l, count: 2, completed: true, completedAt: Date.now() }
+            : l
+        )
+      );
+    } else {
+      const log: IHabitLog = {
+        id: generateId(),
+        habitId,
+        date,
+        completed: true,
+        count: 2,
+        completedAt: Date.now(),
+      };
+      habitLogs.update((current) => [...current, log]);
+      cleanupOldHabitLogs();
+    }
+  }
+  rebuildLogsCache();
+  debouncedSave();
+}
+
+/** Get habit progress for a date: 0=not done, 1=50%, 2=100% */
+export function getHabitProgressOnDate(habitId: string, date: string): number {
+  const log = logsByHabitDate.get(`${habitId}::${date}`);
+  if (!log) return 0;
+  if (log.completed) return 2;
+  if (log.count >= 1) return 1;
+  return 0;
 }
 
 export function getHabitCountOnDate(habitId: string, date: string): number {

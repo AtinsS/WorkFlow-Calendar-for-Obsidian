@@ -22,7 +22,7 @@ import { customTagsSource, streakSource, wordCountSource } from "./ui/sources";
 
 import TaskPanel from "./task-tracker/TaskPanel.svelte";
 import { taskDotSource } from "./task-tracker/taskDotSource";
-import { selectedDate } from "./task-tracker/stores";
+import { tasks, selectedDate } from "./task-tracker/stores";
 
 import HabitPanel from "./habit-tracker/HabitPanel.svelte";
 import { habitSource } from "./habit-tracker/habitSource";
@@ -40,6 +40,7 @@ export default class CalendarView extends ItemView {
   private goalsContainer: HTMLElement;
   private panelsContainer: HTMLElement;
   private goalsUnsub: (() => void) | null = null;
+  private tasksUnsub: (() => void) | null = null;
   private currentMonthKey = "";
   private isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
@@ -134,6 +135,10 @@ export default class CalendarView extends ItemView {
     if (this.goalsUnsub) {
       this.goalsUnsub();
       this.goalsUnsub = null;
+    }
+    if (this.tasksUnsub) {
+      this.tasksUnsub();
+      this.tasksUnsub = null;
     }
     if (this.calendar) {
       this.calendar.$destroy();
@@ -1060,6 +1065,13 @@ export default class CalendarView extends ItemView {
         },
         sources,
       },
+    });
+
+    // Re-render calendar when tasks change (e.g. after SingularityApp sync)
+    this.tasksUnsub = tasks.subscribe(() => {
+      if (this.calendar) {
+        this.calendar.$set({});
+      }
     });
 
     if (isMainView) {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import type { IHabit } from "./types";
-  import { habitLogs, isHabitCompletedOnDate, calculateStreak, getHabitCountOnDate } from "./stores";
+  import { habitLogs, isHabitCompletedOnDate, calculateStreak, getHabitCountOnDate, getHabitProgressOnDate } from "./stores";
 
   export let habit: IHabit;
 
@@ -13,6 +13,7 @@
   let streak = 0;
   let currentCount = 0;
   let targetCount = 1;
+  let progressState = 0; // 0=not done, 1=50%, 2=100%
 
   $: _logs = $habitLogs;
   $: {
@@ -20,6 +21,7 @@
     isCompleted = isHabitCompletedOnDate(habit.id, date);
     currentCount = getHabitCountOnDate(habit.id, date);
     targetCount = habit.targetCount || 1;
+    progressState = getHabitProgressOnDate(habit.id, date);
   }
   $: {
     _logs;
@@ -69,21 +71,24 @@
   <button
     class="habit-check-btn"
     class:checked={isCompleted}
+    class:half={progressState === 1}
     class:partial={isMultiTarget && currentCount > 0 && currentCount < targetCount}
     class:full={isMultiTarget && currentCount >= targetCount}
     style="--habit-color: {habit.color}; --progress: {progress}"
     on:click={toggle}
-    aria-label={isCompleted ? "Отменить выполнение" : "Отметить выполнение"}
+    aria-label={isCompleted ? "Отменить выполнение" : progressState === 1 ? "Довести до 100%" : "Отметить выполнение"}
   >
     {#if isMultiTarget}
       <span class="habit-check-count">{currentCount}</span>
-    {:else if isCompleted}
+    {:else if progressState === 2}
       <span class="habit-check-icon">&#10003;</span>
+    {:else if progressState === 1}
+      <span class="habit-check-icon half">&#9674;</span>
     {/if}
   </button>
 
   <span class="habit-icon">{habit.icon}</span>
-  <span class="habit-title" class:completed-text={isCompleted && !isMultiTarget}>
+  <span class="habit-title" class:completed-text={isCompleted && !isMultiTarget} class:half-text={progressState === 1}>
     {habit.title}
   </span>
 
@@ -91,6 +96,8 @@
     <span class="habit-progress-text" class:done={currentCount >= targetCount}>
       {currentCount}/{targetCount}
     </span>
+  {:else if progressState === 1}
+    <span class="habit-progress-text half-label">50%</span>
   {/if}
 
   {#if streak > 0}

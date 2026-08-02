@@ -3329,6 +3329,29 @@ content: attr(data-task-count);
   box-shadow: 0 0 12px var(--habit-color);
 }
 
+.habit-check-btn.half {
+  background: conic-gradient(
+    var(--habit-color) 180deg,
+    transparent 180deg
+  );
+  border-color: var(--habit-color);
+  color: var(--habit-color);
+}
+
+.habit-check-icon.half {
+  font-size: 12px;
+}
+
+.half-text {
+  opacity: 0.7;
+}
+
+.habit-progress-text.half-label {
+  color: var(--habit-color);
+  font-size: 10px;
+  opacity: 0.8;
+}
+
 .habit-check-count {
   font-size: 10px;
   font-weight: 700;
@@ -5707,6 +5730,114 @@ content: attr(data-task-count);
 .task-work-earnings {
   color: var(--mcp-success, rgba(34, 197, 94, 0.9));
   font-weight: 600;
+}
+
+/* --- Checklist --- */
+
+.checklist-toggle {
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(130, 200, 170, 0.1);
+  border: 1px solid rgba(130, 200, 170, 0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.checklist-toggle:hover {
+  background: rgba(130, 200, 170, 0.2);
+}
+
+.checklist-section {
+  padding: 4px 8px 4px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checklist-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-normal);
+  padding: 2px 0;
+}
+
+.checklist-item.checked .checklist-title {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+  accent-color: var(--interactive-accent);
+}
+
+.checklist-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.checklist-remove {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.checklist-item:hover .checklist-remove {
+  opacity: 1;
+}
+
+.checklist-remove:hover {
+  color: var(--text-error);
+}
+
+.checklist-add {
+  display: flex;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.checklist-add input {
+  flex: 1;
+  font-size: 12px;
+  padding: 2px 6px;
+  background: transparent;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  color: var(--text-normal);
+  min-width: 0;
+}
+
+.checklist-add input::placeholder {
+  color: var(--text-muted);
+}
+
+.checklist-add button {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+  border: none;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* ============================================

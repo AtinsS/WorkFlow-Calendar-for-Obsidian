@@ -49,6 +49,7 @@ import DateTimeWeather from "./components/DateTimeWeather.svelte";
 import Dashboard from "./dashboard/Dashboard.svelte";
 import { NotificationService } from "./services/NotificationService";
 import { initGistSync } from "./services/GistSyncService";
+import { initSingularitySync, cleanupSingularitySync } from "./services/SingularitySyncService";
 import { syncNotificationSettingsOnLoad, migrateFromSingleFile, migrateRootModuleFiles, VAULT_DATA_DIR } from "./io/vaultStorage";
 
 declare global {
@@ -88,6 +89,7 @@ export default class CalendarPlugin extends Plugin {
 
     if (this.syncReloadTimer) clearTimeout(this.syncReloadTimer);
     this.notificationService?.stop();
+    cleanupSingularitySync();
     cleanupTimers();
     this.app.workspace
       .getLeavesOfType(VIEW_TYPE_CALENDAR)
@@ -425,6 +427,9 @@ export default class CalendarPlugin extends Plugin {
 
     // Initialize GitHub Gist sync
     initGistSync(this);
+
+    // Initialize SingularityApp bidirectional sync
+    await initSingularitySync(this);
 
     // Initialize notification service
     this.notificationService = new NotificationService(this);

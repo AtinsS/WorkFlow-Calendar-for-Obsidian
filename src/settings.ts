@@ -98,6 +98,14 @@ export interface ISettings {
   showStatusBar: boolean;
   dtwShowOnAllPages: boolean;
 
+  // SingularityApp sync settings
+  singularityToken?: string;
+  singularityAutoSync?: boolean;
+  singularitySyncInterval?: number; // minutes, default 5
+  singularitySyncDirection?: "both" | "push" | "pull";
+  singularityLastSync?: number; // epoch ms
+  singularityProjectMap?: Record<string, string>; // localProjectId -> singularityProjectId
+
   // Nav panel button style
   navBtnColor?: string;
   navBtnBg?: string;
@@ -170,6 +178,11 @@ export const defaultSettings = Object.freeze({
 
   showStatusBar: true,
   dtwShowOnAllPages: false,
+
+  singularityAutoSync: false,
+  singularitySyncInterval: 5,
+  singularitySyncDirection: "both" as "both" | "push" | "pull",
+  singularityProjectMap: {},
 
   navBtnColor: "",
   navBtnBg: "",
@@ -344,6 +357,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     sync.createEl("h3", { text: "Синхронизация задач с заметками" });
     this.addTaskNoteSyncSettings(sync);
     this.addGitHubGistSettings(sync);
+    this.addSingularitySettings(sync);
 
     // Notifications tab
     const notif = tabContainers["notifications"];
@@ -1236,6 +1250,197 @@ priority: medium
           text.inputEl.style.maxWidth = "500px";
         });
     }
+  }
+
+  addSingularitySettings(container: HTMLElement): void {
+    container.createEl("h3", { text: "SingularityApp" });
+
+    const desc = document.createElement("div");
+    desc.addClass("setting-item-description");
+    desc.style.marginBottom = "8px";
+    desc.innerHTML = `
+      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
+        Двусторонняя синхронизация задач с SingularityApp. Требуется подписка Pro или Elite.
+      </p>
+      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
+        <b>Как получить токен:</b><br>
+        1. <a href="https://me.singularity-app.com" target="_blank" rel="noopener">Личный кабинет SingularityApp</a><br>
+        2. Перейдите на экран «Доступ к API»<br>
+        3. Создайте токен с правами на задачи и проекты<br>
+        4. Скопируйте токен и вставьте ниже
+      </p>
+    `;
+    container.appendChild(desc);
+
+    // Token field
+    new Setting(container)
+      .setName("API токен")
+      .setDesc("Токен доступа SingularityApp API")
+      .addText((text) => {
+        text
+          .setPlaceholder("Вставьте токен...")
+          .setValue(this.plugin.options.singularityToken || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ singularityToken: value });
+          });
+        text.inputEl.type = "password";
+        text.inputEl.style.maxWidth = "300px";
+      })
+      .addButton((btn) =>
+        btn
+          .setButtonText("Проверить")
+          .onClick(async () => {
+            const token = this.plugin.options.singularityToken;
+            if (!token) {
+              alert("Введите токен выше.");
+              return;
+            }
+            const { testConnection } = await import("./services/SingularitySyncService");
+            const result = await testConnection(token);
+            if (result.success) {
+              alert("Токен действителен! Подключение установлено.");
+            } else {
+              alert(`Ошибка: ${result.error}`);
+            }
+          }),
+      );
+
+    // Auto-sync toggle
+    new Setting(container)
+      .setName("Автосинхронизация")
+      .setDesc("Автоматически синхронизировать задачи с SingularityApp")
+      .addToggle((toggle) => {
+        toggle.setValue(!!this.plugin.options.singularityAutoSync);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ singularityAutoSync: value });
+        });
+      });
+
+    // Sync interval
+    new Setting(container)
+      .setName("Интервал синхронизации")
+      .setDesc("Как часто проверять обновления из SingularityApp (в минутах)")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("1", "1 минута");
+        dropdown.addOption("2", "2 минуты");
+        dropdown.addOption("5", "5 минут");
+        dropdown.addOption("10", "10 минут");
+        dropdown.addOption("15", "15 минут");
+        dropdown.addOption("30", "30 минут");
+        dropdown.setValue(String(this.plugin.options.singularitySyncInterval || 5));
+        dropdown.onChange(async (value) => {
+          await this.plugin.writeOptions({ singularitySyncInterval: parseInt(value) });
+        });
+      });
+
+    // Sync direction
+    new Setting(container)
+      .setName("Направление синхронизации")
+      .setDesc("Откуда и куда синхронизировать задачи")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("both", "Оба направления");
+        dropdown.addOption("push", "Только отправка (Obsidian → SingularityApp)");
+        dropdown.addOption("pull", "Только получение (SingularityApp → Obsidian)");
+        dropdown.setValue(this.plugin.options.singularitySyncDirection || "both");
+        dropdown.onChange(async (value) => {
+          await this.plugin.writeOptions({
+            singularitySyncDirection: value as "both" | "push" | "pull",
+          });
+        });
+      });
+
+    // Last sync info
+    const lastSync = this.plugin.options.singularityLastSync
+      ? new Date(this.plugin.options.singularityLastSync).toLocaleString("ru-RU")
+      : "—";
+    new Setting(container)
+      .setName("Последняя синхронизация")
+      .setDesc(lastSync)
+      .setDisabled(true);
+
+    // Action buttons
+    new Setting(container)
+      .setName("Синхронизировать сейчас")
+      .setDesc("Запустить полную синхронизацию немедленно")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Синхронизировать")
+          .setCta()
+          .onClick(async () => {
+            const token = this.plugin.options.singularityToken;
+            if (!token) {
+              alert("Сначала введите токен выше.");
+              return;
+            }
+            btn.setButtonText("Синхронизация...");
+            btn.setDisabled(true);
+            try {
+              const { fullSync } = await import("./services/SingularitySyncService");
+              await fullSync();
+              alert("Синхронизация завершена!");
+              this.display(); // refresh last sync time
+            } catch (e) {
+              alert(`Ошибка: ${e instanceof Error ? e.message : e}`);
+            } finally {
+              btn.setButtonText("Синхронизировать");
+              btn.setDisabled(false);
+            }
+          }),
+      );
+
+    new Setting(container)
+      .setName("Синхронизировать проекты")
+      .setDesc("Сопоставить локальные проекты с SingularityApp, создать недостающие, синхронизировать цвета")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Синхронизировать")
+          .onClick(async () => {
+            const token = this.plugin.options.singularityToken;
+            if (!token) {
+              alert("Сначала введите токен выше.");
+              return;
+            }
+            btn.setButtonText("Синхронизация...");
+            btn.setDisabled(true);
+            try {
+              const { syncProjects } = await import("./services/SingularitySyncService");
+              const result = await syncProjects();
+              alert(
+                `Проекты синхронизированы!\n\n` +
+                `Создано удалённо: ${result.created}\n` +
+                `Сопоставлено: ${result.mapped}\n` +
+                `Загружено из SingularityApp: ${result.pulled}`
+              );
+              this.display();
+            } catch (e) {
+              alert(`Ошибка: ${e instanceof Error ? e.message : e}`);
+            } finally {
+              btn.setButtonText("Синхронизировать");
+              btn.setDisabled(false);
+            }
+          }),
+      );
+
+    new Setting(container)
+      .setName("Сбросить синхронизацию")
+      .setDesc("Удалить все связи между локальными и удалёнными задачами")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Сбросить")
+          .setWarning()
+          .onClick(async () => {
+            if (!confirm("Это удалит все связи задач. Локальные задачи останутся, но связь с SingularityApp будет потеряна. Продолжить?")) {
+              return;
+            }
+            try {
+              const { resetSyncMap } = await import("./services/SingularitySyncService");
+              await resetSyncMap();
+              alert("Связи сброшены.");
+            } catch (e) {
+              alert(`Ошибка: ${e instanceof Error ? e.message : e}`);
+            }
+          }),
+      );
   }
 
   addNavPanelInstructions(container: HTMLElement): void {

@@ -17,10 +17,6 @@
 
   let today: Moment = window.moment();
 
-  // When tasks or habits change, re-render calendar so badges update
-  const unsubTasks = tasks.subscribe(() => { today = window.moment(); });
-  const unsubHabits = habitLogs.subscribe(() => { today = window.moment(); });
-
   // Initialize Russian locale with Monday as first day
   $: {
     configureGlobalMomentLocale("ru", "monday");
@@ -76,6 +72,17 @@
 
   export let displayedMonth: Moment = today;
   export let sources: ICalendarSource[];
+
+  // When tasks or habits change, re-render calendar so badges update.
+  // Clone displayedMonth to force CalendarBase to recompute month → getDailyMetadata.
+  const unsubTasks = tasks.subscribe(() => {
+    today = window.moment();
+    displayedMonth = displayedMonth.clone();
+  });
+  const unsubHabits = habitLogs.subscribe(() => {
+    today = window.moment();
+    displayedMonth = displayedMonth.clone();
+  });
   export let onHoverDay: (date: Moment, targetEl: EventTarget) => boolean;
   export let onHoverWeek: (date: Moment, targetEl: EventTarget) => boolean;
   export let onClickDay: (date: Moment, isMetaPressed: boolean) => boolean;

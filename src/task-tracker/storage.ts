@@ -34,7 +34,7 @@ export async function loadTaskData(
     return data;
   }
   console.log(`[Task] NO DATA`);
-  return { tasks: [], projects: [], timeLogs: [], version: TASK_TRACKER_DATA_VERSION };
+  return { tasks: [], projects: [], timeLogs: [], checklists: [], version: TASK_TRACKER_DATA_VERSION };
 }
 
 export async function saveTaskData(
@@ -97,6 +97,15 @@ function migrateData(data: ITaskTrackerData): ITaskTrackerData {
         deadlineTime: undefined,
       })),
       version: 6,
+    };
+  }
+
+  // v6 -> v7: add checklists array
+  if (data.version < 7) {
+    migrated = {
+      ...migrated,
+      checklists: [],
+      version: 7,
     };
   }
 

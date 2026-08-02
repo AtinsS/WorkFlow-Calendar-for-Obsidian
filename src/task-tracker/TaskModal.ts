@@ -24,9 +24,8 @@ export class TaskModal extends Modal {
   private recurrenceDaysOfWeek: number[] = [];
   private recurrenceUntilDateUID = "";
   private recurrenceUntilDateValue = "";
-  private estimatedTimeHours = "0";
-  private estimatedTimeMinutes = "30";
   private scheduledTime = "";
+  private endTime = "";
   private isWorkTask = false;
   private paymentType: "hour" | "day" = "hour";
   private rate = "";
@@ -40,8 +39,6 @@ export class TaskModal extends Modal {
   private descCounterEl: HTMLSpanElement | null = null;
 
   private advancedBody: HTMLDivElement | null = null;
-  private estHoursEl: HTMLInputElement | null = null;
-  private estMinsEl: HTMLInputElement | null = null;
   private recurrenceSubEl: HTMLDivElement | null = null;
   private workTaskSubEl: HTMLDivElement | null = null;
 
@@ -57,8 +54,7 @@ export class TaskModal extends Modal {
     onSubmit: (task: Partial<ITask>) => void,
     task?: ITask,
     initialDate?: string,
-    initialTime?: string,
-    initialEstimatedTime?: number
+    initialTime?: string
   ) {
     super(app);
     this.onSubmit = onSubmit;
@@ -81,12 +77,8 @@ export class TaskModal extends Modal {
           this.recurrenceUntilDateValue = this.extractDateValue(this.task.recurrence.until);
         }
       }
-      if (this.task.estimatedTime) {
-        const totalMin = this.task.estimatedTime;
-        this.estimatedTimeHours = String(Math.floor(totalMin / 60));
-        this.estimatedTimeMinutes = String(totalMin % 60);
-      }
       if (this.task.scheduledTime) this.scheduledTime = this.task.scheduledTime;
+      if (this.task.endTime) this.endTime = this.task.endTime;
       if (this.task.isWorkTask) {
         this.isWorkTask = this.task.isWorkTask;
         this.paymentType = this.task.paymentType || "hour";
@@ -109,10 +101,6 @@ export class TaskModal extends Modal {
         this.dateValue = this.extractDateValue(this.dateUID);
       }
       if (initialTime) this.scheduledTime = initialTime;
-      if (initialEstimatedTime !== undefined) {
-        this.estimatedTimeHours = String(Math.floor(initialEstimatedTime / 60));
-        this.estimatedTimeMinutes = String(initialEstimatedTime % 60);
-      }
       const cs = get(settings);
       this.paymentType = cs.defaultPaymentType || "hour";
       this.rate = cs.defaultRate ? String(cs.defaultRate) : "";
@@ -216,46 +204,14 @@ export class TaskModal extends Modal {
     });
     timeInput.addEventListener("change", () => { this.scheduledTime = timeInput.value; });
 
-    // ═══ 5. Длительность ═══
-    const durWrap = contentEl.createDiv({ cls: "tm-field" });
-    durWrap.createEl("label", { text: "Длительность (ожидаемое время)", cls: "tm-label" });
-    const durRow = durWrap.createDiv({ cls: "tm-dur-row" });
-    durRow.createEl("span", { text: "🕐", cls: "tm-dur-icon" });
-
-    this.estHoursEl = durRow.createEl("input", {
-      type: "number", cls: "tm-dur-input", value: this.estimatedTimeHours, attr: { min: "0", max: "24" },
-    }) as HTMLInputElement;
-    this.estHoursEl.addEventListener("change", () => { this.estimatedTimeHours = this.estHoursEl?.value ?? "0"; });
-
-    durRow.createEl("span", { text: " ч ", cls: "tm-dur-sep" });
-
-    this.estMinsEl = durRow.createEl("input", {
-      type: "number", cls: "tm-dur-input", value: this.estimatedTimeMinutes, attr: { min: "0", max: "59" },
-    }) as HTMLInputElement;
-    this.estMinsEl.addEventListener("change", () => { this.estimatedTimeMinutes = this.estMinsEl?.value ?? "0"; });
-
-    durRow.createEl("span", { text: " мин", cls: "tm-dur-sep" });
-
-    const decBtn = durRow.createEl("button", { text: "−", cls: "tm-dur-btn" });
-    const incBtn = durRow.createEl("button", { text: "+", cls: "tm-dur-btn" });
-
-    decBtn.addEventListener("click", () => {
-      const mins = (parseInt(this.estimatedTimeHours) || 0) * 60 + (parseInt(this.estimatedTimeMinutes) || 0);
-      const newMins = Math.max(0, mins - 15);
-      this.estimatedTimeHours = String(Math.floor(newMins / 60));
-      this.estimatedTimeMinutes = String(newMins % 60);
-      if (this.estHoursEl) this.estHoursEl.value = this.estimatedTimeHours;
-      if (this.estMinsEl) this.estMinsEl.value = this.estimatedTimeMinutes;
+    // ═══ 5. Время окончания ═══
+    const endTimeWrap = contentEl.createDiv({ cls: "tm-field" });
+    endTimeWrap.createEl("label", { text: "Время окончания", cls: "tm-label" });
+    const endTimeInput = endTimeWrap.createEl("input", {
+      type: "time", cls: "tm-input", value: this.endTime,
     });
-
-    incBtn.addEventListener("click", () => {
-      const mins = (parseInt(this.estimatedTimeHours) || 0) * 60 + (parseInt(this.estimatedTimeMinutes) || 0);
-      const newMins = Math.min(24 * 60, mins + 15);
-      this.estimatedTimeHours = String(Math.floor(newMins / 60));
-      this.estimatedTimeMinutes = String(newMins % 60);
-      if (this.estHoursEl) this.estHoursEl.value = this.estimatedTimeHours;
-      if (this.estMinsEl) this.estMinsEl.value = this.estimatedTimeMinutes;
-    });
+    endTimeInput.addEventListener("input", () => { this.endTime = endTimeInput.value; });
+    endTimeInput.addEventListener("change", () => { this.endTime = endTimeInput.value; });
 
     // ═══ 6. Дополнительные параметры ═══
     const advWrap = contentEl.createDiv({ cls: "tm-advanced" });
@@ -524,7 +480,7 @@ export class TaskModal extends Modal {
       if (this.recurrenceUntilDateUID) recurrence.until = this.recurrenceUntilDateUID;
     }
 
-    this.onSubmit({
+    const submitData = {
       title: this.titleInput.trim(),
       description: this.descriptionInput.trim() || undefined,
       projectId: this.projectId,
@@ -532,8 +488,8 @@ export class TaskModal extends Modal {
       priority: this.priority,
       boundNotePath: this.notePathInput || null,
       recurrence,
-      estimatedTime: (parseInt(this.estimatedTimeHours) || 0) * 60 + (parseInt(this.estimatedTimeMinutes) || 0) || undefined,
       scheduledTime: this.scheduledTime || undefined,
+      endTime: this.endTime || undefined,
       isWorkTask: this.isWorkTask || undefined,
       paymentType: this.isWorkTask ? this.paymentType : undefined,
       rate: this.isWorkTask && this.rate ? parseFloat(this.rate.replace(",", ".")) : undefined,
@@ -541,7 +497,9 @@ export class TaskModal extends Modal {
       overtimeMultiplier: this.isWorkTask && this.paymentType === "hour" && this.overtimeMultiplier ? parseFloat(this.overtimeMultiplier.replace(",", ".")) : undefined,
       deadline: this.deadlineDateUID || undefined,
       deadlineTime: this.deadlineTime || undefined,
-    });
+    };
+    console.log("[TaskModal] submitData:", JSON.stringify(submitData));
+    this.onSubmit(submitData);
     this.close();
   }
 

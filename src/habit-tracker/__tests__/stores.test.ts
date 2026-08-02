@@ -7,6 +7,7 @@ import {
   removeHabit,
   toggleHabitCompletion,
   isHabitCompletedOnDate,
+  getHabitCountOnDate,
   calculateStreak,
   rebuildLogsCache,
 } from "../stores";
@@ -99,7 +100,7 @@ describe("removeHabit", () => {
 });
 
 describe("toggleHabitCompletion", () => {
-  it("should create log entry when completing", () => {
+  it("should create log entry at 100% on first toggle (SingularityApp model)", () => {
     const habit = addHabit({
       title: "Exercise",
       icon: "\uD83C\uDFC3",
@@ -113,10 +114,12 @@ describe("toggleHabitCompletion", () => {
     toggleHabitCompletion(habit.id, "2026-07-05");
 
     expect(get(habitLogs).length).toBe(1);
+    // First toggle = 100% (count=2, completed=true)
     expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(true);
+    expect(getHabitCountOnDate(habit.id, "2026-07-05")).toBe(2);
   });
 
-  it("should remove log entry when toggling off", () => {
+  it("should go to 50% on second toggle and reset on third", () => {
     const habit = addHabit({
       title: "Exercise",
       icon: "\uD83C\uDFC3",
@@ -127,10 +130,14 @@ describe("toggleHabitCompletion", () => {
       sortOrder: 0,
     });
 
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 100%
+    expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(true);
+
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 50%
+    expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(false);
     expect(get(habitLogs).length).toBe(1);
 
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    toggleHabitCompletion(habit.id, "2026-07-05"); // reset to 0
     expect(get(habitLogs).length).toBe(0);
     expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(false);
   });
@@ -159,6 +166,7 @@ describe("toggleHabitCompletion", () => {
     toggleHabitCompletion(h2.id, "2026-07-05");
 
     expect(get(habitLogs).length).toBe(2);
+    // First toggle = 100% (completed)
     expect(isHabitCompletedOnDate(h1.id, "2026-07-05")).toBe(true);
     expect(isHabitCompletedOnDate(h2.id, "2026-07-05")).toBe(true);
   });
@@ -179,7 +187,7 @@ describe("isHabitCompletedOnDate", () => {
     expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(false);
   });
 
-  it("should return true when completed", () => {
+  it("should return true when completed (first toggle for targetCount=1)", () => {
     const habit = addHabit({
       title: "Test",
       icon: "\u2728",
@@ -190,8 +198,10 @@ describe("isHabitCompletedOnDate", () => {
       sortOrder: 0,
     });
 
-    toggleHabitCompletion(habit.id, "2026-07-05");
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 100%
     expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(true);
+    toggleHabitCompletion(habit.id, "2026-07-05"); // 50%
+    expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(false);
   });
 
   it("should return false for different date", () => {
@@ -237,7 +247,7 @@ describe("calculateStreak", () => {
     });
 
     const today = new Date().toISOString().split("T")[0];
-    toggleHabitCompletion(habit.id, today);
+    toggleHabitCompletion(habit.id, today); // 100%
 
     expect(calculateStreak(habit.id)).toBe(1);
   });
@@ -257,8 +267,8 @@ describe("calculateStreak", () => {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
-    toggleHabitCompletion(habit.id, yesterday.toISOString().split("T")[0]);
-    toggleHabitCompletion(habit.id, today.toISOString().split("T")[0]);
+    toggleHabitCompletion(habit.id, yesterday.toISOString().split("T")[0]); // 100%
+    toggleHabitCompletion(habit.id, today.toISOString().split("T")[0]); // 100%
 
     expect(calculateStreak(habit.id)).toBe(2);
   });
@@ -294,7 +304,7 @@ describe("calculateLongestStreak", () => {
     for (let i = 0; i < 5; i++) {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
-      toggleHabitCompletion(habit.id, d.toISOString().split("T")[0]);
+      toggleHabitCompletion(habit.id, d.toISOString().split("T")[0]); // 100%
     }
 
     expect(calculateStreak(habit.id)).toBe(5);

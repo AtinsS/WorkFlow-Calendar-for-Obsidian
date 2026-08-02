@@ -93,23 +93,6 @@ export class HabitModal extends Modal {
     }
 
     new Setting(contentEl)
-      .setName("Цель в день")
-      .setDesc("Сколько раз выполнять привычку за день (1 = обычный чекбокс)")
-      .addText((text) => {
-        text
-          .setPlaceholder("1")
-          .setValue(String(this.targetCountInput))
-          .onChange((value) => {
-            const v = parseInt(value) || 1;
-            this.targetCountInput = Math.max(1, Math.min(99, v));
-          });
-        text.inputEl.type = "number";
-        text.inputEl.min = "1";
-        text.inputEl.max = "99";
-        text.inputEl.style.maxWidth = "60px";
-      });
-
-    new Setting(contentEl)
       .setName("Частота")
       .addDropdown((dropdown) => {
         dropdown.addOption("daily", "Ежедневно");
