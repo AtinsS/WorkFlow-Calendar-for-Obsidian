@@ -428,8 +428,8 @@ export default class CalendarPlugin extends Plugin {
     // Initialize GitHub Gist sync
     initGistSync(this);
 
-    // Initialize SingularityApp bidirectional sync
-    await initSingularitySync(this);
+    // Initialize SingularityApp bidirectional sync (non-blocking — runs in background)
+    initSingularitySync(this);
 
     // Initialize notification service
     this.notificationService = new NotificationService(this);

@@ -18,6 +18,7 @@ import {
   getProjects as apiGetProjects,
   createProject as apiCreateProject,
   updateProject as apiUpdateProject,
+  deleteProject as apiDeleteProject,
   getHabits as apiGetHabits,
   createHabit as apiCreateHabit,
   updateHabit as apiUpdateHabit,
@@ -127,6 +128,13 @@ async function loadSyncMap(): Promise<SingularitySyncMap> {
         if (!parsed.projectMap) {
           parsed.projectMap = get(settings).singularityProjectMap || {};
         }
+        // Ensure all required fields exist
+        if (!parsed.habits) parsed.habits = {};
+        if (!parsed.habitMap) parsed.habitMap = {};
+        if (!parsed.habitDoneSnapshot) parsed.habitDoneSnapshot = {};
+        if (!parsed.checklistMap) parsed.checklistMap = {};
+        // Clean stale entries on load
+        cleanupSyncMapOnLoad(parsed);
         return parsed;
       }
     }
@@ -135,6 +143,55 @@ async function loadSyncMap(): Promise<SingularitySyncMap> {
   }
   return createEmptySyncMap();
 }
+
+/** Remove stale mappings at load time (local projects that no longer exist) */
+function cleanupSyncMapOnLoad(map: SingularitySyncMap): void {
+  const localProjectIds = new Set(get(projects).map(p => p.id));
+  let cleaned = 0;
+
+  // Clean projectMap: remove entries where local project doesn't exist
+  for (const localId of Object.keys(map.projectMap || {})) {
+    if (!localProjectIds.has(localId)) {
+      delete map.projectMap[localId];
+      cleaned++;
+    }
+  }
+
+  // Deduplicate projectMap
+  const seenRemoteIds = new Set<string>();
+  for (const [localId, remoteId] of Object.entries(map.projectMap || {})) {
+    if (seenRemoteIds.has(remoteId)) {
+      delete map.projectMap[localId];
+      cleaned++;
+    } else {
+      seenRemoteIds.add(remoteId);
+    }
+  }
+
+  // Clean task sync map: remove entries where local task doesn't exist
+  const localTaskIds = new Set(get(tasks).map(t => t.id));
+  for (const localId of Object.keys(map.tasks || {})) {
+    if (!localTaskIds.has(localId)) {
+      delete map.tasks[localId];
+      cleaned++;
+    }
+  }
+
+  // Clean habit map: remove entries where local habit doesn't exist
+  const localHabitIds = new Set(get(habits).map(h => h.id));
+  for (const localId of Object.keys(map.habitMap || {})) {
+    if (!localHabitIds.has(localId)) {
+      delete map.habitMap[localId];
+      cleaned++;
+    }
+  }
+
+  if (cleaned > 0) {
+    console.log(`[SingularitySync] Cleaned ${cleaned} stale entries on load`);
+    saveSyncMap().catch((e) => console.warn("[SingularitySync] Failed to save cleaned map:", e));
+  }
+}
+
 
 async function saveSyncMap(): Promise<void> {
   if (!pluginInstance) return;
@@ -686,6 +743,20 @@ export async function resetSyncMap(): Promise<void> {
   }));
 }
 
+/** Reset only project mapping — clears corrupted projectMap and lets sync rebuild it */
+export async function resetProjectMap(): Promise<void> {
+  syncMap.projectMap = {};
+  if (syncMap.habitMap) syncMap.habitMap = {};
+  await saveSyncMap();
+
+  // Also clear settings projectMap
+  if (pluginInstance) {
+    await (pluginInstance as unknown as { writeOptions: (c: Record<string, unknown>) => Promise<void> }).writeOptions.call(pluginInstance, { singularityProjectMap: {} });
+  }
+
+  console.log("[SingularitySync] Project map reset — will rebuild on next sync");
+}
+
 export async function syncProjects(): Promise<Record<string, string>> {
   const token = getToken();
   if (!token || !pluginInstance) return syncMap.projectMap || {};
@@ -695,6 +766,7 @@ export async function syncProjects(): Promise<Record<string, string>> {
   let pulled = 0;
 
   try {
+    // Do NOT include removed (trashed) projects — they pollute the mapping
     const remoteProjects = await apiGetProjects(token, { maxCount: 100, includeArchived: true });
     // Use projectMap from syncMap (persisted reliably), not from settings
     const projectMap = { ...(syncMap.projectMap || {}) };
@@ -709,14 +781,56 @@ export async function syncProjects(): Promise<Record<string, string>> {
     // Build set of already-mapped remote IDs
     const mappedRemoteIds = new Set(Object.values(projectMap));
 
-    // 0. Clean stale map entries where local project no longer exists
+    // 0. Aggressive cleanup: remove all invalid mappings
     const localProjectIds = new Set(localProjects.map(lp => lp.id));
+    const seenRemoteIds = new Set<string>();
+    const deletedRemoteIds = new Set<string>();
+    const justCleanedLocalIds = new Set<string>(); // track cleaned to prevent re-creation
+    let cleaned = 0;
+
     for (const mapLocalId of Object.keys(projectMap)) {
+      const remoteId = projectMap[mapLocalId];
+      let shouldRemove = false;
+
+      // Local project deleted — also delete remote
       if (!localProjectIds.has(mapLocalId)) {
-        console.log(`[SingularitySync] Cleaning stale map entry: local ${mapLocalId} no longer exists`);
-        mappedRemoteIds.delete(projectMap[mapLocalId]);
-        delete projectMap[mapLocalId];
+        shouldRemove = true;
+        const deleted = await apiDeleteProject(token, remoteId);
+        if (deleted) {
+          deletedRemoteIds.add(remoteId);
+          console.log(`[SingularitySync] Deleted remote project ${remoteId} (local ${mapLocalId} removed)`);
+        }
       }
+      // Remote project deleted/trashed
+      else {
+        const remote = remoteProjects.find(rp => rp.id === remoteId);
+        if (!remote || remote.removed) {
+          shouldRemove = true;
+          deletedRemoteIds.add(remoteId);
+        }
+      }
+      // Duplicate remote ID
+      if (!shouldRemove && seenRemoteIds.has(remoteId)) {
+        shouldRemove = true;
+      }
+
+      if (shouldRemove) {
+        justCleanedLocalIds.add(mapLocalId);
+        delete projectMap[mapLocalId];
+        cleaned++;
+      } else {
+        seenRemoteIds.add(remoteId);
+      }
+    }
+
+    if (cleaned > 0) {
+      console.log(`[SingularitySync] Cleaned ${cleaned} stale project mappings`);
+    }
+
+    // Rebuild mappedRemoteIds after cleanup
+    mappedRemoteIds.clear();
+    for (const remoteId of Object.values(projectMap)) {
+      mappedRemoteIds.add(remoteId);
     }
 
     // 1. Auto-map by name match + push local projects that have no remote match
@@ -726,10 +840,9 @@ export async function syncProjects(): Promise<Record<string, string>> {
         const remoteId = projectMap[local.id];
         console.log(`[SingularitySync] Checking mapped project "${local.name}": localId=${local.id}, remoteId=${remoteId}`);
         const remote = remoteProjects.find((rp) => rp.id === remoteId);
-        if (!remote) {
-          // Remote project was deleted — remove stale mapping so it can be re-created
-          console.warn(`[SingularitySync] Remote project for "${local.name}" (${remoteId}) not found, removing stale mapping`);
-          console.warn(`[SingularitySync] Available remote IDs: ${remoteProjects.map(rp => rp.id).join(", ")}`);
+        if (!remote || remote.removed) {
+          // Remote project was deleted or trashed — remove stale mapping
+          console.warn(`[SingularitySync] Remote project for "${local.name}" (${remoteId}) not found or removed, removing mapping`);
           delete projectMap[local.id];
           mappedRemoteIds.delete(remoteId);
           // Fall through to name-match / create logic below
@@ -749,7 +862,14 @@ export async function syncProjects(): Promise<Record<string, string>> {
               await apiUpdateProject(token, remoteId, updateBody);
               console.log(`[SingularitySync] Updated remote project "${local.name}" color/emoji:`, updateBody);
             } catch (e) {
-              console.warn(`[SingularitySync] Failed to update project ${local.name}:`, e);
+              if (e instanceof Error && e.name === "SingularityNotFoundError") {
+                // Project was trashed — clean up mapping
+                console.warn(`[SingularitySync] Project "${local.name}" not found on remote, cleaning mapping`);
+                delete projectMap[local.id];
+                mappedRemoteIds.delete(remoteId);
+              } else {
+                console.warn(`[SingularitySync] Failed to update project ${local.name}:`, e);
+              }
             }
           }
           if (shouldPullEmoji) {
@@ -762,9 +882,15 @@ export async function syncProjects(): Promise<Record<string, string>> {
         }
       }
 
-      // Try to find remote match by name
+      // Skip projects that were just cleaned (prevent cleanup → create cycle)
+      if (justCleanedLocalIds.has(local.id)) {
+        console.log(`[SingularitySync] Skipping project "${local.name}" — just cleaned, will not re-create`);
+        continue;
+      }
+
+      // Try to find remote match by name (not removed, not already mapped to another local)
       const match = remoteProjects.find(
-        (rp) => rp.title.toLowerCase() === local.name.toLowerCase()
+        (rp) => rp.title.toLowerCase() === local.name.toLowerCase() && !rp.removed && !mappedRemoteIds.has(rp.id)
       );
       if (match) {
         projectMap[local.id] = match.id;
@@ -806,11 +932,12 @@ export async function syncProjects(): Promise<Record<string, string>> {
     localProjects = get(projects);
     for (const remote of remoteProjects) {
       if (mappedRemoteIds.has(remote.id)) continue;
+      if (deletedRemoteIds.has(remote.id)) continue;
       if (remote.removed || remote.archived) continue;
 
-      // Check if a local project with the same name already exists (including just-created)
+      // Check if a local project with the same name already exists (not already mapped)
       const existingLocal = localProjects.find(
-        (lp) => lp.name.toLowerCase() === remote.title.toLowerCase()
+        (lp) => lp.name.toLowerCase() === remote.title.toLowerCase() && !projectMap[lp.id]
       );
       if (existingLocal) {
         // Just map it
@@ -834,6 +961,25 @@ export async function syncProjects(): Promise<Record<string, string>> {
       projectMap[newProject.id] = remote.id;
       pulled++;
       console.log(`[SingularitySync] Pulled remote project "${remote.title}" → local ${newProject.id}`);
+    }
+
+    // 2b. Delete locally projects that were removed remotely
+    localProjects = get(projects);
+    for (const local of localProjects) {
+      const remoteId = projectMap[local.id];
+      if (!remoteId) continue; // not synced
+      const remote = remoteProjects.find((rp) => rp.id === remoteId);
+      const shouldDelete = !remote || remote.removed;
+      if (shouldDelete) {
+        console.log(`[SingularitySync] Project "${local.name}" remote deleted: remote=${!!remote}, removed=${remote?.removed}`);
+        // Remote project was deleted — delete locally
+        skipNextProjectPush = true;
+        const { removeProject } = await import("src/task-tracker/stores");
+        removeProject(local.id);
+        delete projectMap[local.id];
+        pulled++;
+        console.log(`[SingularitySync] Deleted local project "${local.name}" (remote removed)`);
+      }
     }
 
     // 3. Save updated map to syncMap (primary persistence) and settings (backward compat)

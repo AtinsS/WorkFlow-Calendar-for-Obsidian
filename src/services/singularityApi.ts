@@ -428,6 +428,15 @@ export async function updateProject(
   await apiRequest<void>(token, "PATCH", `/project/${id}`, body);
 }
 
+export async function deleteProject(token: string, id: string): Promise<boolean> {
+  try {
+    await apiRequest<void>(token, "DELETE", `/project/${id}`);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function getTags(
   token: string,
   params?: {

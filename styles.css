@@ -1,53 +1,56 @@
 /* ============================================
-   GLASSMORPHISM CALENDAR PLUGIN
+   WORKLIFE CALENDAR — DARK PREMIUM THEME
+   Inspired by Linear, Arc, Notion Calendar
    ============================================ */
 
 :root {
-  /* Основной акцент — холодный синий */
-  --mcp-accent: rgba(95, 153, 225, 0.55);
-  --mcp-accent-dim: rgba(95, 153, 225, 0.10);
-  --mcp-accent-faint: rgba(95, 153, 225, 0.15);
-  --mcp-accent-ultra-dim: rgba(95, 153, 225, 0.08);
-  --mcp-accent-hover: rgba(68, 190, 190, 0.18);
-  --mcp-accent-glow: rgba(68, 190, 190, 0.18);
+  /* Background layers */
+  --mcp-bg: #0E0F13;
+  --mcp-surface: #171A21;
+  --mcp-surface-2: #1E222B;
+  --mcp-surface-hover: #252A36;
 
-  /* Успех — мягкий зеленый */
-  --mcp-success: rgba(80, 200, 160, 0.85);
-  --mcp-success-dim: rgba(80, 200, 160, 0.10);
+  /* Accent — indigo/purple gradient */
+  --mcp-accent: #7C5CFC;
+  --mcp-accent-dim: rgba(124, 92, 252, 0.12);
+  --mcp-accent-faint: rgba(124, 92, 252, 0.08);
+  --mcp-accent-ultra-dim: rgba(124, 92, 252, 0.05);
+  --mcp-accent-hover: rgba(91, 141, 239, 0.15);
+  --mcp-accent-glow: rgba(124, 92, 252, 0.20);
 
-  /* Опасность — мягкий красный */
-  --mcp-danger: rgba(220, 150, 150, 0.85);
-  --mcp-danger-dim: rgba(220, 150, 150, 0.10);
+  /* Semantic colors */
+  --mcp-success: #3DD68C;
+  --mcp-success-dim: rgba(61, 214, 140, 0.12);
+  --mcp-danger: #F06565;
+  --mcp-danger-dim: rgba(240, 101, 101, 0.12);
+  --mcp-warning: #F5A623;
+  --mcp-amber: #F5A623;
+  --mcp-amber-dim: rgba(245, 166, 35, 0.12);
 
-  /* Предупреждение — мягкий янтарный */
-  --mcp-warning: rgba(220, 190, 130, 0.85);
+  /* Glass (kept for backward compat, now solid) */
+  --mcp-glass-bg: #171A21;
+  --mcp-glass-border: rgba(255, 255, 255, 0.06);
+  --mcp-glass-highlight: rgba(255, 255, 255, 0.02);
 
-  /* Стеклянные поверхности — более выраженный glass */
-  --mcp-glass-bg: rgba(30, 35, 50, 0.55);
-  --mcp-glass-border: rgba(255, 255, 255, 0.07);
-  --mcp-glass-highlight: rgba(255, 255, 255, 0.03);
+  /* Text */
+  --mcp-text: #E8ECF0;
+  --mcp-text-muted: #6B7280;
+  --mcp-text-faint: #3A3F4B;
 
-  /* Поверхности */
-  --mcp-surface: rgba(40, 45, 60, 0.50);
-  --mcp-surface-hover: rgba(50, 55, 72, 0.60);
-
-  /* Текст */
-  --mcp-text: rgba(230, 235, 240, 0.94);
-  --mcp-text-muted: rgba(200, 210, 220, 0.55);
-  --mcp-text-faint: rgba(200, 210, 220, 0.30);
-
-  /* Скругления — крупнее */
+  /* Radii */
   --mcp-radius: 16px;
-  --mcp-radius-lg: 24px;
+  --mcp-radius-lg: 20px;
   --mcp-radius-sm: 12px;
 
-  /* Тени — более глубокие */
-  --mcp-shadow: 0 12px 40px rgba(0, 0, 0, 0.20), 0 0 0 1px rgba(255, 255, 255, 0.03);
-  --mcp-shadow-glow: 0 0 50px rgba(80, 170, 210, 0.08);
+  /* Shadows — layered depth */
+  --mcp-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --mcp-shadow-glow: 0 0 40px rgba(124, 92, 252, 0.08);
+  --mcp-shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
 
-  /* Размытие и переходы */
-  --mcp-blur: blur(24px);
+  /* Transitions */
   --mcp-transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --mcp-transition-fast: 0.15s ease;
+  --mcp-blur: blur(0px);
 }
 
 /* ============================================
@@ -774,7 +777,7 @@ svg.dot.filled {
 #calendar-container .day,
 #calendar-container .week-num {
   border-radius: var(--mcp-radius-sm);
-  transition: all var(--mcp-transition);
+  transition: all var(--mcp-transition-fast);
   position: relative;
   padding: 10px 6px;
   font-size: 14px;
@@ -784,22 +787,23 @@ svg.dot.filled {
   justify-content: center;
   cursor: pointer;
   color: var(--mcp-text);
-  background: var(--mcp-glass-highlight);
-  border: 1px solid transparent;
+  background: var(--mcp-surface);
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 #calendar-container .day:hover {
-  background: var(--mcp-accent-dim);
-  border-color: var(--mcp-accent);
-  box-shadow: var(--mcp-shadow-glow);
+  background: var(--mcp-surface-hover);
+  border-color: rgba(124, 92, 252, 0.2);
+  box-shadow: 0 0 12px rgba(124, 92, 252, 0.08);
+  transform: scale(1.02);
 }
 
 #calendar-container .day.active {
-  background: var(--mcp-accent);
-  color: #000;
-  font-weight: 700;
-  border-color: var(--mcp-accent);
-  box-shadow: 0 0 16px var(--mcp-accent-glow);
+  background: linear-gradient(135deg, rgba(124, 92, 252, 0.2), rgba(91, 141, 239, 0.15));
+  color: #E8ECF0;
+  font-weight: 600;
+  border-color: rgba(124, 92, 252, 0.3);
+  box-shadow: 0 0 16px rgba(124, 92, 252, 0.15), inset 0 0 12px rgba(124, 92, 252, 0.05);
 }
 
 #calendar-container .day.deadline-highlight {
@@ -814,16 +818,17 @@ svg.dot.filled {
     box-shadow: none;
   }
   50% {
-    background: rgba(251, 191, 36, 0.25);
-    box-shadow: 0 0 12px 2px rgba(251, 191, 36, 0.35);
+    background: rgba(245, 166, 35, 0.15);
+    box-shadow: 0 0 12px 2px rgba(245, 166, 35, 0.25);
   }
 }
 
 #calendar-container .day.today {
-  background: var(--mcp-accent);
-  color: #000;
+  background: linear-gradient(135deg, #7C5CFC, #5B8DEF);
+  color: #fff;
   font-weight: 700;
-  border-color: var(--mcp-accent);
+  border-color: transparent;
+  box-shadow: 0 0 20px rgba(124, 92, 252, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* ============================================
@@ -834,40 +839,43 @@ svg.dot.filled {
 }
 
 #calendar-container .day[data-task-count]::after {
-content: attr(data-task-count);
-    position: absolute;
-    bottom: 2px;
-    right: 1px;
-    font-size: 14px;
-    font-weight: 700;
-    min-width: 18px;
-    height: 18px;
-    text-align: center;
-    color: #fff9f9;
-    background: #a734349e;
-    border-radius: 5px;
-    padding: 0px 2px;
-    pointer-events: none;
+  content: attr(data-task-count);
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  line-height: 16px;
+  text-align: center;
+  color: #fff;
+  background: #7C5CFC;
+  border-radius: 8px;
+  padding: 0 4px;
+  pointer-events: none;
+  box-shadow: 0 0 6px rgba(124, 92, 252, 0.3);
 }
 
 #calendar-container .day.all-completed[data-task-count]::after {
-  background: var(--mcp-success);
+  background: #3DD68C;
+  box-shadow: 0 0 6px rgba(61, 214, 140, 0.3);
 }
 
 #calendar-container .day.has-overdue[data-task-count]::after {
-  background: var(--mcp-danger);
+  background: #F06565;
   color: #fff;
   animation: pulse-danger 2s ease-in-out infinite;
 }
 
 #calendar-container .day.has-deadline:not(.has-overdue)[data-task-count]::after {
-  border-color: var(--mcp-warning);
-  box-shadow: 0 0 4px rgba(251, 191, 36, 0.4);
+  background: #F5A623;
+  box-shadow: 0 0 6px rgba(245, 166, 35, 0.3);
 }
 
 @keyframes pulse-danger {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(248, 113, 113, 0.4); }
-  50% { box-shadow: 0 0 8px 2px rgba(248, 113, 113, 0.3); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 101, 101, 0.4); }
+  50% { box-shadow: 0 0 8px 2px rgba(240, 101, 101, 0.3); }
 }
 
 /* ============================================
@@ -897,9 +905,9 @@ content: attr(data-task-count);
    ============================================ */
 .task-tracker-panel,
 .habit-tracker-panel {
-  backdrop-filter: var(--mcp-blur);
-  -webkit-backdrop-filter: var(--mcp-blur);
-  border-top: 1px solid var(--mcp-glass-border);
+  background: var(--mcp-bg);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 2px solid rgba(124, 92, 252, 0.2);
   padding: 20px 22px;
   width: 100%;
   min-width: 0;
@@ -933,14 +941,14 @@ content: attr(data-task-count);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 12px 14px;
   user-select: none;
   gap: 10px;
   border-radius: var(--mcp-radius-sm);
 }
 
 .habit-tracker-header:hover {
-  background: var(--mcp-accent-dim);
+  background: rgba(124, 92, 252, 0.06);
 }
 
 .habit-tracker-header:focus-visible {
@@ -967,23 +975,22 @@ content: attr(data-task-count);
 .task-tracker-title,
 .habit-tracker-title {
   font-weight: 700;
-  font-size: 13px;
-  color: var(--mcp-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 1.2px;
+  font-size: 15px;
+  color: var(--mcp-text);
+  letter-spacing: -0.3px;
 }
 
 .task-tracker-date {
   font-size: 12px;
-  color: var(--mcp-text-faint);
+  color: var(--mcp-text-muted);
 }
 
 .task-tracker-count {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   color: var(--mcp-accent);
   background: var(--mcp-accent-dim);
-  padding: 4px 12px;
+  padding: 4px 10px;
   border-radius: 14px;
 }
 
@@ -1001,26 +1008,22 @@ content: attr(data-task-count);
    ============================================ */
 .task-tracker-btn,
 .habit-tracker-btn {
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
+  background: var(--mcp-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--mcp-text-muted);
   cursor: pointer;
   padding: 6px 12px;
   font-size: 16px;
   line-height: 1;
-  border-radius: var(--mcp-radius-sm);
-  transition: all var(--mcp-transition);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-radius: 10px;
+  transition: all var(--mcp-transition-fast);
 }
 
 .task-tracker-btn:hover,
 .habit-tracker-btn:hover {
   color: var(--mcp-accent);
   background: var(--mcp-accent-dim);
-  border-color: var(--mcp-accent);
-  box-shadow: var(--mcp-shadow-glow);
+  border-color: rgba(124, 92, 252, 0.3);
 }
 
 /* Unified add button for task and habit panels */
@@ -1029,14 +1032,22 @@ content: attr(data-task-count);
   font-weight: 700;
   padding: 5px 14px;
   white-space: nowrap;
+  background: linear-gradient(135deg, #7C5CFC, #5B8DEF);
+  color: #fff;
+  border-color: transparent;
+}
+
+.add-btn:hover {
+  background: linear-gradient(135deg, #8D6FFF, #6B9BFF);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(124, 92, 252, 0.3);
 }
 
 /* Icon button active state */
 .icon-btn.active {
   background: var(--mcp-accent-dim);
-  border-color: var(--mcp-accent);
+  border-color: rgba(124, 92, 252, 0.3);
   color: var(--mcp-accent);
-  box-shadow: var(--mcp-shadow-glow);
 }
 
 /* Dropdown labels — desktop shows full, mobile shows short */
@@ -1066,38 +1077,34 @@ content: attr(data-task-count);
 .task-tracker-search-input {
   flex: 1;
   min-width: 0;
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
-  border-radius: var(--mcp-radius-sm);
+  background: var(--mcp-bg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
   padding: 8px 14px;
   font-size: 13px;
   color: var(--mcp-text);
   outline: none;
-  transition: all var(--mcp-transition);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  transition: all var(--mcp-transition-fast);
 }
 
 .task-tracker-search-input::placeholder {
-  color: var(--mcp-text-faint);
+  color: var(--mcp-text-muted);
 }
 
 .task-tracker-search-input:focus {
-  border-color: var(--mcp-accent);
-  box-shadow: 0 0 0 3px var(--mcp-accent-dim), var(--mcp-shadow-glow);
+  border-color: rgba(124, 92, 252, 0.4);
+  box-shadow: 0 0 0 3px rgba(124, 92, 252, 0.1);
 }
 
 .task-tracker-sort-select {
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
-  border-radius: var(--mcp-radius-sm);
+  background: var(--mcp-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 10px;
   padding: 6px 12px;
   font-size: 12px;
   color: var(--mcp-text-muted);
   cursor: pointer;
   outline: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 /* ============================================
@@ -1112,22 +1119,19 @@ content: attr(data-task-count);
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: var(--mcp-radius-sm);
-  border: 1px solid var(--mcp-glass-border);
-  background: var(--mcp-surface);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--mcp-surface-2);
   color: var(--mcp-text-muted);
   cursor: pointer;
   font-size: 13px;
   font-weight: 500;
-  transition: all var(--mcp-transition);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all var(--mcp-transition-fast);
 }
 
 .kanban-dropdown-trigger:hover {
   background: var(--mcp-accent-dim);
-  border-color: var(--mcp-accent);
+  border-color: rgba(124, 92, 252, 0.3);
   color: var(--mcp-accent);
 }
 
@@ -1140,19 +1144,19 @@ content: attr(data-task-count);
 }
 
 .kanban-trigger-count {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--mcp-accent);
   background: var(--mcp-accent-dim);
-  padding: 1px 5px;
+  padding: 2px 6px;
   border-radius: 8px;
-  min-width: 16px;
+  min-width: 18px;
   text-align: center;
 }
 
 .kanban-trigger-arrow {
   font-size: 10px;
-  transition: transform var(--mcp-transition);
+  transition: transform var(--mcp-transition-fast);
   margin-left: 2px;
 }
 
@@ -1165,15 +1169,10 @@ content: attr(data-task-count);
   top: 100%;
   left: 0;
   margin-top: 6px;
-  background: var(--mcp-glass-bg);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
-  border: 1px solid var(--mcp-glass-border);
-  border-radius: var(--mcp-radius);
-  box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: #171A21;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
   z-index: 1000;
   min-width: 180px;
   overflow: hidden;
@@ -1185,16 +1184,16 @@ content: attr(data-task-count);
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 13px;
   color: var(--mcp-text-muted);
   background: none;
   border: none;
-  border-radius: calc(var(--mcp-radius-sm) - 2px);
+  border-radius: 10px;
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all var(--mcp-transition-fast);
 }
 
 .kanban-dropdown-item:hover {
@@ -1208,8 +1207,8 @@ content: attr(data-task-count);
 }
 
 .kanban-item-icon {
-  font-size: 13px;
-  width: 18px;
+  font-size: 14px;
+  width: 20px;
   text-align: center;
 }
 
@@ -1218,10 +1217,10 @@ content: attr(data-task-count);
 }
 
 .kanban-item-count {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
-  color: var(--mcp-text-faint);
-  background: var(--mcp-surface);
+  color: var(--mcp-text-muted);
+  background: var(--mcp-surface-2);
   padding: 1px 5px;
   border-radius: 8px;
   min-width: 16px;
@@ -1279,15 +1278,10 @@ content: attr(data-task-count);
   top: 100%;
   right: 0;
   margin-top: 6px;
-  background: var(--mcp-glass-bg);
-  backdrop-filter: blur(28px) saturate(1.6);
-  -webkit-backdrop-filter: blur(28px) saturate(1.6);
-  border: 1px solid var(--mcp-glass-border);
-  border-radius: var(--mcp-radius);
-  box-shadow:
-    0 12px 48px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  background: #171A21;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
   z-index: 1000;
   min-width: 220px;
   overflow: hidden;
@@ -1299,16 +1293,16 @@ content: attr(data-task-count);
   align-items: center;
   gap: 10px;
   width: 100%;
-  padding: 9px 14px;
+  padding: 10px 14px;
   font-size: 13px;
   color: var(--mcp-text-muted);
   background: none;
   border: none;
-  border-radius: calc(var(--mcp-radius-sm) - 2px);
+  border-radius: 10px;
   cursor: pointer;
   text-align: left;
   white-space: nowrap;
-  transition: all 0.15s ease;
+  transition: all var(--mcp-transition-fast);
 }
 
 .task-tracker-dropdown-item:hover {
@@ -1318,7 +1312,7 @@ content: attr(data-task-count);
 
 .task-tracker-dropdown-divider {
   height: 1px;
-  background: var(--mcp-glass-border);
+  background: rgba(255, 255, 255, 0.04);
   margin: 4px 8px;
 }
 
@@ -1337,15 +1331,15 @@ content: attr(data-task-count);
 }
 
 .task-tracker-filter-btn {
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
+  background: var(--mcp-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--mcp-text-muted);
   cursor: pointer;
   padding: 5px 12px;
   font-size: 12px;
   font-weight: 500;
   border-radius: 14px;
-  transition: all var(--mcp-transition);
+  transition: all var(--mcp-transition-fast);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -1355,14 +1349,14 @@ content: attr(data-task-count);
 .task-tracker-filter-btn:hover {
   color: var(--mcp-text);
   background: var(--mcp-surface-hover);
-  border-color: var(--mcp-glass-border);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .task-tracker-filter-btn.active {
-  color: #000;
+  color: #fff;
   background: var(--mcp-accent);
-  border-color: var(--mcp-accent);
-  box-shadow: var(--mcp-shadow-glow);
+  border-color: transparent;
+  box-shadow: 0 0 12px rgba(124, 92, 252, 0.25);
 }
 
 .task-tracker-filter-btn.dragging {
@@ -1392,26 +1386,44 @@ content: attr(data-task-count);
    TASK LIST
    ============================================ */
 .task-tracker-list {
-  padding-top: 6px;
+  padding-top: 8px;
 }
 
 .task-tracker-empty {
   text-align: center;
-  padding: 28px 16px;
-  color: var(--mcp-text-faint);
+  padding: 40px 20px;
+  color: var(--mcp-text-muted);
   font-size: 13px;
+}
+
+.task-tracker-empty .empty-illustration {
+  opacity: 0.6;
+  margin-bottom: 12px;
+  filter: drop-shadow(0 0 8px rgba(124, 92, 252, 0.1));
+}
+
+.task-tracker-empty .empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--mcp-text);
+  margin-bottom: 6px;
+}
+
+.task-tracker-empty .empty-subtitle {
+  font-size: 13px;
+  color: var(--mcp-text-muted);
 }
 
 .task-group-header {
   display: flex;
   align-items: center;
-  padding: 14px 0 6px;
-  font-size: 10px;
-  font-weight: 700;
+  padding: 16px 0 8px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--mcp-text-muted);
   gap: 8px;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.5px;
 }
 
 .project-dot {
@@ -1444,16 +1456,31 @@ content: attr(data-task-count);
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border-radius: var(--mcp-radius-sm);
   cursor: pointer;
-  transition: all var(--mcp-transition);
-  gap: 4px;
+  transition: transform var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast), background var(--mcp-transition-fast), border-color var(--mcp-transition-fast);
+  gap: 6px;
   min-width: 0;
-  margin-bottom: 4px;
-  background: var(--mcp-glass-highlight);
-  border: 1px solid #ffffff0f;;
+  margin-bottom: 6px;
+  background: var(--mcp-surface);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-left: 3px solid transparent;
+}
+
+.task-item:hover {
+  background: var(--mcp-surface-hover);
+  border-color: color-mix(in srgb, var(--task-color, var(--mcp-accent)) 30%, transparent);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 16px color-mix(in srgb, var(--task-color, var(--mcp-accent)) 15%, transparent);
+}
+
+.task-item.completed {
+  opacity: 0.5;
+}
+
+.task-item.completed:hover {
+  opacity: 0.7;
 }
 
 .task-item-row-main {
@@ -1473,32 +1500,32 @@ content: attr(data-task-count);
 }
 
 .task-item[data-status="todo"] {
-  border-left-color: var(--mcp-text-faint);
+  border-left-color: rgba(124, 92, 252, 0.4);
 }
 
 .task-item[data-status="progress"] {
-  border-left-color: #f59e0b;
+  border-left-color: #F5A623;
 }
 
 .task-item[data-status="done"] {
-  border-left-color: var(--mcp-success);
+  border-left-color: #3DD68C;
 }
 
 /* Status button */
 .task-status-btn {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
-  border: 2px solid var(--mcp-glass-border);
-  background: var(--mcp-surface);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  background: var(--mcp-surface-2);
   color: var(--mcp-text-muted);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--mcp-transition);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background var(--mcp-transition-fast), border-color var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast);
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 12px;
   padding: 0;
 }
 
@@ -1507,20 +1534,20 @@ content: attr(data-task-count);
 }
 
 .task-status-btn.status-todo {
-  border-color: var(--mcp-text-faint);
-  color: var(--mcp-text-faint);
+  border-color: rgba(124, 92, 252, 0.3);
+  color: #A5B4FC;
 }
 
 .task-status-btn.status-progress {
-  border-color: #f59e0b;
-  color: #f59e0b;
-  background: rgba(245, 158, 11, 0.12);
+  border-color: #F5A623;
+  color: #FCD34D;
+  background: rgba(245, 166, 35, 0.1);
 }
 
 .task-status-btn.status-done {
-  border-color: var(--mcp-success);
-  color: var(--mcp-success);
-  background: var(--mcp-success-dim);
+  border-color: #3DD68C;
+  color: #3DD68C;
+  background: rgba(61, 214, 140, 0.1);
 }
 
 .task-status-btn.status-done:disabled {
@@ -1616,23 +1643,17 @@ content: attr(data-task-count);
   color: var(--mcp-success);
 }
 
-.task-item:hover {
-  background: var(--mcp-surface-hover);
-  border-color: var(--task-color, var(--mcp-glass-border));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--task-color, var(--mcp-accent)) 20%, transparent);
-}
-
 .task-item:focus-visible {
-  outline: 2px solid var(--mcp-accent);
+  outline: 2px solid var(--task-color, var(--mcp-accent));
   outline-offset: 1px;
 }
 
-
 .task-project-dot {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
+  box-shadow: 0 0 4px var(--task-color, var(--mcp-accent));
 }
 
 /* Checkbox */
@@ -1681,27 +1702,30 @@ content: attr(data-task-count);
 /* Title */
 .task-title {
   flex: 1;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--mcp-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
+  letter-spacing: -0.2px;
 }
 
 .task-title.strikethrough {
   text-decoration: line-through;
-  color: var(--mcp-text-faint);
+  color: var(--mcp-text-muted);
+  opacity: 0.6;
 }
 
 .task-title.note-link {
   cursor: pointer;
-  color: var(--mcp-accent);
+  color: #A5B4FC;
 }
 
 .task-title.note-link:hover {
   text-decoration: underline;
+  color: var(--mcp-accent);
 }
 
 /* Task description toggle button */
@@ -1765,96 +1789,96 @@ content: attr(data-task-count);
 .task-timer {
   font-size: 11px;
   font-weight: 600;
-  color: var(--mcp-accent);
-  background: var(--mcp-accent-dim);
-  padding: 2px 8px;
-  border-radius: 10px;
+  color: #A5B4FC;
+  background: rgba(124, 92, 252, 0.08);
+  padding: 3px 8px;
+  border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .task-timer.total {
-  color: var(--mcp-text-faint);
-  background: var(--mcp-surface);
+  color: var(--mcp-text-muted);
+  background: var(--mcp-surface-2);
 }
 
 .task-estimate {
   font-size: 11px;
   font-weight: 600;
-  color: var(--mcp-text-faint);
-  background: var(--mcp-surface);
-  padding: 2px 8px;
-  border-radius: 10px;
+  color: var(--mcp-text-muted);
+  background: var(--mcp-surface-2);
+  padding: 3px 8px;
+  border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .task-estimate-compare {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 3px 8px;
+  border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .task-estimate-compare.over {
-  color: var(--mcp-danger);
-  background: var(--mcp-danger-dim);
+  color: #F06565;
+  background: rgba(240, 101, 101, 0.1);
 }
 
 .task-estimate-compare.under {
-  color: var(--mcp-success);
-  background: var(--mcp-success-dim);
+  color: #3DD68C;
+  background: rgba(61, 214, 140, 0.1);
 }
 
 .task-scheduled {
   font-size: 11px;
   font-weight: 600;
-  color: var(--mcp-accent);
-  background: var(--mcp-accent-dim);
-  padding: 2px 8px;
-  border-radius: 10px;
+  color: #A5B4FC;
+  background: rgba(124, 92, 252, 0.08);
+  padding: 3px 8px;
+  border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .task-scheduled.passed {
-  color: var(--mcp-danger);
-  background: var(--mcp-danger-dim);
+  color: #F06565;
+  background: rgba(240, 101, 101, 0.1);
 }
 
 .task-status-badge {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 4px;
+  padding: 3px 8px;
+  border-radius: 6px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
 .status-badge-todo {
-  color: rgba(180, 195, 215, 0.8);
-  background: rgba(140, 160, 190, 0.15);
+  color: #A5B4FC;
+  background: rgba(124, 92, 252, 0.12);
 }
 
 .status-badge-progress {
-  color: rgba(225, 195, 130, 0.85);
-  background: rgba(214, 178, 108, 0.15);
+  color: #FCD34D;
+  background: rgba(245, 166, 35, 0.12);
 }
 
 .status-badge-paused {
-  color: rgba(200, 170, 110, 0.85);
-  background: rgba(180, 150, 100, 0.15);
+  color: #9CA3AF;
+  background: rgba(156, 163, 175, 0.12);
 }
 
 .task-deadline {
   font-size: 11px;
   font-weight: 600;
   color: var(--mcp-warning);
-  background: rgba(251, 191, 36, 0.12);
-  padding: 2px 8px;
-  border-radius: 10px;
+  background: var(--mcp-amber-dim);
+  padding: 3px 8px;
+  border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
 }
@@ -1887,21 +1911,21 @@ content: attr(data-task-count);
 }
 
 .task-priority {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: 6px;
   flex-shrink: 0;
 }
 
 .task-priority.high {
-  color: var(--mcp-danger);
-  background: var(--mcp-danger-dim);
+  color: #F06565;
+  background: rgba(240, 101, 101, 0.12);
 }
 
 .task-priority.medium {
-  color: var(--mcp-warning);
-  background: rgba(251, 191, 36, 0.12);
+  color: #FCD34D;
+  background: rgba(245, 166, 35, 0.12);
 }
 
 .task-edit-btn,
@@ -3250,7 +3274,7 @@ content: attr(data-task-count);
 .task-tracker-recurrence-day-btn.active {
   background: var(--mcp-accent);
   border-color: var(--mcp-accent);
-  color: #000;
+  color: #fff;
   box-shadow: 0 0 10px var(--mcp-accent-glow);
 }
 
@@ -3263,22 +3287,22 @@ content: attr(data-task-count);
   padding: 12px 14px;
   border-radius: var(--mcp-radius-sm);
   gap: 10px;
-  transition: all var(--mcp-transition);
-  background: var(--mcp-glass-highlight);
-  border: 1px solid transparent;
+  transition: transform var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast), background var(--mcp-transition-fast);
+  background: var(--mcp-surface);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   border-left: 3px solid var(--habit-color, transparent);
-  margin-bottom: 4px;
-  border:  1px solid #ffffff0f;
+  margin-bottom: 6px;
 }
 
 .habit-item:hover {
   background: var(--mcp-surface-hover);
-  border-color: var(--habit-color, var(--mcp-glass-border));
-  box-shadow: 0 0 8px color-mix(in srgb, var(--habit-color, var(--mcp-accent)) 20%, transparent);
+  border-color: var(--habit-color, rgba(255, 255, 255, 0.06));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 12px color-mix(in srgb, var(--habit-color, var(--mcp-accent)) 15%, transparent);
 }
 
 .habit-item.completed {
-  opacity: 0.45;
+  opacity: 0.4;
 }
 
 .habit-item.fully-done {
@@ -3295,7 +3319,7 @@ content: attr(data-task-count);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--mcp-transition);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast);
   flex-shrink: 0;
   color: transparent;
   padding: 0;
@@ -3315,7 +3339,7 @@ content: attr(data-task-count);
   background: var(--habit-color);
   border-color: var(--habit-color);
   color: #fff;
-  box-shadow: 0 0 14px var(--habit-color);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--habit-color) 40%, transparent);
 }
 
 .habit-check-btn:hover {
@@ -3326,13 +3350,13 @@ content: attr(data-task-count);
   background: var(--habit-color);
   border-color: var(--habit-color);
   color: #fff;
-  box-shadow: 0 0 12px var(--habit-color);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--habit-color) 40%, transparent);
 }
 
 .habit-check-btn.half {
   background: conic-gradient(
     var(--habit-color) 180deg,
-    transparent 180deg
+    rgba(255, 255, 255, 0.04) 180deg
   );
   border-color: var(--habit-color);
   color: var(--habit-color);
@@ -3406,18 +3430,19 @@ content: attr(data-task-count);
   gap: 3px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--mcp-warning);
-  padding: 2px 8px;
-  border-radius: 10px;
-  background: rgba(251, 191, 36, 0.1);
+  color: #FCD34D;
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgba(245, 166, 35, 0.1);
   flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(245, 166, 35, 0.1);
 }
 
 .habit-edit-btn,
 .habit-delete-btn {
   opacity: 0;
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
+  background: var(--mcp-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   color: var(--mcp-text-muted);
   cursor: pointer;
   padding: 3px 6px;
@@ -3472,9 +3497,9 @@ content: attr(data-task-count);
 
 .habit-tracker-empty {
   text-align: center;
-  padding: 18px;
-  color: var(--mcp-text-faint);
-  font-size: 12px;
+  padding: 24px 16px;
+  color: var(--mcp-text-muted);
+  font-size: 13px;
 }
 
 /* ============================================
@@ -5691,9 +5716,8 @@ content: attr(data-task-count);
    SCHEDULED TIME — DONE BADGE
    ============================================ */
 .task-scheduled.done {
-  background: var(--mcp-success, rgba(34, 197, 94, 0.15));
-  color: var(--mcp-success, rgba(34, 197, 94, 0.9));
-  border-color: var(--mcp-success, rgba(34, 197, 94, 0.3));
+  background: rgba(61, 214, 140, 0.1);
+  color: #3DD68C;
   font-weight: 600;
 }
 
@@ -5714,13 +5738,13 @@ content: attr(data-task-count);
    WORK TASK BADGE
    ============================================ */
 .task-work-badge {
-  font-size: 10px;
-  color: var(--mcp-accent, rgba(95, 153, 225, 0.9));
-  background: var(--mcp-accent-dim, rgba(95, 153, 225, 0.1));
-  border: 1px solid var(--mcp-accent, rgba(95, 153, 225, 0.3));
-  border-radius: 4px;
-  padding: 1px 5px;
-  font-weight: 500;
+  font-size: 11px;
+  color: var(--mcp-accent);
+  background: var(--mcp-accent-dim);
+  border: 1px solid rgba(124, 92, 252, 0.2);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-weight: 600;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
@@ -5728,53 +5752,56 @@ content: attr(data-task-count);
 }
 
 .task-work-earnings {
-  color: var(--mcp-success, rgba(34, 197, 94, 0.9));
+  color: var(--mcp-success);
   font-weight: 600;
 }
 
 /* --- Checklist --- */
 
 .checklist-toggle {
-  font-size: 10px;
-  color: var(--text-muted);
-  background: rgba(130, 200, 170, 0.1);
-  border: 1px solid rgba(130, 200, 170, 0.3);
-  border-radius: 4px;
-  padding: 1px 5px;
+  font-size: 11px;
+  color: var(--mcp-text-muted);
+  background: rgba(124, 92, 252, 0.08);
+  border: 1px solid rgba(124, 92, 252, 0.15);
+  border-radius: 8px;
+  padding: 2px 8px;
   cursor: pointer;
   white-space: nowrap;
+  transition: all var(--mcp-transition-fast);
 }
 
 .checklist-toggle:hover {
-  background: rgba(130, 200, 170, 0.2);
+  background: rgba(124, 92, 252, 0.15);
+  border-color: rgba(124, 92, 252, 0.3);
 }
 
 .checklist-section {
-  padding: 4px 8px 4px 28px;
+  padding: 6px 8px 6px 30px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .checklist-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-normal);
-  padding: 2px 0;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--mcp-text);
+  padding: 3px 0;
 }
 
 .checklist-item.checked .checklist-title {
   text-decoration: line-through;
-  opacity: 0.5;
+  opacity: 0.4;
 }
 
 .checklist-item input[type="checkbox"] {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   cursor: pointer;
-  accent-color: var(--interactive-accent);
+  accent-color: var(--mcp-accent);
+  border-radius: 4px;
 }
 
 .checklist-title {
