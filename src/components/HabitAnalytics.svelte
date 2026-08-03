@@ -28,6 +28,7 @@
   import {
     financialAnalyticsData,
     getTotalManualIncome,
+    getManualIncomeForMonth,
   } from "../finance/financialAnalyticsStorage";
   import { VIEW_TYPE_FINANCIAL_ANALYTICS } from "../constants";
 
@@ -148,21 +149,26 @@
 
     const taskMonthly = getEarningsForMonth(currentYear, currentMonth);
     const taskYearly = getEarningsForYear(currentYear);
-    const manualIncome = getTotalManualIncome();
-    monthlyEarnings = taskMonthly + manualIncome;
-    yearlyEarnings = taskYearly + manualIncome;
+    const manualIncomeMonth = getManualIncomeForMonth(currentYear, currentMonth);
+    const manualIncomeYear = getTotalManualIncome();
+    monthlyEarnings = taskMonthly + manualIncomeMonth;
+    yearlyEarnings = taskYearly + manualIncomeYear;
     expectedMonthlyEarnings = getExpectedEarningsForMonth(currentYear, currentMonth);
-    monthlyChart = getMonthlyEarningsForYear(currentYear);
+    monthlyChart = getMonthlyEarningsForYear(currentYear).map((m) => ({
+      month: m.month,
+      amount: m.amount + getManualIncomeForMonth(currentYear, m.month),
+    }));
     maxMonthly = Math.max(...monthlyChart.map((m) => m.amount), 1);
 
     // Real deltas: previous month vs current
     const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const prevMonthYear = currentMonth === 1 ? currentYear - 1 : currentYear;
-    const prevMonthEarnings = getEarningsForMonth(prevMonthYear, prevMonth) + manualIncome;
+    const prevMonthManualIncome = getManualIncomeForMonth(prevMonthYear, prevMonth);
+    const prevMonthEarnings = getEarningsForMonth(prevMonthYear, prevMonth) + prevMonthManualIncome;
     monthlyDelta = monthlyEarnings - prevMonthEarnings;
 
     // Real deltas: previous year vs current
-    const prevYearEarnings = getEarningsForYear(currentYear - 1) + manualIncome;
+    const prevYearEarnings = getEarningsForYear(currentYear - 1) + manualIncomeYear;
     yearlyDelta = yearlyEarnings - prevYearEarnings;
   }
   let monthlyEarnings = 0;

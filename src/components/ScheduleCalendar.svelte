@@ -902,6 +902,7 @@
     const isAllDay = info.allDay === true;
 
     let estimatedTime: number | undefined;
+    let initialEndTime: string | undefined;
 
     if (isTimeView && !isAllDay) {
       if (!initialTime) {
@@ -917,11 +918,15 @@
         if (durationMin > 0) {
           estimatedTime = Math.max(15, durationMin);
         }
+        // Calculate end time — use UTC getters because FullCalendar
+        // provides selection end boundary in UTC regardless of calendar timeZone
+        const endDate = info.end as Date;
+        initialEndTime = `${String(endDate.getUTCHours()).padStart(2, "0")}:${String(endDate.getUTCMinutes()).padStart(2, "0")}`;
       }
     }
 
     calendar.unselect();
-    openTaskCreator(dateStr, initialTime, estimatedTime);
+    openTaskCreator(dateStr, initialTime, estimatedTime, initialEndTime);
   }
 
   let dropDebounceTimer: ReturnType<typeof setTimeout> | null = null;
@@ -1004,26 +1009,54 @@
       info.revert();
       return;
     }
-    const start = info.event.start as Date;
-    const end = info.event.end as Date;
 
-    if (start && end) {
-      const durationMin = Math.round(
-        (end.getTime() - start.getTime()) / 1000 / 60,
-      );
-      if (dropDebounceTimer) clearTimeout(dropDebounceTimer);
-      dropDebounceTimer = setTimeout(() => {
-        dropDebounceTimer = null;
-        skipNextRefetch = true;
-        try {
-          updateTask(task.id, { estimatedTime: Math.max(15, durationMin) });
-          const updatedTask = get(tasks).find((t) => t.id === task.id);
-          if (updatedTask) syncTaskToNote(updatedTask, plugin.app);
-        } catch (e) {
-          /* ignore */
-        }
-      }, 100);
+    const startStr = info.event.startStr as string;
+    const endStr = info.event.endStr as string;
+
+    console.log("[handleEventResize] strings:", { startStr, endStr });
+    console.log("[handleEventResize] dates:", { start: info.event.start, end: info.event.end });
+
+    if (!startStr || !endStr) {
+      info.revert();
+      return;
     }
+
+    // Try to parse time from ISO strings
+    const startTimeMatch = startStr.match(/T(\d{2}):(\d{2})/);
+    const endTimeMatch = endStr.match(/T(\d{2}):(\d{2})/);
+
+    if (!startTimeMatch || !endTimeMatch) {
+      info.revert();
+      return;
+    }
+
+    const scheduledTime = `${startTimeMatch[1]}:${startTimeMatch[2]}`;
+    const endTime = `${endTimeMatch[1]}:${endTimeMatch[2]}`;
+
+    const durationMin = Math.round(
+      (info.event.end.getTime() - info.event.start.getTime()) / 1000 / 60,
+    );
+
+    console.log("[handleEventResize] parsed:", { scheduledTime, endTime, durationMin });
+
+    if (dropDebounceTimer) clearTimeout(dropDebounceTimer);
+    dropDebounceTimer = setTimeout(() => {
+      dropDebounceTimer = null;
+      skipNextRefetch = true;
+      try {
+        const updates: Record<string, any> = { 
+          estimatedTime: Math.max(15, durationMin),
+          endTime: endTime,
+          scheduledTime: scheduledTime,
+        };
+        console.log("[handleEventResize] updating with:", updates);
+        updateTask(task.id, updates);
+        const updatedTask = get(tasks).find((t) => t.id === task.id);
+        if (updatedTask) syncTaskToNote(updatedTask, plugin.app);
+      } catch (e) {
+        console.error("[handleEventResize] error:", e);
+      }
+    }, 100);
   }
 
   async function openTaskEditor(task: ITask): Promise<void> {
@@ -1069,6 +1102,7 @@
     dateStr: string,
     timeStr?: string,
     prefillEstimatedTime?: number,
+    endTimeStr?: string,
   ): Promise<void> {
     const moment = window.moment(dateStr, "YYYY-MM-DD", true);
     if (!moment.isValid()) return;
@@ -1128,6 +1162,7 @@
       undefined,
       initialDate,
       initialTime,
+      endTimeStr,
     ).open();
     // If modal is closed without submitting, restore refetch
     setTimeout(() => {

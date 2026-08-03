@@ -59,19 +59,23 @@
     .filter((t) => t.status === "done")
     .reduce((sum, t) => sum + calculateTaskEarnings(t), 0);
 
-  $: totalManualIncome = $financialAnalyticsData
-    ? getTotalManualIncome()
-    : 0;
-
-  $: grandTotal = totalTaskEarnings + totalManualIncome;
-
   $: incomeCategories = $financialAnalyticsData?.incomeCategories || [];
 
   $: filteredManualSources = (() => {
     const sources = $financialAnalyticsData.manualIncomeSources;
-    if (categoryFilter === "all") return sources;
-    return sources.filter((s) => s.category === categoryFilter);
+    // Filter by month and year
+    const filtered = sources.filter((s) => {
+      const [year, month] = s.date.split("-");
+      return parseInt(year) === selectedYear && parseInt(month) === selectedMonth;
+    });
+    // Filter by category
+    if (categoryFilter === "all") return filtered;
+    return filtered.filter((s) => s.category === categoryFilter);
   })();
+
+  $: totalManualIncome = filteredManualSources.reduce((sum, source) => sum + source.amount, 0);
+
+  $: grandTotal = totalTaskEarnings + totalManualIncome;
 
   interface ProjectGroup {
     projectId: string | null;

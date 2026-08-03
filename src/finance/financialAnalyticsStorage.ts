@@ -138,6 +138,19 @@ export function getTotalManualIncome(): number {
   return data.manualIncomeSources.reduce((sum, s) => sum + s.amount, 0);
 }
 
+export function getManualIncomeForMonth(year: number, month: number): number {
+  const data = get(financialAnalyticsData);
+  return data.manualIncomeSources
+    .filter((source) => {
+      const match = source.date.match(/^(\d{4})-(\d{2})/);
+      if (match) {
+        return parseInt(match[1], 10) === year && parseInt(match[2], 10) === month;
+      }
+      return false;
+    })
+    .reduce((sum, s) => sum + s.amount, 0);
+}
+
 export function getIncomeCategories(): string[] {
   const data = get(financialAnalyticsData);
   return data.incomeCategories || [];

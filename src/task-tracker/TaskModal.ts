@@ -54,7 +54,8 @@ export class TaskModal extends Modal {
     onSubmit: (task: Partial<ITask>) => void,
     task?: ITask,
     initialDate?: string,
-    initialTime?: string
+    initialTime?: string,
+    initialEndTime?: string
   ) {
     super(app);
     this.onSubmit = onSubmit;
@@ -101,6 +102,7 @@ export class TaskModal extends Modal {
         this.dateValue = this.extractDateValue(this.dateUID);
       }
       if (initialTime) this.scheduledTime = initialTime;
+      if (initialEndTime) this.endTime = initialEndTime;
       const cs = get(settings);
       this.paymentType = cs.defaultPaymentType || "hour";
       this.rate = cs.defaultRate ? String(cs.defaultRate) : "";
@@ -202,7 +204,18 @@ export class TaskModal extends Modal {
     const timeInput = timeWrap.createEl("input", {
       type: "time", cls: "tm-input", value: this.scheduledTime,
     });
-    timeInput.addEventListener("change", () => { this.scheduledTime = timeInput.value; });
+    timeInput.addEventListener("change", () => { 
+      this.scheduledTime = timeInput.value;
+      // Update min time for endTimeInput
+      if (this.scheduledTime) {
+        endTimeInput.min = this.scheduledTime;
+        // If endTime is set and less than scheduledTime, reset it
+        if (this.endTime && this.endTime < this.scheduledTime) {
+          this.endTime = "";
+          endTimeInput.value = "";
+        }
+      }
+    });
 
     // ═══ 5. Время окончания ═══
     const endTimeWrap = contentEl.createDiv({ cls: "tm-field" });
@@ -210,8 +223,30 @@ export class TaskModal extends Modal {
     const endTimeInput = endTimeWrap.createEl("input", {
       type: "time", cls: "tm-input", value: this.endTime,
     });
-    endTimeInput.addEventListener("input", () => { this.endTime = endTimeInput.value; });
-    endTimeInput.addEventListener("change", () => { this.endTime = endTimeInput.value; });
+    
+    // Set min attribute if scheduledTime is set
+    if (this.scheduledTime) {
+      endTimeInput.min = this.scheduledTime;
+    }
+    
+    endTimeInput.addEventListener("input", () => { 
+      this.endTime = endTimeInput.value;
+      // Validate that endTime >= scheduledTime
+      if (this.scheduledTime && this.endTime && this.endTime < this.scheduledTime) {
+        endTimeInput.style.borderColor = "var(--text-error, #ef4436)";
+      } else {
+        endTimeInput.style.borderColor = "";
+      }
+    });
+    endTimeInput.addEventListener("change", () => { 
+      this.endTime = endTimeInput.value;
+      // Validate that endTime >= scheduledTime
+      if (this.scheduledTime && this.endTime && this.endTime < this.scheduledTime) {
+        endTimeInput.style.borderColor = "var(--text-error, #ef4436)";
+      } else {
+        endTimeInput.style.borderColor = "";
+      }
+    });
 
     // ═══ 6. Дополнительные параметры ═══
     const advWrap = contentEl.createDiv({ cls: "tm-advanced" });
@@ -453,6 +488,29 @@ export class TaskModal extends Modal {
 
     if (!this.titleInput.trim()) return;
 
+    // Validate: endTime cannot be earlier than scheduledTime
+    if (this.scheduledTime && this.endTime && this.endTime < this.scheduledTime) {
+      // Show error
+      const errorEl = this.contentEl.querySelector(".tm-time-error") as HTMLElement;
+      if (errorEl) {
+        errorEl.textContent = "⚠ Время окончания не может быть раньше начального времени";
+        setTimeout(() => {
+          errorEl.textContent = "";
+        }, 3000);
+      } else {
+        // Create error element if it doesn't exist
+        const msgEl = this.contentEl.createDiv({ cls: "tm-time-error" });
+        msgEl.textContent = "⚠ Время окончания не может быть раньше начального времени";
+        msgEl.style.color = "var(--text-error, #ef4436)";
+        msgEl.style.fontSize = "0.9em";
+        msgEl.style.marginBottom = "10px";
+        setTimeout(() => {
+          msgEl.remove();
+        }, 3000);
+      }
+      return;
+    }
+
     const desc = (this.descriptionInput || "").trim();
     if (desc.length > 100) {
       if (this.descCounterEl) {
@@ -480,6 +538,19 @@ export class TaskModal extends Modal {
       if (this.recurrenceUntilDateUID) recurrence.until = this.recurrenceUntilDateUID;
     }
 
+    // Calculate estimatedTime if both scheduledTime and endTime are set
+    let estimatedTime: number | undefined;
+    if (this.scheduledTime && this.endTime) {
+      const [startH, startM] = this.scheduledTime.split(":").map(Number);
+      const [endH, endM] = this.endTime.split(":").map(Number);
+      const startTotalMin = startH * 60 + startM;
+      const endTotalMin = endH * 60 + endM;
+      const diffMin = endTotalMin - startTotalMin;
+      if (diffMin > 0) {
+        estimatedTime = Math.max(15, diffMin);
+      }
+    }
+
     const submitData = {
       title: this.titleInput.trim(),
       description: this.descriptionInput.trim() || undefined,
@@ -490,6 +561,7 @@ export class TaskModal extends Modal {
       recurrence,
       scheduledTime: this.scheduledTime || undefined,
       endTime: this.endTime || undefined,
+      estimatedTime: estimatedTime,
       isWorkTask: this.isWorkTask || undefined,
       paymentType: this.isWorkTask ? this.paymentType : undefined,
       rate: this.isWorkTask && this.rate ? parseFloat(this.rate.replace(",", ".")) : undefined,
