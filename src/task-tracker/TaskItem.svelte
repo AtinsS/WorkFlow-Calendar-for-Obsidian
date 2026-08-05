@@ -4,9 +4,9 @@
   import type { ITask, TaskStatus } from "./types";
   import { updateTask, updateTaskStatus, removeTask, resetTaskTimer, projects, activeTab, calculateTaskEarnings, tasks, checklists, toggleChecklistItem, addChecklistItem, removeChecklistItem } from "./stores";
   import { get } from "svelte/store";
-  import { timerTick, getActiveTimer, formatDuration, formatEstimate } from "./TimerManager";
+  import { getActiveTimer, formatDuration, formatEstimate } from "./TimerManager";
   import { TaskModal } from "./TaskModal";
-  import { syncTaskToNote, shouldSyncTaskToNote } from "./noteTasks";
+  import { syncTaskToNote } from "./noteTasks";
 
   export let task: ITask;
   export let appInstance: App;
@@ -14,204 +14,101 @@
   const dispatch = createEventDispatcher();
 
   // Checklist
-  $: taskChecklistItems = $checklists
-    .filter((c) => c.taskId === task.id)
-    .sort((a, b) => a.sortOrder - b.sortOrder);
+  $: taskChecklistItems = $checklists.filter((c) => c.taskId === task.id).sort((a, b) => a.sortOrder - b.sortOrder);
   $: checklistDone = taskChecklistItems.filter((c) => c.checked).length;
   $: checklistTotal = taskChecklistItems.length;
   let showChecklist = false;
   let newChecklistTitle = "";
+  let showDescription = false;
 
-  function handleToggleChecklist(id: string) {
-    toggleChecklistItem(id);
-  }
-
+  function handleToggleChecklist(id: string) { toggleChecklistItem(id); }
   function handleAddChecklistItem() {
     const title = newChecklistTitle.trim();
     if (!title) return;
     addChecklistItem(task.id, title);
     newChecklistTitle = "";
   }
+  function handleRemoveChecklistItem(id: string) { removeChecklistItem(id); }
 
-  function handleRemoveChecklistItem(id: string) {
-    removeChecklistItem(id);
-  }
-
-  $: project = $projects.find((p) => p.id === task.projectId);
-  $: projectColor = project?.color || "var(--text-muted)";
-
-  // Timer display — include accumulated totalWorkTime from prior sessions
-  $: elapsed = $timerTick && task.status === "progress" && task.timerStartedAt
-    ? getActiveTimer(task.id)
-    : null;
-  $: timerDisplay = elapsed !== null
-    ? formatDuration(elapsed + (task.totalWorkTime || 0))
-    : null;
-
-  // Estimate vs actual
-  $: hasEstimate = !!task.estimatedTime;
-  $: hasActual = !!task.totalWorkTime;
-  $: estimateOver = hasEstimate && hasActual && task.totalWorkTime > task.estimatedTime * 60000;
-
-  $: scheduledTimePassed = task.scheduledTime && task.dateUID ? isTimePassed(task.scheduledTime, task.dateUID) : false;
-
-  // Deadline logic
-  $: hasDeadline = !!task.deadline;
-  $: deadlineOverdue = hasDeadline && task.status !== "done" ? isDeadlineOverdue(task.deadline, task.deadlineTime) : false;
-  $: deadlineLabel = hasDeadline ? formatDeadlineLabel(task.deadline, task.deadlineTime) : "";
-
-  function isTimePassed(time: string, dateUID: string): boolean {
-    const [h, m] = time.split(":").map(Number);
-    const now = new Date();
-    const match = dateUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
-    if (!match) {
-      return now.getHours() > h || (now.getHours() === h && now.getMinutes() > m);
+  function openNote(e: MouseEvent) {
+    e.preventDefault();
+    if (task.boundNotePath && appInstance) {
+      appInstance.workspace.openLinkText(task.boundNotePath, "", true);
     }
-    const taskDate = new Date(match[1] + "T00:00:00");
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (taskDate.getTime() < today.getTime()) return true;
-    if (taskDate.getTime() > today.getTime()) return false;
-    return now.getHours() > h || (now.getHours() === h && now.getMinutes() > m);
   }
 
-  function isDeadlineOverdue(deadlineUID: string, deadlineTime?: string): boolean {
-    if (!deadlineUID) return false;
-    const match = deadlineUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
-    if (!match) return false;
-    const now = new Date();
-    const deadlineDate = new Date(match[1] + "T00:00:00");
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    if (deadlineDate.getTime() < today.getTime()) return true;
-    if (deadlineDate.getTime() > today.getTime()) return false;
-    if (deadlineTime) {
-      const [h, m] = deadlineTime.split(":").map(Number);
-      return now.getHours() > h || (now.getHours() === h && now.getMinutes() > m);
-    }
-    return false;
-  }
+  // Timer
+  let timerInterval: ReturnType<typeof setInterval> | null = null;
+  let timerDisplay = "";
 
-  function formatDeadlineLabel(deadlineUID: string, deadlineTime?: string): string {
-    if (!deadlineUID) return "";
-    const match = deadlineUID.match(/^day-(\d{4})-(\d{2})-(\d{2})/);
-    if (!match) return "";
-    const [, year, month, day] = match;
-    const now = new Date();
-    const deadlineDate = new Date(`${year}-${month}-${day}T00:00:00`);
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const diffMs = deadlineDate.getTime() - today.getTime();
-    const diffDays = Math.round(diffMs / 86400000);
-    let label = "";
-    if (diffDays < 0) {
-      label = `${Math.abs(diffDays)}д просрочено`;
-    } else if (diffDays === 0) {
-      label = "Сегодня";
-    } else if (diffDays === 1) {
-      label = "Завтра";
+  function updateTimerDisplay() {
+    const active = getActiveTimer(task.id);
+    if (active && typeof active === "object") {
+      const elapsed = Math.floor((Date.now() - (active as any).startedAt) / 1000) + ((active as any).elapsedBefore || 0);
+      timerDisplay = formatDuration(elapsed);
     } else {
-      label = `${diffDays}д`;
+      timerDisplay = "";
     }
-    if (deadlineTime) {
-      label += ` ${deadlineTime}`;
-    }
-    return label;
   }
 
-  const statusIcons: Record<TaskStatus, string> = {
-    todo: "🟢",
-    progress: "🔥",
-    done: "✅",
-    paused: "☕",
-    all: "",
-  };
+  onMount(() => { timerInterval = setInterval(updateTimerDisplay, 1000); updateTimerDisplay(); });
+  onDestroy(() => { if (timerInterval) clearInterval(timerInterval); });
 
-  async function quickStatus(status: TaskStatus) {
-    if (task.status === status) return;
+  // Computed
+  $: hasDeadline = !!task.deadline;
+  $: scheduledTimePassed = (() => {
+    if (!task.scheduledTime || task.status === "done") return false;
+    const [h, m] = task.scheduledTime.split(":").map(Number);
+    const now = new Date();
+    return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
+  })();
+
+  $: deadlineOverdue = (() => {
+    if (!task.deadline || task.status === "done") return false;
+    const match = task.deadline.match(/(\d{4}-\d{2}-\d{2})/);
+    if (!match) return false;
+    const deadline = new Date(match[1]);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return deadline < today;
+  })();
+
+  $: deadlineLabel = (() => {
+    if (!task.deadline) return "";
+    const match = task.deadline.match(/(\d{4}-\d{2}-\d{2})/);
+    if (!match) return task.deadline;
+    return new Date(match[1]).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+  })();
+
+  $: hasEstimate = !!task.estimatedTime;
+  $: hasActual = !!(task.totalWorkTime && task.totalWorkTime > 0);
+  $: estimateOver = hasEstimate && hasActual && task.totalWorkTime > task.estimatedTime;
+
+  function quickStatus(status: TaskStatus) {
     updateTaskStatus(task.id, status);
-    if (status === "todo") {
-      resetTaskTimer(task.id);
-    }
-    // Синхронизируем заметку при смене статуса
-    if (appInstance) {
-      const { tasks: tasksStore } = await import("./stores");
-      const { get } = await import("svelte/store");
-      const updatedTask = get(tasksStore).find((t) => t.id === task.id);
-      if (updatedTask) {
-        await syncTaskToNote(updatedTask, appInstance);
-      }
-    }
+    if (status === "todo") resetTaskTimer(task.id);
   }
 
   function handleEdit() {
-    const modal = new TaskModal(
-      appInstance,
-      async (changes) => {
-        console.log("[TaskItem] handleEdit changes:", changes);
-        updateTask(task.id, changes);
-
-        // Получаем обновлённую задачу из store
-        const updatedTask = get(tasks).find((t) => t.id === task.id);
-        console.log("[TaskItem] updatedTask:", updatedTask);
-        if (!updatedTask || !appInstance) return;
-
-        // Если нет Task заметки — создаём
-        if (!updatedTask.notePath && shouldSyncTaskToNote(updatedTask)) {
-          console.log("[TaskItem] Creating Task note...");
-          const { createNoteTask } = await import("./noteTasks");
-          const project = $projects.find((p) => p.id === updatedTask.projectId);
-          const file = await createNoteTask(updatedTask, project, appInstance);
-          if (file) {
-            console.log("[TaskItem] Task note created:", file.path);
-            updateTask(updatedTask.id, { notePath: file.path });
-          }
-        }
-
-        // Синхронизируем Task заметку
-        console.log("[TaskItem] Syncing to note...");
-        await syncTaskToNote(updatedTask, appInstance);
-        console.log("[TaskItem] Sync done");
-      },
-      task
-    );
+    const modal = new TaskModal(appInstance, async (data) => {
+      updateTask(task.id, data);
+      const updatedTask = get(tasks).find((t) => t.id === task.id);
+      if (updatedTask && appInstance) await syncTaskToNote(updatedTask, appInstance);
+    }, task);
     modal.open();
   }
 
-  function handleDelete() {
-    dispatch("delete", { task });
-  }
-
-  function openNote() {
-    // Приоритет: привязанная заметка > Task заметка
-    const pathToOpen = task.boundNotePath || task.notePath;
-    if (!pathToOpen) return;
-    if (!appInstance) return;
-    const file = appInstance.vault.getAbstractFileByPath(pathToOpen);
-    if (file) {
-      appInstance.workspace.openLinkText(pathToOpen, "", false);
+  async function handleDelete() {
+    if (!confirm("Удалить задачу?")) return;
+    if (task.notePath && appInstance) {
+      const { deleteNoteTask } = await import("./noteTasks");
+      await deleteNoteTask(task.notePath, appInstance);
     }
+    removeTask(task.id);
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      if (task.status !== "done") quickStatus("progress");
-    } else if (e.key === "Delete" || e.key === "Backspace") {
-      e.preventDefault();
-      handleDelete();
-    } else if (e.key === "e" || e.key === "E") {
-      e.preventDefault();
-      if (task.status !== "done") handleEdit();
-    }
-  }
-
-  function handleDragStart(event: DragEvent) {
-    if (event.dataTransfer) {
-      event.dataTransfer.setData("text/plain", task.id);
-      event.dataTransfer.effectAllowed = "move";
-    }
-  }
-
+  // Actions menu
   let showActionsMenu = false;
-  let showDescription = false;
   let actionsMenuEl: HTMLDivElement | null = null;
 
   function toggleActionsMenu(e: MouseEvent) {
@@ -233,10 +130,10 @@
     menu.style.zIndex = "9999";
     menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
     menu.style.right = `${window.innerWidth - rect.right}px`;
-    menu.style.background = "var(--background-primary)";
-    menu.style.border = "1px solid var(--background-modifier-border)";
-    menu.style.borderRadius = "8px";
-    menu.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+    menu.style.background = "var(--mcp-surface-2)";
+    menu.style.border = "1px solid rgba(255,255,255,0.06)";
+    menu.style.borderRadius = "10px";
+    menu.style.boxShadow = "0 8px 24px rgba(0,0,0,0.25)";
     menu.style.minWidth = "160px";
     menu.style.overflow = "hidden";
     menu.style.padding = "4px";
@@ -268,316 +165,145 @@
       if ("divider" in item && item.divider) {
         const d = document.createElement("div");
         d.style.height = "1px";
-        d.style.background = "var(--background-modifier-border)";
-        d.style.margin = "3px 8px";
+        d.style.background = "rgba(255,255,255,0.06)";
+        d.style.margin = "4px 8px";
         menu.appendChild(d);
       } else if ("label" in item) {
-        const b = document.createElement("button");
-        b.className = "task-actions-item" + (item.danger ? " danger" : "");
-        b.textContent = item.label;
-        b.style.cssText = "display:flex;width:100%;padding:8px 12px;font-size:13px;border:none;background:transparent;text-align:left;cursor:pointer;border-radius:4px;font-family:var(--font-interface);transition:background .12s;align-items:center;gap:6px";
-        if (item.danger) b.style.color = "var(--text-error,#ef4444)";
-        b.addEventListener("mouseenter", () => b.style.background = "var(--background-modifier-hover,rgba(255,255,255,.06))");
-        b.addEventListener("mouseleave", () => b.style.background = "transparent");
-        b.addEventListener("click", (ev) => { ev.stopPropagation(); closeActionsMenu(); item.action?.(); });
-        menu.appendChild(b);
+        const btn = document.createElement("button");
+        btn.textContent = item.label;
+        btn.style.width = "100%";
+        btn.style.textAlign = "left";
+        btn.style.padding = "8px 12px";
+        btn.style.border = "none";
+        btn.style.background = "none";
+        btn.style.color = item.danger ? "var(--mcp-danger)" : "var(--mcp-text)";
+        btn.style.cursor = "pointer";
+        btn.style.borderRadius = "6px";
+        btn.style.transition = "background 0.15s";
+        btn.addEventListener("mouseenter", () => { btn.style.background = "rgba(255,255,255,0.06)"; });
+        btn.addEventListener("mouseleave", () => { btn.style.background = "none"; });
+        btn.addEventListener("click", () => { item.action?.(); closeActionsMenu(); });
+        menu.appendChild(btn);
       }
     }
 
-    el.appendChild(menu);
     document.body.appendChild(el);
+    document.body.appendChild(menu);
     actionsMenuEl = el;
-
-    requestAnimationFrame(() => {
-      const r = menu.getBoundingClientRect();
-      if (r.bottom > window.innerHeight) {
-        menu.style.bottom = "auto";
-        menu.style.top = `${rect.top - r.height - 4}px`;
-      }
-      if (r.left < 8) menu.style.left = "8px";
-    });
   }
 
   function closeActionsMenu() {
     showActionsMenu = false;
-    if (actionsMenuEl) { actionsMenuEl.remove(); actionsMenuEl = null; }
-  }
-
-  let descrPopupEl: HTMLDivElement | null = null;
-
-  function toggleDescription(e: MouseEvent) {
-    e.stopPropagation();
-    if (showDescription) { closeDescription(); return; }
-    if (!task.description) return;
-    showDescription = true;
-
-    const btn = e.currentTarget as HTMLElement;
-    const rect = btn.getBoundingClientRect();
-
-    const popup = document.createElement("div");
-    popup.className = "sch-ctx-overlay";
-    popup.style.zIndex = "9998";
-    popup.addEventListener("click", closeDescription);
-
-    const content = document.createElement("div");
-    content.className = "task-descr-popup-body";
-    content.textContent = task.description;
-    content.style.cssText = "position:fixed;z-index:9999;min-width:180px;max-width:340px;max-height:200px;overflow-y:auto;background:var(--mcp-surface);border:1px solid var(--mcp-glass-border);border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.25);padding:8px 12px;font-size:12px;color:var(--mcp-text);white-space:pre-wrap;word-break:break-word;line-height:1.45;";
-    content.style.left = `${rect.left}px`;
-    content.style.top = `${rect.bottom + 6}px`;
-
-    popup.appendChild(content);
-    document.body.appendChild(popup);
-    descrPopupEl = popup;
-
-    requestAnimationFrame(() => {
-      const cr = content.getBoundingClientRect();
-      if (cr.bottom > window.innerHeight) {
-        content.style.top = `${rect.top - cr.height - 6}px`;
-      }
-      if (cr.right > window.innerWidth) {
-        content.style.left = `${Math.max(8, window.innerWidth - cr.width - 8)}px`;
-      }
-    });
-  }
-
-  function closeDescription() {
-    showDescription = false;
-    if (descrPopupEl) { descrPopupEl.remove(); descrPopupEl = null; }
-  }
-
-  function handleDescrKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      showDescription = false;
+    if (actionsMenuEl) {
+      actionsMenuEl.remove();
+      const menu = document.querySelector(".task-actions-menu");
+      if (menu) menu.remove();
+      actionsMenuEl = null;
     }
   }
-
-  function handleDescriptionClickOutside(e: MouseEvent) {
-    if (!showDescription) return;
-    const target = e.target as HTMLElement;
-    if (!target.closest('.task-descr-wrapper')) {
-      showDescription = false;
-    }
-  }
-
-  onMount(() => {
-    document.addEventListener("click", handleDescriptionClickOutside, true);
-  });
-
-  onDestroy(() => {
-    document.removeEventListener("click", handleDescriptionClickOutside, true);
-    if (actionsMenuEl) { actionsMenuEl.remove(); actionsMenuEl = null; }
-    if (descrPopupEl) { descrPopupEl.remove(); descrPopupEl = null; }
-  });
 </script>
 
-<div
-  class="task-item"
-  class:completed={task.status === "done"}
-  class:is-note-task={!!task.isNoteTask}
-  data-status={task.status}
-  draggable="true"
-  on:dragstart={handleDragStart}
-  on:keydown={handleKeydown}
-  tabindex="0"
-  role="listitem"
-  style="--task-color: {projectColor}"
-  aria-label={task.title}
->
+<div class="task-item" class:completed={task.status === "done"} data-status={task.status} draggable="true" role="listitem" aria-label={task.title} style="--task-color: {task.projectId ? ($projects.find(p => p.id === task.projectId)?.color || 'var(--mcp-accent)') : 'var(--mcp-accent)'}" on:dragstart>
   <div class="task-item-row-main">
-    <span
-      class="task-project-dot"
-      style="background-color: {projectColor}"
-    ></span>
-
-    {#if task.isNoteTask && task.notePath}
-      <button
-        class="note-icon"
-        on:click|stopPropagation={openNote}
-        title="Открыть заметку-задачу"
-        aria-label="Открыть заметку"
-      >
-        📝
-      </button>
-    {:else}
-      <button
-        class="task-status-btn status-{task.status}"
-        disabled={task.status === "done"}
-        on:click|stopPropagation={() => {
-          if (task.status === "done") return;
-          else if (task.status === "progress") quickStatus("done");
-          else if (task.status === "paused") quickStatus("done");
-          else quickStatus("done");
-        }}
-        title={task.status === 'done' ? 'Готово (только удаление)' : task.status === 'todo' ? 'Сделать' : task.status === 'progress' ? 'В работе' : 'На паузе'}
-        aria-label="Изменить статус"
-      >
-        {statusIcons[task.status]}
-      </button>
-    {/if}
+    <button class="task-status-btn status-{task.status}" disabled={task.status === "done"} on:click|stopPropagation={() => { if (task.status !== "done") quickStatus("done"); }}>
+      {#if task.status === "todo"}
+        <svg class="check-hover" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L5 9l4.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {:else if task.status === "progress"}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v4l3 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.5" opacity="0.4"/></svg>
+      {:else if task.status === "done"}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2.5 6.5L5 9l4.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {:else if task.status === "paused"}
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="3" y="2.5" width="2" height="7" rx="1" fill="currentColor"/><rect x="7" y="2.5" width="2" height="7" rx="1" fill="currentColor"/></svg>
+      {/if}
+    </button>
 
     {#if task.boundNotePath}
-      <a
-        class="task-title note-link"
-        class:strikethrough={task.status === "done"}
-        href={task.boundNotePath}
-        on:click|preventDefault={openNote}
-        title="Открыть привязанную заметку: {task.boundNotePath}"
-      >
-        {task.title}
-      </a>
+      <a class="task-title note-link" class:strikethrough={task.status === "done"} href={task.boundNotePath} on:click|preventDefault={openNote}>{task.title}</a>
     {:else}
-      <span class="task-title" class:strikethrough={task.status === "done"}>
-        {task.title}
-      </span>
+      <span class="task-title" class:strikethrough={task.status === "done"}>{task.title}</span>
     {/if}
 
     {#if task.description}
-      <div class="task-descr-wrapper">
-        <button
-          class="task-descr-toggle"
-          on:click={toggleDescription}
-          title={showDescription ? "Скрыть описание" : "Показать описание"}
-          aria-label="Описание задачи"
-          aria-expanded={showDescription}
-        >
-          &#128196;
-        </button>
-      </div>
-    {/if}
-
-    {#if task.recurrence}
-      <span class="task-recurring-icon" title="Повторяющаяся задача">&#8635;</span>
+      <button class="task-descr-toggle" on:click|stopPropagation={() => showDescription = !showDescription} title={showDescription ? "Скрыть" : "Описание"}>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="4" x2="9" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="3" y1="6.5" x2="7.5" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      </button>
     {/if}
 
     {#if task.priority === "high"}
-      <span class="task-priority high" aria-label="Высокий приоритет">!</span>
+      <span class="task-priority high">!</span>
     {:else if task.priority === "medium"}
-      <span class="task-priority medium" aria-label="Средний приоритет">~</span>
+      <span class="task-priority medium">~</span>
     {/if}
 
+    <button class="checklist-toggle" on:click|stopPropagation={() => showChecklist = !showChecklist} title="Чек-лист">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 6l1.5 1.5L8.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      {#if checklistTotal > 0}{checklistDone}/{checklistTotal}{:else}+{/if}
+    </button>
+
     <div class="task-actions-dropdown">
-      <button
-        class="task-actions-toggle"
-        on:click={toggleActionsMenu}
-        aria-label="Действия"
-      >
-        &#8942;
-      </button>
+      <button class="task-actions-toggle" on:click={toggleActionsMenu}>⋮</button>
     </div>
   </div>
+
+  {#if showDescription && task.description}
+    <div class="task-description">{task.description}</div>
+  {/if}
 
   <div class="task-item-row-meta">
     {#if $activeTab === "all" && task.status !== "done"}
       <span class="task-status-badge status-badge-{task.status}">
-        {task.status === "todo" ? "Сделать" : task.status === "progress" ? "В работе" : "На паузе"}
+        {#if task.status === "todo"}Сделать{:else if task.status === "progress"}🔥 В работе{:else if task.status === "paused"}☕ На паузе{/if}
       </span>
     {/if}
 
-    {#if task.scheduledTime && task.status !== "progress" && task.status !== "paused"}
+    {#if task.priority === "high"}
+      <span class="task-priority-badge high">❗ Высокий</span>
+    {:else if task.priority === "medium"}
+      <span class="task-priority-badge medium">⚡ Средний</span>
+    {/if}
+
+    {#if task.scheduledTime}
       {#if task.status === "done"}
-        <span class="task-scheduled done" title="Готово">
-          &#10003; Готово
-        </span>
+        <span class="task-scheduled done">✓ Готово</span>
+      {:else if task.status === "progress"}
+        <span class="task-scheduled in-progress">🔥 В работе</span>
       {:else}
-        <span class="task-scheduled {scheduledTimePassed ? 'passed' : ''}" title={scheduledTimePassed ? "Время прошло" : "Запланировано"}>
-          {scheduledTimePassed ? "\u26A0" : "\uD83D\uDD52"} {task.scheduledTime}
+        <span class="task-scheduled {scheduledTimePassed ? 'passed' : ''}">
+          {scheduledTimePassed ? "⚠" : "🕐"} {task.scheduledTime}{#if task.endTime} — {task.endTime}{/if}
         </span>
       {/if}
     {/if}
 
     {#if hasDeadline && task.status !== "done"}
-      <span
-        class="task-deadline {deadlineOverdue ? 'overdue' : ''}"
-        title={deadlineOverdue ? "Дедлайн просрочен" : "Дедлайн"}
-      >
-        &#9200; {deadlineLabel}
-      </span>
+      <span class="task-deadline {deadlineOverdue ? 'overdue' : ''}">⏰ {deadlineLabel}</span>
     {/if}
 
-    {#if task.status === "paused"}
-      <span class="task-work-paused" title="Работа на паузе">
-        &#9208; Работа на паузе
-      </span>
-      {#if hasActual}
-        <span class="task-timer total" title="Общее время">
-          &#9201; {formatDuration(task.totalWorkTime)}
-        </span>
-      {/if}
-    {:else if timerDisplay}
-      <span class="task-timer" title="Текущее время">
-        &#9201; {timerDisplay}
-      </span>
+    {#if timerDisplay}
+      <span class="task-timer">⏱ {timerDisplay}</span>
     {:else if hasEstimate && !hasActual}
-      <span class="task-estimate" title="План">
-        &#9201; {formatEstimate(task.estimatedTime)}
-      </span>
+      <span class="task-estimate">⏱ {formatEstimate(task.estimatedTime)}</span>
     {:else if task.status === "done" && hasEstimate && hasActual}
-      <span
-        class="task-estimate-compare {estimateOver ? 'over' : 'under'}"
-        title="План → Факт"
-      >
-        &#9201; {formatEstimate(task.estimatedTime)} → &#10003; {formatDuration(task.totalWorkTime)}
+      <span class="task-estimate-compare {estimateOver ? 'over' : 'under'}">
+        ⏱ {formatEstimate(task.estimatedTime)} → ✓ {formatDuration(task.totalWorkTime)}
       </span>
     {:else if hasActual}
-      <span class="task-timer total" title="Общее время">
-        &#9201; {formatDuration(task.totalWorkTime)}
-      </span>
+      <span class="task-timer total">⏱ {formatDuration(task.totalWorkTime)}</span>
     {/if}
-
-    {#if task.isWorkTask}
-      <span class="task-work-badge" title="Рабочая задача">
-        &#128188; Рабочая
-        {#if task.rate && task.status === "done"}
-          <span class="task-work-earnings">
-            {calculateTaskEarnings(task)} ₽
-          </span>
-        {/if}
-      </span>
-    {/if}
-
-    <button
-      class="checklist-toggle"
-      on:click|stopPropagation={() => showChecklist = !showChecklist}
-      title="Чек-лист"
-    >
-      {#if checklistTotal > 0}
-        ☑ {checklistDone}/{checklistTotal}
-      {:else}
-        ☑ +
-      {/if}
-    </button>
   </div>
 
   {#if showChecklist}
     <div class="checklist-section">
       {#each taskChecklistItems as item (item.id)}
         <div class="checklist-item" class:checked={item.checked}>
-          <input
-            type="checkbox"
-            checked={item.checked}
-            on:change={() => handleToggleChecklist(item.id)}
-            on:click|stopPropagation
-          />
+          <input type="checkbox" checked={item.checked} on:change={() => handleToggleChecklist(item.id)} on:click|stopPropagation />
           <span class="checklist-title">{item.title}</span>
-          <button
-            class="checklist-remove"
-            on:click|stopPropagation={() => handleRemoveChecklistItem(item.id)}
-            title="Удалить"
-          >×</button>
+          <button class="checklist-remove" on:click|stopPropagation={() => handleRemoveChecklistItem(item.id)} title="Удалить">✕</button>
         </div>
       {/each}
       <div class="checklist-add">
-        <input
-          type="text"
-          placeholder="Новый пункт..."
-          bind:value={newChecklistTitle}
-          on:keydown={(e) => e.key === "Enter" && handleAddChecklistItem()}
-          on:click|stopPropagation
-        />
+        <input type="text" placeholder="Новый пункт..." bind:value={newChecklistTitle} on:keydown|stopPropagation={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddChecklistItem(); } }} on:click|stopPropagation />
         <button on:click|stopPropagation={handleAddChecklistItem}>+</button>
       </div>
     </div>
   {/if}
-
 </div>

@@ -304,8 +304,26 @@ table {
   font-size: 12px;
 }
 .calendar-main-view .task-tracker-panel .task-project-dot {
-  width: 7px;
-  height: 7px;
+  display: none;
+}
+
+.calendar-main-view .task-tracker-panel .task-project-emoji {
+  width: 28px;
+  height: 28px;
+  font-size: 14px;
+}
+
+.task-project-emoji {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+  line-height: 1;
+  opacity: 0.5;
 }
 .calendar-main-view .task-tracker-panel .task-scheduled,
 .calendar-main-view .task-tracker-panel .task-timer,
@@ -907,12 +925,10 @@ svg.dot.filled {
 .habit-tracker-panel {
   background: var(--mcp-bg);
   border: 1px solid rgba(255, 255, 255, 0.04);
-  border-top: 2px solid rgba(124, 92, 252, 0.2);
   padding: 20px 22px;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  box-shadow: var(--mcp-shadow);
 }
 
 .task-tracker-panel {
@@ -948,12 +964,11 @@ svg.dot.filled {
 }
 
 .habit-tracker-header:hover {
-  background: rgba(124, 92, 252, 0.06);
+  background: transparent;
 }
 
 .habit-tracker-header:focus-visible {
-  outline: 2px solid var(--mcp-accent);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .task-tracker-header-left,
@@ -968,7 +983,7 @@ svg.dot.filled {
 .habit-tracker-header-right {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -986,12 +1001,13 @@ svg.dot.filled {
 }
 
 .task-tracker-count {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--mcp-accent);
-  background: var(--mcp-accent-dim);
+  color: var(--mcp-text-muted);
+  background: rgba(255, 255, 255, 0.05);
   padding: 4px 10px;
-  border-radius: 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .habit-tracker-streak {
@@ -1008,7 +1024,7 @@ svg.dot.filled {
    ============================================ */
 .task-tracker-btn,
 .habit-tracker-btn {
-  background: var(--mcp-surface-2);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--mcp-text-muted);
   cursor: pointer;
@@ -1021,9 +1037,9 @@ svg.dot.filled {
 
 .task-tracker-btn:hover,
 .habit-tracker-btn:hover {
-  color: var(--mcp-accent);
-  background: var(--mcp-accent-dim);
-  border-color: rgba(124, 92, 252, 0.3);
+  color: var(--mcp-text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* Unified add button for task and habit panels */
@@ -1032,15 +1048,15 @@ svg.dot.filled {
   font-weight: 700;
   padding: 5px 14px;
   white-space: nowrap;
-  background: linear-gradient(135deg, #7C5CFC, #5B8DEF);
+  background: var(--mcp-accent);
   color: #fff;
   border-color: transparent;
 }
 
 .add-btn:hover {
-  background: linear-gradient(135deg, #8D6FFF, #6B9BFF);
+  background: #8D6FFF;
   color: #fff;
-  box-shadow: 0 0 16px rgba(124, 92, 252, 0.3);
+  box-shadow: 0 0 12px rgba(124, 92, 252, 0.25);
 }
 
 /* Icon button active state */
@@ -1239,31 +1255,64 @@ svg.dot.filled {
   display: flex;
   gap: 4px;
   padding: 6px 0;
-  border-bottom: 1px solid var(--mcp-glass-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   margin-bottom: 6px;
 }
 
 .task-tracker-search-input {
   flex: 1;
   padding: 8px 14px;
-  border: 1px solid var(--mcp-glass-border);
-  border-radius: var(--mcp-radius-sm);
-  background: var(--mcp-surface);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
   color: var(--mcp-text);
   font-size: 13px;
   font-family: inherit;
   outline: none;
   transition: border-color 0.15s;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .task-tracker-search-input:focus {
-  border-color: var(--mcp-accent);
+  border-color: rgba(124, 92, 252, 0.4);
 }
 
 .task-tracker-search-input::placeholder {
   color: var(--mcp-text-faint);
+}
+
+/* Filter tabs */
+.task-tracker-filters {
+  display: flex;
+  gap: 6px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mcp-text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.filter-btn.active {
+  background: var(--mcp-accent);
+  color: #fff;
+  border-color: var(--mcp-accent);
+}
+
+.filter-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mcp-text);
 }
 
 /* ============================================
@@ -1320,43 +1369,92 @@ svg.dot.filled {
    FILTER BAR
    ============================================ */
 .task-tracker-filter-bar {
+  display: none;
+}
+
+.task-tracker-body {
+  gap: 12px;
+  min-height: 0;
+}
+
+.task-tracker-sidebar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--mcp-glass-border);
-  margin-bottom: 8px;
-  max-height: 80px;
-  overflow-y: auto;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 120px;
+  max-width: 160px;
+  flex-shrink: 0;
+  padding-top: 8px;
+}
+
+.task-tracker-sidebar-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mcp-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.task-tracker-sidebar-btn:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--mcp-text);
+}
+
+.task-tracker-sidebar-btn.active {
+  background: var(--mcp-accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.sidebar-project-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.sidebar-project-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .task-tracker-filter-btn {
-  background: var(--mcp-surface-2);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   color: var(--mcp-text-muted);
   cursor: pointer;
-  padding: 5px 12px;
+  padding: 6px 14px;
   font-size: 12px;
   font-weight: 500;
-  border-radius: 14px;
+  border-radius: 20px;
   transition: all var(--mcp-transition-fast);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   white-space: nowrap;
 }
 
 .task-tracker-filter-btn:hover {
   color: var(--mcp-text);
-  background: var(--mcp-surface-hover);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .task-tracker-filter-btn.active {
   color: #fff;
   background: var(--mcp-accent);
   border-color: transparent;
-  box-shadow: 0 0 12px rgba(124, 92, 252, 0.25);
+}
+
+.filter-project-icon {
+  font-size: 14px;
+  line-height: 1;
 }
 
 .task-tracker-filter-btn.dragging {
@@ -1415,22 +1513,11 @@ svg.dot.filled {
 }
 
 .task-group-header {
-  display: flex;
-  align-items: center;
-  padding: 16px 0 8px;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--mcp-text-muted);
-  gap: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: none;
 }
 
 .project-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
+  display: none;
 }
 
 .project-icon {
@@ -1439,14 +1526,10 @@ svg.dot.filled {
   line-height: 1;
 }
 
-.group-name { flex: 1; }
+.group-name { display: none; }
 
 .group-count {
-  font-size: 10px;
-  color: var(--mcp-text-faint);
-  background: var(--mcp-surface);
-  padding: 2px 8px;
-  border-radius: 10px;
+  display: none;
 }
 
 /* ============================================
@@ -1457,30 +1540,30 @@ svg.dot.filled {
   flex-direction: column;
   align-items: stretch;
   padding: 12px 14px;
-  border-radius: var(--mcp-radius-sm);
-  cursor: pointer;
-  transition: transform var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast), background var(--mcp-transition-fast), border-color var(--mcp-transition-fast);
-  gap: 6px;
+  border-radius: 12px;
+  cursor: default;
+  transition: background var(--mcp-transition-fast), border-color var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast);
+  gap: 8px;
   min-width: 0;
   margin-bottom: 6px;
-  background: var(--mcp-surface);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-left: 3px solid transparent;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-left: 3px solid var(--task-color, rgba(255, 255, 255, 0.08));
 }
 
 .task-item:hover {
-  background: var(--mcp-surface-hover);
-  border-color: color-mix(in srgb, var(--task-color, var(--mcp-accent)) 30%, transparent);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.04), 0 0 16px color-mix(in srgb, var(--task-color, var(--mcp-accent)) 15%, transparent);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: color-mix(in srgb, var(--task-color, var(--mcp-accent)) 50%, transparent);
+  border-left-color: var(--task-color, var(--mcp-accent));
+  box-shadow: 0 0 20px color-mix(in srgb, var(--task-color, var(--mcp-accent)) 30%, transparent), 0 0 40px color-mix(in srgb, var(--task-color, var(--mcp-accent)) 10%, transparent);
 }
 
 .task-item.completed {
-  opacity: 0.5;
+  opacity: 0.45;
 }
 
 .task-item.completed:hover {
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 .task-item-row-main {
@@ -1496,52 +1579,67 @@ svg.dot.filled {
   gap: 6px;
   min-width: 0;
   flex-wrap: wrap;
-  padding-left: 30px;
-}
-
-.task-item[data-status="todo"] {
-  border-left-color: rgba(124, 92, 252, 0.4);
-}
-
-.task-item[data-status="progress"] {
-  border-left-color: #F5A623;
+  padding-left: 28px;
 }
 
 .task-item[data-status="done"] {
-  border-left-color: #3DD68C;
+  opacity: 0.5;
 }
 
 /* Status button */
 .task-status-btn {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.08);
-  background: var(--mcp-surface-2);
-  color: var(--mcp-text-muted);
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: transparent;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background var(--mcp-transition-fast), border-color var(--mcp-transition-fast), box-shadow var(--mcp-transition-fast);
+  transition: all 0.15s ease;
   flex-shrink: 0;
-  font-size: 12px;
+  font-size: 11px;
   padding: 0;
+  position: relative;
 }
 
 .task-status-btn:hover {
-  transform: scale(1.15);
+  transform: scale(1.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .task-status-btn.status-todo {
-  border-color: rgba(124, 92, 252, 0.3);
-  color: #A5B4FC;
+  border-color: rgba(255, 255, 255, 0.15);
+  background: transparent;
+  color: transparent;
+}
+
+.task-status-btn.status-todo:hover {
+  border-color: #3DD68C;
+  background: rgba(61, 214, 140, 0.12);
+  color: #3DD68C;
+}
+
+.task-status-btn.status-todo .check-hover {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.task-status-btn.status-todo:hover .check-hover {
+  opacity: 1;
 }
 
 .task-status-btn.status-progress {
   border-color: #F5A623;
-  color: #FCD34D;
-  background: rgba(245, 166, 35, 0.1);
+  color: #F5A623;
+  background: rgba(245, 166, 35, 0.08);
+}
+
+.task-status-btn.status-progress:hover {
+  border-color: #F5A623;
+  background: rgba(245, 166, 35, 0.15);
 }
 
 .task-status-btn.status-done {
@@ -1551,7 +1649,7 @@ svg.dot.filled {
 }
 
 .task-status-btn.status-done:disabled {
-  cursor: not-allowed;
+  cursor: default;
   opacity: 0.7;
 }
 
@@ -1562,20 +1660,22 @@ svg.dot.filled {
 
 /* Note icon */
 .note-icon {
-  font-size: 18px;
+  font-size: 16px;
   background: none;
   border: none;
   cursor: pointer;
   padding: 2px;
-  border-radius: 4px;
-  transition: all var(--mcp-transition);
+  border-radius: 5px;
+  transition: all 0.12s ease;
   flex-shrink: 0;
   line-height: 1;
+  opacity: 0.6;
 }
 
 .note-icon:hover {
+  opacity: 1;
   background: var(--mcp-accent-dim);
-  transform: scale(1.15);
+  transform: scale(1.1);
 }
 
 .is-note-task {
@@ -1649,11 +1749,20 @@ svg.dot.filled {
 }
 
 .task-project-dot {
-  width: 8px;
-  height: 8px;
+  display: none;
+}
+
+.task-project-emoji {
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   flex-shrink: 0;
-  box-shadow: 0 0 4px var(--task-color, var(--mcp-accent));
+  line-height: 1;
+  opacity: 0.5;
 }
 
 /* Checkbox */
@@ -1709,13 +1818,14 @@ svg.dot.filled {
   text-overflow: ellipsis;
   white-space: nowrap;
   min-width: 0;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.15px;
+  line-height: 1.4;
 }
 
 .task-title.strikethrough {
   text-decoration: line-through;
   color: var(--mcp-text-muted);
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .task-title.note-link {
@@ -1736,23 +1846,26 @@ svg.dot.filled {
 }
 
 .task-descr-toggle {
-  background: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
-  font-size: 11px;
-  padding: 0;
+  padding: 3px 5px;
   line-height: 1;
-  opacity: 0.45;
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  opacity: 0.7;
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--mcp-text-muted);
+  border-radius: 6px;
 }
 
 .task-descr-toggle:hover {
   opacity: 1;
-  transform: scale(1.15);
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mcp-text);
 }
 
 .task-descr-popup {
@@ -1763,17 +1876,17 @@ svg.dot.filled {
   max-width: 340px;
   max-height: 200px;
   overflow-y: auto;
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
-  border-radius: var(--mcp-radius);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  background: var(--mcp-surface-2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   z-index: 9999;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 12px;
   color: var(--mcp-text);
   white-space: pre-wrap;
   word-break: break-word;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 
 .task-item[data-status="done"] .task-descr-toggle {
@@ -1781,106 +1894,122 @@ svg.dot.filled {
 }
 
 .task-recurring-icon {
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   opacity: 0.4;
   flex-shrink: 0;
+  color: var(--mcp-text-muted);
 }
 
 .task-timer {
   font-size: 11px;
   font-weight: 600;
-  color: #A5B4FC;
-  background: rgba(124, 92, 252, 0.08);
-  padding: 3px 8px;
+  color: #F5A623;
+  background: rgba(245, 166, 35, 0.12);
+  padding: 3px 10px;
   border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
+  letter-spacing: 0.2px;
+  border: 1px solid rgba(245, 166, 35, 0.2);
 }
 
 .task-timer.total {
   color: var(--mcp-text-muted);
-  background: var(--mcp-surface-2);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .task-estimate {
   font-size: 11px;
   font-weight: 600;
   color: var(--mcp-text-muted);
-  background: var(--mcp-surface-2);
-  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
   border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .task-estimate-compare {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  padding: 3px 8px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.task-estimate-compare.over {
-  color: #F06565;
-  background: rgba(240, 101, 101, 0.1);
-}
-
-.task-estimate-compare.under {
-  color: #3DD68C;
-  background: rgba(61, 214, 140, 0.1);
-}
-
-.task-scheduled {
-  font-size: 11px;
-  font-weight: 600;
-  color: #A5B4FC;
-  background: rgba(124, 92, 252, 0.08);
-  padding: 3px 8px;
-  border-radius: 8px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.task-scheduled.passed {
-  color: #F06565;
-  background: rgba(240, 101, 101, 0.1);
-}
-
-.task-status-badge {
-  font-size: 11px;
-  font-weight: 600;
-  padding: 3px 8px;
+  padding: 2px 8px;
   border-radius: 6px;
   flex-shrink: 0;
   white-space: nowrap;
 }
 
+.task-estimate-compare.over {
+  color: var(--mcp-danger);
+  background: var(--mcp-danger-dim);
+}
+
+.task-estimate-compare.under {
+  color: var(--mcp-success);
+  background: var(--mcp-success-dim);
+}
+
+.task-scheduled {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--mcp-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.task-scheduled.in-progress {
+  color: #F5A623;
+  background: rgba(245, 166, 35, 0.12);
+  border-color: rgba(245, 166, 35, 0.2);
+}
+
+.task-scheduled.passed {
+  color: var(--mcp-danger);
+  background: var(--mcp-danger-dim);
+}
+
+.task-status-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+
 .status-badge-todo {
-  color: #A5B4FC;
-  background: rgba(124, 92, 252, 0.12);
+  color: #3DD68C;
+  background: rgba(61, 214, 140, 0.12);
 }
 
 .status-badge-progress {
-  color: #FCD34D;
+  color: #F5A623;
   background: rgba(245, 166, 35, 0.12);
 }
 
 .status-badge-paused {
-  color: #9CA3AF;
-  background: rgba(156, 163, 175, 0.12);
+  color: #A78BFA;
+  background: rgba(167, 139, 250, 0.12);
 }
 
 .task-deadline {
   font-size: 11px;
   font-weight: 600;
-  color: var(--mcp-warning);
-  background: var(--mcp-amber-dim);
-  padding: 3px 8px;
+  color: var(--mcp-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 3px 10px;
   border-radius: 8px;
   flex-shrink: 0;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .task-deadline.overdue {
@@ -1911,20 +2040,41 @@ svg.dot.filled {
 }
 
 .task-priority {
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 1px 6px;
+  border-radius: 5px;
   flex-shrink: 0;
+  letter-spacing: 0.3px;
 }
 
 .task-priority.high {
-  color: #F06565;
-  background: rgba(240, 101, 101, 0.12);
+  color: var(--mcp-danger);
+  background: var(--mcp-danger-dim);
 }
 
 .task-priority.medium {
-  color: #FCD34D;
+  color: #F5A623;
+  background: rgba(245, 166, 35, 0.1);
+}
+
+/* Priority badge for task-item-row-meta */
+.task-priority-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.task-priority-badge.high {
+  color: var(--mcp-danger);
+  background: var(--mcp-danger-dim);
+}
+
+.task-priority-badge.medium {
+  color: #F5A623;
   background: rgba(245, 166, 35, 0.12);
 }
 
@@ -1992,26 +2142,31 @@ svg.dot.filled {
 }
 
 .task-actions-toggle {
-  background: var(--mcp-surface);
-  border: 1px solid var(--mcp-glass-border);
+  background: transparent;
+  border: 1px solid transparent;
   color: var(--mcp-text-muted);
   cursor: pointer;
-  padding: 4px 8px;
+  padding: 4px;
   font-size: 14px;
-  border-radius: var(--mcp-radius-sm);
-  min-width: 28px;
-  min-height: 28px;
+  border-radius: 7px;
+  min-width: 26px;
+  min-height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--mcp-transition);
+  transition: all 0.12s ease;
   flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.task-item:hover .task-actions-toggle {
+  opacity: 1;
 }
 
 .task-actions-toggle:hover {
-  color: var(--mcp-accent);
-  background: var(--mcp-accent-dim);
-  border-color: var(--mcp-accent);
+  color: var(--mcp-text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.06);
 }
 
 .task-actions-menu {
@@ -2963,8 +3118,6 @@ svg.dot.filled {
 }
 
 .pm-icon-apply-btn {
-  width: 36px;
-  height: 36px;
   border-radius: 8px;
   border: 1px solid var(--mcp-accent);
   background: var(--mcp-accent-dim);
@@ -3297,8 +3450,7 @@ svg.dot.filled {
 .habit-item:hover {
   background: var(--mcp-surface-hover);
   border-color: var(--habit-color, rgba(255, 255, 255, 0.06));
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2), 0 0 12px color-mix(in srgb, var(--habit-color, var(--mcp-accent)) 15%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--habit-color, var(--mcp-accent)) 30%, transparent), 0 0 40px color-mix(in srgb, var(--habit-color, var(--mcp-accent)) 10%, transparent);
 }
 
 .habit-item.completed {
@@ -3610,8 +3762,13 @@ svg.dot.filled {
   }
 
   .task-tracker-panel .task-project-dot {
-    width: 5px;
-    height: 5px;
+    display: none;
+  }
+
+  .task-tracker-panel .task-project-emoji {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
   }
 
   /* Habit items — tighter */
@@ -3817,19 +3974,28 @@ svg.dot.filled {
     border-radius: 6px;
   }
 
-  /* Panels — spacious glassmorphism */
+  /* ── Panels: full scroll, bottom safe area ── */
   .task-tracker-panel {
-    padding: 16px 16px;
+    padding: 14px 12px;
   }
 
   .task-tracker-panel .task-tracker-list {
-    max-height: 42vh;
+    max-height: none;
+    overflow: visible;
   }
 
   .habit-tracker-panel {
-    padding: 14px 16px;
-    max-height: 32vh;
+    padding: 14px 12px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  /* Scroll container with bottom padding for Obsidian nav bar */
+  .panels-container,
+  .calendar-main-view .panels-container {
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 80px;
   }
 
   /* Header — more space */
@@ -3897,12 +4063,21 @@ svg.dot.filled {
 
   /* Filter bar — horizontal scroll with more space */
   .task-tracker-filter-bar {
+    display: flex;
     gap: 6px;
     padding: 10px 0;
     flex-wrap: nowrap;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
+  }
+
+  .task-tracker-sidebar {
+    display: none;
+  }
+
+  .task-tracker-body {
+    flex-direction: column;
   }
 
   .task-tracker-filter-bar::-webkit-scrollbar {
@@ -3916,49 +4091,139 @@ svg.dot.filled {
     flex-shrink: 0;
   }
 
-  /* ===== MOBILE TASK ITEM — compact with meta ===== */
+  /* ===== MOBILE TASK ITEM — spacious ===== */
   .task-item {
-    padding: 4px 6px;
-    gap: 2px;
-    min-height: 30px;
+    padding: 10px 10px;
+    gap: 6px;
+    min-height: 48px;
+    margin-bottom: 4px;
+    border-radius: 10px;
   }
 
   .task-item-row-main {
-    gap: 4px;
+    gap: 6px;
   }
 
   .task-item-row-meta {
     display: flex !important;
-    gap: 4px;
-    padding-left: 0;
-    flex-wrap: nowrap;
-    overflow: hidden;
+    gap: 5px;
+    padding-left: 32px;
+    flex-wrap: wrap;
   }
 
   .task-title {
-    font-size: 12px;
+    font-size: 14px;
     min-width: 0;
     flex: 1 1 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    line-height: 1.3;
   }
 
-  /* Show status badge and time, hide the rest */
+  .task-status-btn {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    font-size: 12px;
+  }
+
+  /* Show status badge and time */
   .task-item .task-status-badge {
     display: inline-flex !important;
-    font-size: 8px;
-    padding: 1px 4px;
-    border-radius: 3px;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
     white-space: nowrap;
     flex-shrink: 0;
   }
 
   .task-item .task-scheduled {
     display: inline-flex !important;
-    font-size: 8px;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .task-item .task-timer {
+    display: inline-flex !important;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .task-item .task-estimate {
+    display: inline-flex !important;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .task-item .task-deadline {
+    display: inline-flex !important;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .task-item .task-priority {
+    font-size: 10px;
     padding: 1px 4px;
-    border-radius: 3px;
+  }
+
+  .task-item .note-icon {
+    font-size: 12px;
+  }
+
+  .task-item .task-descr-toggle {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
+
+  .task-item .checklist-toggle {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  /* Mobile status buttons */
+  .task-item-status-bar {
+    display: flex;
+    gap: 6px;
+    padding: 6px 0 0 36px;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+    margin-top: 6px;
+  }
+
+  .status-btn-sm {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--mcp-text-muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .status-btn-sm:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--mcp-text);
+  }
+
+  .status-btn-sm.done {
+    background: rgba(61, 214, 140, 0.12);
+    color: #3DD68C;
+    border-color: rgba(61, 214, 140, 0.3);
+  }
+
+  .status-btn-sm.done:hover {
+    background: rgba(61, 214, 140, 0.2);
+  }
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -3967,9 +4232,9 @@ svg.dot.filled {
   .task-item .task-estimate,
   .task-item .task-estimate-compare {
     display: inline-flex !important;
-    font-size: 8px;
-    padding: 1px 4px;
-    border-radius: 3px;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 5px;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -3979,113 +4244,96 @@ svg.dot.filled {
   .task-item .task-deadline,
   .task-item .task-work-paused,
   .task-item .task-priority,
-  .task-item .task-work-badge,
-  .task-item .task-project-dot {
+  .task-item .task-work-badge {
     display: none !important;
   }
 
-  /* Description toggle — smaller on mobile */
-  .task-item .task-descr-toggle {
-    font-size: 10px;
+  .task-item .task-project-dot {
+    display: none;
   }
 
-  /* Description popup — bottom sheet on mobile */
-  .task-item .task-descr-popup {
-    position: fixed;
-    bottom: env(safe-area-inset-bottom, 16px);
-    left: 12px;
-    right: 12px;
-    top: auto;
-    max-width: none;
-    max-height: 45vh;
-    border-radius: var(--mcp-radius);
-    background: var(--mcp-glass-bg);
-    backdrop-filter: blur(28px) saturate(1.6);
-    -webkit-backdrop-filter: blur(28px) saturate(1.6);
-    border: 1px solid var(--mcp-glass-border);
-    box-shadow:
-      0 -8px 40px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    padding: 14px 18px;
-    font-size: 14px;
-    z-index: 200;
-  }
-
-  /* Scheduled time — keep visible */
-  .task-item .task-scheduled {
-    font-size: 10px;
-    padding: 1px 4px;
-    border-radius: 4px;
-    flex-shrink: 0;
-  }
-
-  /* Timer / estimate — keep visible, compact */
-  .task-item .task-timer,
-  .task-item .task-estimate,
-  .task-item .task-estimate-compare {
-    font-size: 10px;
-    padding: 1px 4px;
-    border-radius: 4px;
-    flex-shrink: 0;
-  }
-
-  .task-tracker-panel .checkmark {
+  .task-item .task-project-emoji {
     width: 20px;
     height: 20px;
+    font-size: 10px;
   }
 
-  /* Edit/delete hidden by default, visible on tap */
-  .task-edit-btn,
-  .task-delete-btn,
-  .task-move-btn {
-    opacity: 0;
-    padding: 8px 10px;
-    font-size: 14px;
+  /* Actions toggle — always visible on mobile */
+  .task-actions-toggle {
+    opacity: 1 !important;
     min-width: 36px;
     min-height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    padding: 6px;
   }
 
-  .task-item:active .task-edit-btn,
-  .task-item:active .task-delete-btn,
-  .task-item:active .task-move-btn {
-    opacity: 0.6;
+  /* Checklist — larger touch targets */
+  .checklist-section {
+    padding: 8px 4px 8px 30px;
   }
 
-  /* ===== MOBILE HABIT ITEM — single row, compact ===== */
+  .checklist-item {
+    padding: 8px 6px;
+    gap: 10px;
+    min-height: 40px;
+  }
+
+  .checklist-item input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 5px;
+  }
+
+  .checklist-item input[type="checkbox"]:checked {
+    background: #5B8DEF;
+    border-color: #5B8DEF;
+  }
+
+  .checklist-title {
+    font-size: 14px;
+  }
+
+  .checklist-remove {
+    opacity: 0.5 !important;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .checklist-add input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .checklist-add button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  /* ===== MOBILE HABIT ITEM — spacious ===== */
   .habit-item {
-    padding: 3px 6px;
-    gap: 5px;
-    min-height: 28px;
-    flex-wrap: nowrap;
+    padding: 10px 8px;
+    gap: 8px;
+    min-height: 44px;
   }
 
   .habit-check-btn {
-    width: 22px;
-    height: 22px;
+    min-width: 38px;
+    min-height: 38px;
   }
 
   .habit-icon {
-    font-size: 14px;
+    font-size: 22px;
   }
 
   .habit-title {
-    font-size: 11px;
-    flex: 1 1 0;
-    min-width: 0;
+    font-size: 14px;
   }
 
-  .habit-progress-text {
-    font-size: 9px;
-    padding: 1px 5px;
-  }
-
+  .habit-progress-text,
   .habit-streak {
-    font-size: 9px;
-    padding: 1px 5px;
+    font-size: 11px;
+    padding: 3px 8px;
   }
 
   .habit-edit-btn,
@@ -4215,7 +4463,6 @@ svg.dot.filled {
 
   /* Advanced rows — stack label + input vertically on mobile */
   .tm-adv-row {
-    flex-direction: column;
     align-items: stretch;
     gap: 6px;
     padding: 10px 14px;
@@ -4372,6 +4619,7 @@ svg.dot.filled {
     font-size: 22px;
     padding: 10px;
     height: 44px;
+    width: 44px;
   }
 
   .pm-icon-apply-btn {
@@ -4534,7 +4782,7 @@ svg.dot.filled {
 
   /* Group headers */
   .task-group-header {
-    padding: 12px 0 6px;
+    display: none;
   }
 
   /* Project items */
@@ -4620,6 +4868,139 @@ svg.dot.filled {
     min-height: 28px;
     font-size: 13px;
     padding: 3px 6px;
+  }
+
+  /* Mobile header */
+  .task-tracker-mob-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--mcp-glass-border);
+  }
+
+  .task-tracker-mob-date {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--mcp-text);
+  }
+
+  /* Mobile filter tabs */
+  .task-tracker-mob-filters {
+    display: flex;
+    gap: 4px;
+    padding: 6px 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .task-tracker-mob-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mob-filter-btn {
+    flex-shrink: 0;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mcp-text-muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .mob-filter-btn.active {
+    background: var(--mcp-accent);
+    color: #fff;
+    border-color: var(--mcp-accent);
+  }
+
+  .mob-filter-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--mcp-text);
+  }
+
+  /* Mobile project picker */
+  .task-tracker-mob-project-picker {
+    position: relative;
+    flex: 1;
+  }
+
+  .task-tracker-mob-project-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--mcp-text);
+    background: var(--mcp-surface-2);
+    border: 1px solid var(--mcp-glass-border);
+    border-radius: 8px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .project-picker-arrow {
+    font-size: 10px;
+    margin-left: auto;
+    transition: transform 0.2s;
+  }
+
+  .project-picker-arrow.rotated {
+    transform: rotate(180deg);
+  }
+
+  .task-tracker-mob-project-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: var(--mcp-surface-2);
+    border: 1px solid var(--mcp-glass-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    min-width: 180px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+
+  .project-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 13px;
+    color: var(--mcp-text-muted);
+    background: none;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s;
+  }
+
+  .project-dropdown-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--mcp-text);
+  }
+
+  .project-dropdown-item.active {
+    background: var(--mcp-accent-dim);
+    color: var(--mcp-accent);
   }
 
   /* Filter bar — compact on mobile */
@@ -4906,8 +5287,13 @@ svg.dot.filled {
   }
 
   .task-project-dot {
-    width: 5px;
-    height: 5px;
+    display: none;
+  }
+
+  .task-project-emoji {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
   }
 
   .note-icon {
@@ -5221,6 +5607,82 @@ svg.dot.filled {
 }
 
 /* ============================================
+   TASK TRACKER — Date Navigation
+   ============================================ */
+.task-tracker-date-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 8px;
+}
+
+.task-tracker-date-all {
+  font-size: 12px;
+  color: var(--mcp-text-muted);
+  margin-left: 8px;
+  font-weight: 500;
+}
+
+.date-nav-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--mcp-text-muted);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 600;
+  transition: all var(--mcp-transition-fast);
+  padding: 0;
+}
+
+.date-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--mcp-text);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.task-tracker-date {
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all var(--mcp-transition-fast);
+}
+
+.task-tracker-date:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.schedule-btn,
+.calendar-btn {
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.schedule-btn:hover,
+.calendar-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.all-tasks-btn {
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.all-tasks-btn.active {
+  background: var(--mcp-accent-dim);
+  color: var(--mcp-accent);
+}
+
+.all-tasks-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ============================================
    TOUCH DEVICES — always show action buttons
    ============================================ */
 @media (hover: none) and (pointer: coarse) {
@@ -5299,6 +5761,41 @@ svg.dot.filled {
 
   .task-tracker-panel .task-item:active {
     transform: scale(0.98);
+  }
+
+  /* Checklist — larger touch targets */
+  .checklist-item input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    border-radius: 5px;
+  }
+
+  .checklist-item input[type="checkbox"]:checked {
+    background: #5B8DEF;
+    border-color: #5B8DEF;
+  }
+
+  .checklist-item {
+    padding: 8px 6px;
+    min-height: 36px;
+  }
+
+  .checklist-remove {
+    opacity: 0.5 !important;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .checklist-add input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .checklist-add button {
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
   }
 }
 
@@ -5738,17 +6235,17 @@ svg.dot.filled {
    WORK TASK BADGE
    ============================================ */
 .task-work-badge {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--mcp-accent);
   background: var(--mcp-accent-dim);
-  border: 1px solid rgba(124, 92, 252, 0.2);
+  border: 1px solid rgba(124, 92, 252, 0.15);
   border-radius: 6px;
-  padding: 2px 6px;
+  padding: 2px 8px;
   font-weight: 600;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
 }
 
 .task-work-earnings {
@@ -5760,48 +6257,91 @@ svg.dot.filled {
 
 .checklist-toggle {
   font-size: 11px;
+  font-weight: 500;
   color: var(--mcp-text-muted);
-  background: rgba(124, 92, 252, 0.08);
-  border: 1px solid rgba(124, 92, 252, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 8px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   cursor: pointer;
   white-space: nowrap;
   transition: all var(--mcp-transition-fast);
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .checklist-toggle:hover {
-  background: rgba(124, 92, 252, 0.15);
-  border-color: rgba(124, 92, 252, 0.3);
+  color: var(--mcp-text);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .checklist-section {
-  padding: 6px 8px 6px 30px;
+  padding: 8px 4px 8px 30px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  margin-top: 4px;
+}
+
+.task-description {
+  padding: 8px 4px 8px 30px;
+  font-size: 12px;
+  color: var(--mcp-text-muted);
+  line-height: 1.5;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .checklist-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
   color: var(--mcp-text);
-  padding: 3px 0;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: background 0.12s ease;
+}
+
+.checklist-item:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .checklist-item.checked .checklist-title {
   text-decoration: line-through;
-  opacity: 0.4;
+  color: var(--mcp-text-muted);
+  opacity: 0.5;
 }
 
+/* Custom checkbox */
 .checklist-item input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  border-radius: 5px;
+  background: transparent;
   cursor: pointer;
-  accent-color: var(--mcp-accent);
-  border-radius: 4px;
+  transition: all 0.15s ease;
+  padding: 0;
+  margin: 0;
+}
+
+.checklist-item input[type="checkbox"]:hover {
+  border-color: var(--mcp-accent);
+  background: var(--mcp-accent-dim);
+}
+
+.checklist-item input[type="checkbox"]:checked {
+  background: #5B8DEF;
+  border-color: #5B8DEF;
 }
 
 .checklist-title {
@@ -5810,61 +6350,88 @@ svg.dot.filled {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 400;
+  letter-spacing: -0.1px;
 }
 
 .checklist-remove {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--mcp-text-muted);
   cursor: pointer;
-  font-size: 14px;
-  padding: 0 2px;
+  font-size: 12px;
+  padding: 2px;
   line-height: 1;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity 0.12s, color 0.12s;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
 }
 
 .checklist-item:hover .checklist-remove {
-  opacity: 1;
+  opacity: 0.6;
 }
 
 .checklist-remove:hover {
-  color: var(--text-error);
+  opacity: 1 !important;
+  color: var(--mcp-danger);
+  background: var(--mcp-danger-dim);
 }
 
 .checklist-add {
   display: flex;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 0 8px;
 }
 
 .checklist-add input {
   flex: 1;
   font-size: 12px;
-  padding: 2px 6px;
-  background: transparent;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
-  color: var(--text-normal);
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  color: var(--mcp-text);
   min-width: 0;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+}
+
+.checklist-add input:focus {
+  border-color: rgba(91, 141, 239, 0.4);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .checklist-add input::placeholder {
-  color: var(--text-muted);
+  color: var(--mcp-text-faint);
 }
 
 .checklist-add button {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
-  border: none;
-  border-radius: 4px;
-  width: 22px;
-  height: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--mcp-text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
   font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+}
+
+.checklist-add button:hover {
+  color: var(--mcp-accent);
+  background: var(--mcp-accent-dim);
+  border-color: rgba(124, 92, 252, 0.2);
 }
 
 /* ============================================

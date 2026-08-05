@@ -13,6 +13,7 @@ import {
   verifyToken,
   getAllTasks,
   createTask as apiCreateTask,
+  getTask as apiGetTask,
   updateTask as apiUpdateTask,
   deleteTask as apiDeleteTask,
   getProjects as apiGetProjects,
@@ -45,13 +46,14 @@ import {
   buildUpdateHabitBody,
   buildReverseHabitMap,
   singularityColorToHex,
+  STATUS_TAG_PREFIX,
 } from "./singularityMapper";
 
 // --- Constants ---
 
 const PUSH_DEBOUNCE_MS = 3000;
 const SYNC_MAP_FILE = "calendar-data/singularitySync.json";
-const API_CALL_DELAY_MS = 200;
+const API_CALL_DELAY_MS = 500;
 
 // --- Types ---
 
@@ -231,6 +233,22 @@ function isEnabled(): boolean {
 
 // --- Push Logic ---
 
+const ALL_STATUS_TAGS = [`${STATUS_TAG_PREFIX}done`, `${STATUS_TAG_PREFIX}progress`, `${STATUS_TAG_PREFIX}paused`];
+
+/** Manages status tags on a remote task: removes old status tags, adds the current one */
+async function pushStatusTag(token: string, remoteTaskId: string, status: string): Promise<void> {
+  try {
+    const remote = await apiGetTask(token, remoteTaskId);
+    const existingTags = (remote.tags || []).filter((t) => !ALL_STATUS_TAGS.includes(t));
+    const statusTag = `${STATUS_TAG_PREFIX}${status}`;
+    const newTags = [...existingTags, statusTag];
+    await delay(API_CALL_DELAY_MS);
+    await apiUpdateTask(token, remoteTaskId, { tags: newTags });
+  } catch (e) {
+    console.warn(`[SingularitySync] Failed to push status tag for ${remoteTaskId}:`, e);
+  }
+}
+
 async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ pushed: number; errors: number }> {
   const token = getToken();
   if (!token || !pluginInstance) return { pushed: 0, errors: 0 };
@@ -255,6 +273,8 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
         // UPDATE: build body via mapper
         const body = buildUpdateTaskBody(task, projectMap);
         await apiUpdateTask(token, syncEntry.singularityId, body);
+        // Push status tag separately (preserves non-status tags)
+        await pushStatusTag(token, syncEntry.singularityId, task.status);
         syncMap.tasks[task.id] = {
           ...syncEntry,
           lastPushedAt: Date.now(),
@@ -272,6 +292,11 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
         }
 
         console.log(`[SingularitySync] Created task "${task.title}" → remote id: ${created.id}`);
+
+        // Push status tag for newly created task
+        if (task.status !== "todo") {
+          await pushStatusTag(token, created.id, task.status);
+        }
 
         // Set flag BEFORE updateTask to prevent re-push via store subscription
         skipNextPush = true;
@@ -357,7 +382,7 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
         const localId = reverseMap.get(remote.id);
 
         if (localId) {
-          // READ (update existing): check if remote is newer
+          // READ (update existing): check if remote is newer or status changed
           const localTask = localTasks.find((t) => t.id === localId);
           if (!localTask) {
             console.log(`[SingularitySync] Pull skip (local not found): ${remote.id}(${remote.title}) localId=${localId}`);
@@ -366,9 +391,10 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
 
           const remoteUpdated = parseRemoteUpdatedAt(remote.updatedAt);
           const syncEntry = syncMap.tasks[localId];
+          const remoteData = buildLocalTaskFromRemote(remote, reverseProjectMap);
+          const statusChanged = remoteData.status !== localTask.status;
 
-          if (remoteUpdated > localTask.updatedAt && remoteUpdated > (syncEntry?.lastPulledAt || 0)) {
-            const remoteData = buildLocalTaskFromRemote(remote, reverseProjectMap);
+          if (statusChanged || (remoteUpdated > localTask.updatedAt && remoteUpdated > (syncEntry?.lastPulledAt || 0))) {
             const { updateTask } = await import("src/task-tracker/stores");
             skipNextPush = true;
             updateTask(localId, {
@@ -383,7 +409,7 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
               lastPulledAt: Date.now(),
             };
             pulled++;
-            console.log(`[SingularitySync] Pull updated: ${remote.id}(${remote.title}) → local ${localId}`);
+            console.log(`[SingularitySync] Pull updated: ${remote.id}(${remote.title}) → local ${localId} statusChanged=${statusChanged}`);
           } else {
             console.log(`[SingularitySync] Pull skip (not newer): ${remote.id}(${remote.title}) remoteUpdated=${remoteUpdated} localUpdated=${localTask.updatedAt}`);
           }

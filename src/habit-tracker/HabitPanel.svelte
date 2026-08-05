@@ -16,8 +16,6 @@
 
   export let appInstance: App;
 
-  let collapsed = false;
-
   $: currentDate = $selectedDate;
   $: dateStr = extractDateStr(currentDate);
   $: activeHabits = $habits.filter((h) => {
@@ -102,19 +100,9 @@
   }
 </script>
 
-<div class="habit-tracker-panel" class:collapsed>
-  <div
-    class="habit-tracker-header"
-    on:click={() => (collapsed = !collapsed)}
-    on:keydown={(e) => {
-      if (e.key === "Enter" || e.key === " ") collapsed = !collapsed;
-    }}
-    tabindex="0"
-    role="button"
-    aria-expanded={!collapsed}
-  >
+<div class="habit-tracker-panel">
+  <div class="habit-tracker-header">
     <div class="habit-tracker-header-left">
-      <span class="habit-tracker-chevron" class:rotated={!collapsed}>&#9662;</span>
       <span class="habit-tracker-title">Привычки</span>
       {#if totalStreak > 0}
         <span class="habit-tracker-streak">
@@ -133,25 +121,23 @@
     </div>
   </div>
 
-  {#if !collapsed}
-    <div class="habit-tracker-list">
-      {#if activeHabits.length === 0}
-        <div class="habit-tracker-empty">
-          Нет привычек. Нажмите + чтобы создать.
-        </div>
-      {:else}
-        {#each activeHabits as habit (habit.id)}
-          <HabitItem
-            {habit}
-            date={dateStr}
-            on:toggle={handleToggle}
-            on:edit={handleEdit}
-            on:delete={handleDelete}
-          />
-        {/each}
-      {/if}
-    </div>
-  {/if}
+  <div class="habit-tracker-list">
+    {#if activeHabits.length === 0}
+      <div class="habit-tracker-empty">
+        Нет привычек. Нажмите + чтобы создать.
+      </div>
+    {:else}
+      {#each activeHabits as habit (habit.id)}
+        <HabitItem
+          {habit}
+          date={dateStr}
+          on:toggle={handleToggle}
+          on:edit={handleEdit}
+          on:delete={handleDelete}
+        />
+      {/each}
+    {/if}
+  </div>
 </div>
 
 <style>

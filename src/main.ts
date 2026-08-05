@@ -10,6 +10,7 @@ let currentPluginInstance: CalendarPlugin | null = null;
 
 import {
   VIEW_TYPE_CALENDAR,
+  VIEW_TYPE_TASKS,
   VIEW_TYPE_SCHEDULE,
   VIEW_TYPE_MOBILE_SCHEDULE,
   VIEW_TYPE_MOBILE_TASKS,
@@ -28,6 +29,7 @@ import {
 } from "./settings";
 import { TFile } from "obsidian";
 import CalendarView from "./view";
+import TaskView from "./views/TaskView";
 import ScheduleView from "./views/ScheduleView";
 import MobileScheduleView from "./views/MobileScheduleView";
 import MobileTaskTrackerView from "./views/MobileTaskTrackerView";
@@ -175,6 +177,11 @@ export default class CalendarPlugin extends Plugin {
     );
 
     safeRegisterView(
+      VIEW_TYPE_TASKS,
+      (leaf: WorkspaceLeaf) => new TaskView(leaf)
+    );
+
+    safeRegisterView(
       VIEW_TYPE_SCHEDULE,
       (leaf: WorkspaceLeaf) => new ScheduleView(leaf, currentPluginInstance!)
     );
@@ -258,14 +265,14 @@ export default class CalendarPlugin extends Plugin {
     document.querySelectorAll("[data-mcp-ribbon]").forEach(el => el.remove());
 
     if (!this.ribbonIconsRegistered) {
-      const scheduleIcon = this.addRibbonIcon("calendar-range", "Расписание", () => {
-        this.activateScheduleView();
+      const tasksIcon = this.addRibbonIcon("checkbox-glyph", "Задачи", () => {
+        this.activateTaskView();
       });
-      scheduleIcon.dataset.mcpRibbon = "true";
-      this.ribbonIcons.push(scheduleIcon);
+      tasksIcon.dataset.mcpRibbon = "true";
+      this.ribbonIcons.push(tasksIcon);
 
       const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", "Календарь", () => {
-        this.initLeaf();
+        this.activateCalendarView();
       });
       calendarIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(calendarIcon);
@@ -332,7 +339,7 @@ export default class CalendarPlugin extends Plugin {
           onNavigate: (viewKey: string) => {
             const viewMap: Record<string, () => Promise<void> | void> = {
               schedule: () => this.activateScheduleView(),
-              tasks: () => this.initLeaf(),
+              tasks: () => this.activateTaskView(),
               finance: () => this.activateFinanceView(),
               analytics: () => this.activateHabitAnalyticsView(),
             };
@@ -555,7 +562,13 @@ export default class CalendarPlugin extends Plugin {
     });
     headerEl.parentElement?.insertBefore(this.dtwContainer, headerEl.nextSibling);
 
-    this.dtwPanel = new DateTimeWeather({ target: this.dtwContainer });
+    this.dtwPanel = new DateTimeWeather({
+      target: this.dtwContainer,
+      props: {
+        onOpenCalendar: () => this.activateCalendarView(),
+        onOpenFinance: () => this.activateFinanceView(),
+      },
+    });
   }
 
   private removeDateTimeWeather(): void {
@@ -570,23 +583,19 @@ export default class CalendarPlugin extends Plugin {
   }
 
   initLeaf(): void {
-    const existingLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
-    if (existingLeaves.length) {
-      // Clean up duplicate leaves (keep only the first one)
-      if (existingLeaves.length > 1) {
-        existingLeaves.slice(1).forEach((leaf) => leaf.detach());
-      }
-      return;
-    }
-    // On mobile, open calendar in the main content area (right sidebar is hidden by default)
-    const isMobile = this.app.workspace.containerEl.innerWidth <= 768;
-    if (isMobile || this.options?.calendarInMainView) {
-      const leaf = this.app.workspace.getLeaf("tab");
-      leaf.setViewState({ type: VIEW_TYPE_CALENDAR });
-    } else {
+    // Open calendar in right sidebar
+    const existingCalLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CALENDAR);
+    if (existingCalLeaves.length === 0) {
       this.app.workspace.getRightLeaf(false).setViewState({
         type: VIEW_TYPE_CALENDAR,
       });
+    }
+
+    // Open tasks in main content area
+    const existingTaskLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_TASKS);
+    if (existingTaskLeaves.length === 0) {
+      const leaf = this.app.workspace.getLeaf("tab");
+      leaf.setViewState({ type: VIEW_TYPE_TASKS });
     }
   }
 
@@ -626,6 +635,14 @@ export default class CalendarPlugin extends Plugin {
 
   async activateFinanceView(): Promise<void> {
     return this.activateView(VIEW_TYPE_FINANCE);
+  }
+
+  async activateCalendarView(): Promise<void> {
+    return this.activateView(VIEW_TYPE_CALENDAR);
+  }
+
+  async activateTaskView(): Promise<void> {
+    return this.activateView(VIEW_TYPE_TASKS);
   }
 
   async activateFinancialAnalyticsView(): Promise<void> {

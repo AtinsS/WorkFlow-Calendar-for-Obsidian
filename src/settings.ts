@@ -13,9 +13,6 @@ export interface ISettings {
   wordsPerDot: number;
   shouldConfirmBeforeCreate: boolean;
 
-  // View mode
-  calendarInMainView?: boolean;
-
   // Weekly Note settings
   showWeeklyNote: boolean;
   weeklyNoteFormat: string;
@@ -331,8 +328,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // General tab
     const general = tabContainers["general"];
-    general.createEl("h3", { text: "Расположение" });
-    this.addCalendarInMainViewSetting(general);
     this.addShowStatusBarSetting(general);
     this.addDtwShowOnAllPagesSetting(general);
     general.createEl("h3", { text: "Панели" });
@@ -390,20 +385,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
     for (const [k, container] of Object.entries(this._tabContainers)) {
       container.style.display = k === key ? "" : "none";
     }
-  }
-
-  addCalendarInMainViewSetting(container: HTMLElement): void {
-    new Setting(container)
-      .setName("Календарь в основной вкладке")
-      .setDesc(
-        "Отображать календарь по центру основного окна вместо правого сайдбара. Требуется перезапуск для применения.",
-      )
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.calendarInMainView);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ calendarInMainView: value });
-        });
-      });
   }
 
   addShowStatusBarSetting(container: HTMLElement): void {

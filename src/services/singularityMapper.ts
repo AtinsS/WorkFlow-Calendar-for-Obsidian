@@ -109,6 +109,7 @@ export function statusFromRemote(task: SingularityTask): { status: TaskStatus; c
 
   if (task.tags) {
     for (const tag of task.tags) {
+      if (tag === `${STATUS_TAG_PREFIX}done`) return { status: "done", completed: true };
       if (tag === `${STATUS_TAG_PREFIX}progress`) return { status: "progress", completed: false };
       if (tag === `${STATUS_TAG_PREFIX}paused`) return { status: "paused", completed: false };
     }
@@ -194,9 +195,8 @@ export function buildUpdateTaskBody(task: {
   if (task.projectId && projectMap[task.projectId]) {
     body.projectId = projectMap[task.projectId];
   }
-  if (task.status === "done") {
-    body.journalDate = new Date().toISOString();
-  }
+  // Status tags are managed separately via updateTaskStatusTag() to preserve non-status tags.
+  // Do NOT set journalDate here — it archives the task in SingularityApp.
   return body;
 }
 

@@ -3,6 +3,8 @@
   import { get } from "svelte/store";
   import { tasks } from "../task-tracker/stores";
   import { settings } from "../ui/stores";
+  import { financeData } from "../finance/storage";
+  import { getMonthGoals } from "../finance/storage";
   import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
   import { getDateUID } from "obsidian-daily-notes-interface";
   import moment from "moment";
@@ -14,6 +16,8 @@
   let inProgressCount = 0;
   let weather: DayWeather | null = null;
   let unsubTasks: (() => void) | null = null;
+  let unsubFinance: (() => void) | null = null;
+  let monthGoals: { name: string; icon: string; remaining: number; done: boolean }[] = [];
 
   interface TaskItem {
     title: string;
@@ -23,6 +27,10 @@
   let inProgressTaskList: TaskItem[] = [];
 
   let activeTooltip: HTMLDivElement | null = null;
+
+  function switchToTasks() {
+    // Tasks are already in the main view
+  }
 
   function showTooltip(target: EventTarget | null, title: string, rows: { status: string; name: string }[]) {
     removeTooltip();
@@ -89,6 +97,20 @@
       .map((t) => ({ title: t.title, status: t.status }));
   }
 
+  function updateMonthGoal() {
+    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const goals = getMonthGoals(monthKey);
+    monthGoals = goals.map((g) => {
+      const remaining = (g.targetAmount || 0) - (g.currentAmount || 0);
+      return {
+        name: g.name || "Цель",
+        icon: g.icon || "🎯",
+        remaining,
+        done: remaining <= 0,
+      };
+    });
+  }
+
   async function loadWeather() {
     const s = $settings;
     if (!s.weatherEnabled) return;
@@ -108,13 +130,16 @@
       now = new Date();
     }, 10000);
     unsubTasks = tasks.subscribe(() => updateStats());
+    unsubFinance = financeData.subscribe(() => updateMonthGoal());
     updateStats();
+    updateMonthGoal();
     loadWeather();
   });
 
   onDestroy(() => {
     if (timer) clearInterval(timer);
     unsubTasks?.();
+    unsubFinance?.();
     removeTooltip();
   });
 </script>
@@ -140,6 +165,7 @@
     <span class="dtw-sep"></span>
     <span
       class="dtw-item dtw-hoverable"
+      on:click={() => switchToTasks()}
       on:mouseenter={(e) => {
         if (todayTaskList.length > 0)
           showTooltip(e.currentTarget, "Задачи на сегодня", todayTaskList.map(t => ({ status: t.status, name: t.title })));
@@ -154,6 +180,7 @@
     <span class="dtw-sep"></span>
     <span
       class="dtw-item dtw-hoverable"
+      on:click={() => switchToTasks()}
       on:mouseenter={(e) => {
         if (inProgressTaskList.length > 0)
           showTooltip(e.currentTarget, "В работе", inProgressTaskList.map(t => ({ status: t.status, name: t.title })));
@@ -162,6 +189,25 @@
     >
       <span class="dtw-icon">▶️</span>
       <span>В работе: {inProgressCount}</span>
+    </span>
+  {/if}
+  {#if monthGoals.length > 0}
+    <span class="dtw-sep"></span>
+    <span
+      class="dtw-item dtw-hoverable"
+      on:click={() => switchToTasks()}
+      on:mouseenter={(e) => {
+        if (monthGoals.length > 1)
+          showTooltip(e.currentTarget, "Цели на месяц", monthGoals.map(g => ({ status: g.done ? "done" : "progress", name: `${g.icon} ${g.name}: ${g.done ? "✓" : g.remaining.toLocaleString("ru-RU") + " ₽"}` })));
+      }}
+      on:mouseleave={removeTooltip}
+    >
+      <span class="dtw-icon">{monthGoals[0].icon}</span>
+      {#if monthGoals.length === 1}
+        <span>{monthGoals[0].name}: {monthGoals[0].done ? "✓" : monthGoals[0].remaining.toLocaleString("ru-RU") + " ₽"}</span>
+      {:else}
+        <span>Цели: {monthGoals.filter(g => g.done).length}/{monthGoals.length}</span>
+      {/if}
     </span>
   {/if}
 </div>

@@ -149,9 +149,11 @@ async function apiRequest<T>(
 
       const { status, body: responseText } = response;
 
-      if (status === 429) {
-        const delay = Math.pow(2, attempt) * 1000;
-        await new Promise((r) => setTimeout(r, delay));
+      // Retry on rate limit (429) and transient server errors (5xx)
+      if (status === 429 || (status >= 500 && status < 600)) {
+        const delayMs = Math.pow(2, attempt) * 1000;
+        console.warn(`[SingularityApp] ${method} ${path} → ${status}, retrying in ${delayMs}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise((r) => setTimeout(r, delayMs));
         continue;
       }
 
@@ -332,6 +334,14 @@ export async function createTask(
   return unwrapResponse(result);
 }
 
+export async function getTask(
+  token: string,
+  id: string
+): Promise<SingularityTask> {
+  const result = await apiRequest<SingularityTask | ApiResponse<SingularityTask>>(token, "GET", `/task/${id}`);
+  return unwrapResponse(result);
+}
+
 export async function updateTask(
   token: string,
   id: string,
@@ -343,6 +353,7 @@ export async function updateTask(
     projectId?: string;
     journalDate?: string;
     deleteDate?: string;
+    tags?: string[];
   }
 ): Promise<void> {
   await apiRequest<void>(token, "PATCH", `/task/${id}`, body);

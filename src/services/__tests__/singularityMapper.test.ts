@@ -97,6 +97,11 @@ describe("singularityMapper", () => {
       expect(statusFromRemote(task)).toEqual({ status: "done", completed: true });
     });
 
+    it("returns done when done tag exists", () => {
+      const task: SingularityTask = { id: "1", title: "T", tags: [`${STATUS_TAG_PREFIX}done`] };
+      expect(statusFromRemote(task)).toEqual({ status: "done", completed: true });
+    });
+
     it("returns progress when tag exists", () => {
       const task: SingularityTask = { id: "1", title: "T", tags: [`${STATUS_TAG_PREFIX}progress`] };
       expect(statusFromRemote(task)).toEqual({ status: "progress", completed: false });
@@ -177,13 +182,12 @@ describe("singularityMapper", () => {
       expect(body.note).toBe("D");
     });
 
-    it("sets journalDate when status is done", () => {
+    it("does not set journalDate when status is done (uses tags instead)", () => {
       const body = buildUpdateTaskBody(
         { title: "Done", dateUID: "day-2026-08-01", priority: "medium", status: "done" },
         {}
       );
-      expect(body.journalDate).toBeDefined();
-      expect(typeof body.journalDate).toBe("string");
+      expect(body.journalDate).toBeUndefined();
     });
 
     it("does not set journalDate for non-done status", () => {
