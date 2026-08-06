@@ -242,17 +242,20 @@
     const menu = document.createElement("div");
     menu.className = "ms-context-menu";
 
+    const priorityIcon = task.priority === "high" ? "!" : task.priority === "medium" ? "~" : "";
+    const priorityPrefix = priorityIcon ? `${priorityIcon} ` : "";
+
     const items = [
-      { label: `📝 ${"📝 Редактировать"}`, action: () => contextEditTask() },
-      ...(task.notePath ? [{ label: `📄 ${"📄 Открыть заметку"}`, action: () => contextOpenNote() }] : []),
+      { label: `${priorityPrefix}📝 Редактировать`, action: () => contextEditTask() },
+      ...(task.notePath ? [{ label: `${priorityPrefix}📄 Открыть заметку`, action: () => contextOpenNote() }] : []),
       { divider: true },
       { label: "Перевести статус:", disabled: true },
-      { label: `🟢 ${"🟢 Сделать"}`, action: () => contextChangeStatus("todo") },
-      { label: `▶️ ${"▶️ В работу"}`, action: () => contextChangeStatus("progress") },
-      { label: `⏸️ ${"⏸️ На паузу"}`, action: () => contextChangeStatus("paused") },
-      { label: `✅ ${"✅ Готово"}`, action: () => contextChangeStatus("done") },
+      ...(task.status !== "todo" ? [{ label: `🟢 Сделать`, action: () => contextChangeStatus("todo") }] : []),
+      ...(task.status !== "progress" ? [{ label: `▶️ В работу`, action: () => contextChangeStatus("progress") }] : []),
+      ...(task.status !== "paused" ? [{ label: `⏸️ На паузу`, action: () => contextChangeStatus("paused") }] : []),
+      ...(task.status !== "done" ? [{ label: `✅ Готово`, action: () => contextChangeStatus("done") }] : []),
       { divider: true },
-      { label: `🗑️ ${"🗑️ Удалить"}`, action: () => contextDeleteTask(), danger: true },
+      { label: `🗑️ Удалить`, action: () => contextDeleteTask(), danger: true },
     ];
 
     for (const item of items) {
@@ -471,6 +474,14 @@
               <span class="ms-task-work-icon">💼</span>
             {/if}
             <span class="ms-task-title">{task.title}</span>
+            {#if task.priority === "high"}
+              <span class="ms-task-priority ms-priority-high">!</span>
+            {:else if task.priority === "medium"}
+              <span class="ms-task-priority ms-priority-mid">~</span>
+            {/if}
+            {#if task.recurrence}
+              <span class="ms-task-recurring" title="Повторяющаяся">🔄</span>
+            {/if}
             {#if task.status === "progress"}
               <span class="ms-task-status ms-status-progress">{"В работе"}</span>
             {:else if task.status === "paused"}
@@ -502,6 +513,14 @@
               tabindex="0"
             >
               <span class="ms-untimed-task-title">{task.title}</span>
+              {#if task.priority === "high"}
+                <span class="ms-task-priority ms-priority-high">!</span>
+              {:else if task.priority === "medium"}
+                <span class="ms-task-priority ms-priority-mid">~</span>
+              {/if}
+              {#if task.recurrence}
+                <span class="ms-task-recurring" title="Повторяющаяся">🔄</span>
+              {/if}
               {#if task.isWorkTask}
                 <span class="ms-task-work-icon">💼</span>
               {/if}
@@ -772,6 +791,32 @@
   .ms-task-work-icon {
     font-size: 12px;
     flex-shrink: 0;
+  }
+
+  .ms-task-recurring {
+    font-size: 11px;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  .ms-task-priority {
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  .ms-task-priority.ms-priority-high {
+    background: rgba(244, 67, 54, 0.25);
+    color: #f44336;
+  }
+  .ms-task-priority.ms-priority-mid {
+    background: rgba(255, 152, 0, 0.25);
+    color: #ff9800;
   }
 
   .ms-task-title {

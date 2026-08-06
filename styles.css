@@ -34,7 +34,7 @@
 
   /* Text */
   --mcp-text: #E8ECF0;
-  --mcp-text-muted: #6B7280;
+  --mcp-text-muted: ##b7b8bb;
   --mcp-text-faint: #3A3F4B;
 
   /* Radii */
@@ -186,17 +186,21 @@ table {
 .calendar-main-view #calendar-container .nav .title {
   font-size: 16px;
 }
+
 .calendar-main-view #calendar-container .nav .title .year {
   font-size: 18px;
 }
+
 .calendar-main-view #calendar-container .nav .right-nav {
   gap: 6px;
 }
+
 .calendar-main-view #calendar-container .reset-button {
   padding: 5px 16px;
   font-size: 12px;
   min-height: 32px;
 }
+
 .calendar-main-view #calendar-container .arrow svg {
   width: 18px;
   height: 18px;
@@ -216,35 +220,43 @@ table {
     max-width: 1600px;
     gap: 36px;
   }
+
   .calendar-main-view .calendar-layout-left {
     flex: 1 1 540px;
     max-width: 680px;
   }
+
   .calendar-main-view #calendar-container .day,
   .calendar-main-view #calendar-container .week-num {
     min-height: 64px;
     font-size: 18px;
     padding: 16px 12px;
   }
+
   .calendar-main-view #calendar-container .calendar th {
     font-size: 13px;
     letter-spacing: 3px;
     padding: 10px 0;
   }
+
   .calendar-main-view #calendar-container .nav .title {
     font-size: 18px;
   }
+
   .calendar-main-view #calendar-container .nav .title .year {
     font-size: 20px;
   }
+
   .calendar-main-view #calendar-container .nav .right-nav {
     gap: 8px;
   }
+
   .calendar-main-view #calendar-container .reset-button {
     padding: 6px 20px;
     font-size: 13px;
     min-height: 36px;
   }
+
   .calendar-main-view #calendar-container .arrow svg {
     width: 22px;
     height: 22px;
@@ -285,24 +297,30 @@ table {
 .calendar-main-view .task-tracker-panel {
   padding: 24px 26px;
 }
+
 .calendar-main-view .task-tracker-panel .task-tracker-header {
   padding: 12px 14px;
 }
+
 .calendar-main-view .task-tracker-panel .task-tracker-title {
   font-size: 14px;
 }
+
 .calendar-main-view .task-tracker-panel .task-item {
   padding: 10px 12px;
   gap: 8px;
 }
+
 .calendar-main-view .task-tracker-panel .task-title {
   font-size: 14px;
 }
+
 .calendar-main-view .task-tracker-panel .task-status-btn {
   width: 24px;
   height: 24px;
   font-size: 12px;
 }
+
 .calendar-main-view .task-tracker-panel .task-project-dot {
   display: none;
 }
@@ -325,6 +343,7 @@ table {
   line-height: 1;
   opacity: 0.5;
 }
+
 .calendar-main-view .task-tracker-panel .task-scheduled,
 .calendar-main-view .task-tracker-panel .task-timer,
 .calendar-main-view .task-tracker-panel .task-estimate,
@@ -332,33 +351,40 @@ table {
   font-size: 12px;
   padding: 3px 8px;
 }
+
 .calendar-main-view .task-tracker-panel .task-deadline {
   font-size: 12px;
   padding: 3px 8px;
 }
+
 .calendar-main-view .task-tracker-panel .task-work-badge {
   font-size: 11px;
   padding: 2px 7px;
 }
+
 .calendar-main-view .task-tracker-panel .task-status-badge {
   font-size: 11px;
   padding: 3px 8px;
 }
+
 .calendar-main-view .task-tracker-panel .task-tracker-filter-btn {
   padding: 6px 12px;
   font-size: 13px;
   min-height: 34px;
 }
+
 .calendar-main-view .task-tracker-panel .task-tracker-search-input {
   padding: 8px 14px;
   font-size: 13px;
 }
+
 .calendar-main-view .task-tracker-panel .task-actions-toggle {
   padding: 4px 8px;
   font-size: 14px;
   min-width: 28px;
   min-height: 28px;
 }
+
 .calendar-main-view .task-tracker-panel .note-icon {
   font-size: 17px;
 }
@@ -367,34 +393,43 @@ table {
 .calendar-main-view .habit-tracker-panel {
   padding: 24px 26px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-tracker-header {
   padding: 12px 14px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-tracker-title {
   font-size: 14px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-item {
   padding: 10px 14px;
   gap: 10px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-check-btn {
   width: 30px;
   height: 30px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-icon {
   font-size: 20px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-title {
   font-size: 14px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-progress-text {
   font-size: 12px;
   padding: 3px 8px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-streak {
   font-size: 12px;
   padding: 3px 8px;
 }
+
 .calendar-main-view .habit-tracker-panel .habit-edit-btn,
 .calendar-main-view .habit-tracker-panel .habit-delete-btn {
   font-size: 13px;
@@ -410,24 +445,29 @@ table {
     align-items: center;
     gap: 12px;
   }
+
   .calendar-main-view .calendar-layout-left {
     flex: none;
     width: 100%;
     max-width: 400px;
   }
+
   .calendar-main-view .calendar-layout-right {
     width: 100%;
     max-width: 540px;
     min-width: 0;
   }
+
   /* Main view: stack columns, hide info panel */
   .calendar-main-view .month-goals-indicator {
     display: none !important;
   }
+
   .calendar-main-view .task-tracker-panel,
   .calendar-main-view .habit-tracker-panel {
     padding: 14px 14px;
   }
+
   .calendar-main-view .task-tracker-panel .task-tracker-list {
     max-height: 40vh;
   }
@@ -439,24 +479,29 @@ table {
     gap: 16px;
     max-width: 900px;
   }
+
   .calendar-main-view .calendar-layout-left {
     flex: 1 1 360px;
     min-width: 300px;
     max-width: 440px;
   }
+
   .calendar-main-view .calendar-layout-right {
     flex: 1 1 320px;
     min-width: 280px;
   }
+
   .calendar-main-view #calendar-container .day,
   .calendar-main-view #calendar-container .week-num {
     min-height: 44px;
     font-size: 14px;
     padding: 8px 6px;
   }
+
   .calendar-main-view #calendar-container .nav .title {
     font-size: 15px;
   }
+
   .calendar-main-view #calendar-container .nav .title .year {
     font-size: 16px;
   }
@@ -831,10 +876,13 @@ svg.dot.filled {
 }
 
 @keyframes deadline-blink {
-  0%, 100% {
+
+  0%,
+  100% {
     background: transparent;
     box-shadow: none;
   }
+
   50% {
     background: rgba(245, 166, 35, 0.15);
     box-shadow: 0 0 12px 2px rgba(245, 166, 35, 0.25);
@@ -892,8 +940,15 @@ svg.dot.filled {
 }
 
 @keyframes pulse-danger {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(240, 101, 101, 0.4); }
-  50% { box-shadow: 0 0 8px 2px rgba(240, 101, 101, 0.3); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(240, 101, 101, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 8px 2px rgba(240, 101, 101, 0.3);
+  }
 }
 
 /* ============================================
@@ -1526,7 +1581,9 @@ svg.dot.filled {
   line-height: 1;
 }
 
-.group-name { display: none; }
+.group-name {
+  display: none;
+}
 
 .group-count {
   display: none;
@@ -1793,13 +1850,13 @@ svg.dot.filled {
   background: var(--mcp-surface);
 }
 
-.task-tracker-panel .task-checkbox input:checked + .checkmark {
+.task-tracker-panel .task-checkbox input:checked+.checkmark {
   background: var(--mcp-accent);
   border-color: var(--mcp-accent);
   box-shadow: 0 0 10px var(--mcp-accent-glow);
 }
 
-.task-tracker-panel .task-checkbox input:checked + .checkmark::after {
+.task-tracker-panel .task-checkbox input:checked+.checkmark::after {
   content: "";
   width: 5px;
   height: 10px;
@@ -2019,8 +2076,15 @@ svg.dot.filled {
 }
 
 @keyframes deadline-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 .task-date-group-header {
@@ -2056,26 +2120,6 @@ svg.dot.filled {
 .task-priority.medium {
   color: #F5A623;
   background: rgba(245, 166, 35, 0.1);
-}
-
-/* Priority badge for task-item-row-meta */
-.task-priority-badge {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-.task-priority-badge.high {
-  color: var(--mcp-danger);
-  background: var(--mcp-danger-dim);
-}
-
-.task-priority-badge.medium {
-  color: #F5A623;
-  background: rgba(245, 166, 35, 0.12);
 }
 
 .task-edit-btn,
@@ -2305,11 +2349,17 @@ svg.dot.filled {
 /* ============================================
    TASK MODERN MODAL
    ============================================ */
+.modal:has(.tm) {
+  max-width: 480px !important;
+  width: fit-content !important;
+}
+
 .tm {
   padding: 0 !important;
   background: var(--background-primary, #1a1a2e) !important;
   border-radius: 16px !important;
-  overflow: visible;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .tm .modal-content {
@@ -2335,7 +2385,7 @@ svg.dot.filled {
 .tm-close {
   background: none;
   border: none;
-  color: var(--mcp-text-muted, rgba(200,210,220,0.5));
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.5));
   font-size: 18px;
   cursor: pointer;
   padding: 4px 8px;
@@ -2343,7 +2393,11 @@ svg.dot.filled {
   transition: all 0.15s;
   line-height: 1;
 }
-.tm-close:hover { color: var(--mcp-text); background: rgba(255,255,255,0.05); }
+
+.tm-close:hover {
+  color: var(--mcp-text);
+  background: rgba(255, 255, 255, 0.05);
+}
 
 /* Скрываем стандартную кнопку закрытия Obsidian Modal — используем свою */
 .tm .modal-close-button {
@@ -2368,8 +2422,8 @@ svg.dot.filled {
 .tm-select,
 .tm-textarea {
   width: 100%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: var(--mcp-text, #e8ecf0);
   font-family: var(--font-interface);
   font-size: 14px;
@@ -2389,7 +2443,7 @@ svg.dot.filled {
 
 .tm-input::placeholder,
 .tm-textarea::placeholder {
-  color: var(--mcp-text-faint, rgba(200,210,220,0.3));
+  color: var(--mcp-text-faint, rgba(200, 210, 220, 0.3));
 }
 
 .tm-textarea {
@@ -2401,7 +2455,7 @@ svg.dot.filled {
   display: block;
   text-align: right;
   font-size: 11px;
-  color: var(--mcp-text-faint, rgba(200,210,220,0.3));
+  color: var(--mcp-text-faint, rgba(200, 210, 220, 0.3));
   margin-top: 4px;
   padding-right: 4px;
 }
@@ -2412,7 +2466,11 @@ svg.dot.filled {
   gap: 12px;
   padding: 0 16px 8px;
 }
-.tm-half { flex: 1; padding: 0 !important; }
+
+.tm-half {
+  flex: 1;
+  padding: 0 !important;
+}
 
 .tm-select {
   appearance: none;
@@ -2436,10 +2494,10 @@ svg.dot.filled {
   justify-content: center;
   gap: 6px;
   padding: 8px 10px;
-  border: 1px solid rgba(255,255,255,0.08);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 8px;
-  background: rgba(255,255,255,0.03);
-  color: var(--mcp-text-muted, rgba(200,210,220,0.5));
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.5));
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -2447,11 +2505,13 @@ svg.dot.filled {
   font-family: var(--font-interface);
 }
 
-.tm-pri-btn:hover { background: rgba(255,255,255,0.06); }
+.tm-pri-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .tm-pri-btn.active {
-  background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.15);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
   color: var(--mcp-text, #e8ecf0);
 }
 
@@ -2470,7 +2530,9 @@ svg.dot.filled {
   padding: 8px 16px 4px;
 }
 
-.tm-section-icon { font-size: 16px; }
+.tm-section-icon {
+  font-size: 16px;
+}
 
 .tm-section-title {
   font-size: 15px;
@@ -2483,14 +2545,17 @@ svg.dot.filled {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   padding: 4px 12px;
   justify-content: center;
 }
 
-.tm-dur-icon { font-size: 14px; flex-shrink: 0; }
+.tm-dur-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
 
 .tm-dur-input {
   width: 36px;
@@ -2504,11 +2569,14 @@ svg.dot.filled {
   padding: 6px 0;
   -moz-appearance: textfield;
 }
+
 .tm-dur-input::-webkit-outer-spin-button,
-.tm-dur-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+.tm-dur-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+}
 
 .tm-dur-sep {
-  color: var(--mcp-text-faint, rgba(200,210,220,0.3));
+  color: var(--mcp-text-faint, rgba(200, 210, 220, 0.3));
   font-size: 13px;
 }
 
@@ -2516,9 +2584,9 @@ svg.dot.filled {
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  color: var(--mcp-text-muted, rgba(200,210,220,0.5));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.5));
   font-size: 16px;
   cursor: pointer;
   display: flex;
@@ -2527,12 +2595,16 @@ svg.dot.filled {
   transition: all 0.15s;
   flex-shrink: 0;
 }
-.tm-dur-btn:hover { background: rgba(255,255,255,0.08); color: var(--mcp-text); }
+
+.tm-dur-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mcp-text);
+}
 
 /* Advanced section */
 .tm-advanced {
   margin: 4px 16px 12px;
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -2545,11 +2617,14 @@ svg.dot.filled {
   cursor: pointer;
   transition: background 0.15s;
 }
-.tm-adv-toggle:hover { background: rgba(255,255,255,0.02); }
+
+.tm-adv-toggle:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
 
 .tm-adv-chevron {
   font-size: 11px;
-  color: var(--mcp-text-muted, rgba(200,210,220,0.5));
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.5));
 }
 
 .tm-adv-label {
@@ -2559,7 +2634,7 @@ svg.dot.filled {
 }
 
 .tm-adv-body {
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .tm-adv-row {
@@ -2567,16 +2642,19 @@ svg.dot.filled {
   align-items: center;
   gap: 12px;
   padding: 10px 16px;
-  border-bottom: 1px solid rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
 }
-.tm-adv-row:last-child { border-bottom: none; }
+
+.tm-adv-row:last-child {
+  border-bottom: none;
+}
 
 .tm-adv-label-item {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: var(--mcp-text-muted, rgba(200,210,220,0.6));
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.6));
   min-width: 160px;
   flex-shrink: 0;
 }
@@ -2589,7 +2667,7 @@ svg.dot.filled {
 .tm-adv-sublabel {
   display: block;
   font-size: 11px;
-  color: var(--mcp-text-faint, rgba(200,210,220,0.3));
+  color: var(--mcp-text-faint, rgba(200, 210, 220, 0.3));
   margin-top: 2px;
 }
 
@@ -2597,9 +2675,9 @@ svg.dot.filled {
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  color: var(--mcp-text-muted, rgba(200,210,220,0.5));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.5));
   font-size: 14px;
   cursor: pointer;
   display: flex;
@@ -2608,7 +2686,10 @@ svg.dot.filled {
   flex-shrink: 0;
   transition: all 0.15s;
 }
-.tm-adv-file-btn:hover { background: rgba(255,255,255,0.08); }
+
+.tm-adv-file-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
 
 /* Toggle switch */
 .tm-toggle {
@@ -2620,16 +2701,21 @@ svg.dot.filled {
   margin-left: auto;
 }
 
-.tm-toggle-input { opacity: 0; width: 0; height: 0; }
+.tm-toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
 
 .tm-toggle-slider {
   position: absolute;
   inset: 0;
-  background: rgba(255,255,255,0.08);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s;
 }
+
 .tm-toggle-slider::after {
   content: "";
   position: absolute;
@@ -2641,17 +2727,19 @@ svg.dot.filled {
   background: #666;
   transition: transform 0.2s, background 0.2s;
 }
-.tm-toggle-input:checked + .tm-toggle-slider {
-  background: var(--mcp-accent, rgba(220,190,130,0.7));
+
+.tm-toggle-input:checked+.tm-toggle-slider {
+  background: var(--mcp-accent, rgba(220, 190, 130, 0.7));
 }
-.tm-toggle-input:checked + .tm-toggle-slider::after {
+
+.tm-toggle-input:checked+.tm-toggle-slider::after {
   transform: translateX(20px);
   background: #fff;
 }
 
 /* Recurrence sub-fields */
 .tm-adv-sub {
-  border-top: 1px solid rgba(255,255,255,0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .tm-adv-row-days {
@@ -2668,9 +2756,9 @@ svg.dot.filled {
   width: 34px;
   height: 30px;
   border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
-  color: var(--mcp-text-muted, rgba(200,210,220,0.5));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.5));
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -2678,12 +2766,14 @@ svg.dot.filled {
   font-family: var(--font-interface);
 }
 
-.tm-day-btn:hover { background: rgba(255,255,255,0.06); }
+.tm-day-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .tm-day-btn.active {
-  background: var(--mcp-accent, rgba(95,153,225,0.5));
+  background: var(--mcp-accent, rgba(95, 153, 225, 0.5));
   color: #fff;
-  border-color: var(--mcp-accent, rgba(95,153,225,0.5));
+  border-color: var(--mcp-accent, rgba(95, 153, 225, 0.5));
 }
 
 /* Footer */
@@ -2710,21 +2800,23 @@ svg.dot.filled {
 
 .tm-cancel {
   background: transparent;
-  color: var(--mcp-text-muted, rgba(200,210,220,0.6));
-  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--mcp-text-muted, rgba(200, 210, 220, 0.6));
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .tm-cancel:hover {
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   color: var(--mcp-text);
 }
 
 .tm-submit {
-  background: rgba(200,160,80,0.85);
+  background: rgba(200, 160, 80, 0.85);
   color: #fff;
 }
+
 .tm-submit:hover {
-  background: rgba(200,160,80,1);
-  box-shadow: 0 2px 16px rgba(200,160,80,0.3);
+  background: rgba(200, 160, 80, 1);
+  box-shadow: 0 2px 16px rgba(200, 160, 80, 0.3);
 }
 
 /* ============================================
@@ -2744,8 +2836,13 @@ svg.dot.filled {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .time-logs-modal {
@@ -2764,8 +2861,15 @@ svg.dot.filled {
 }
 
 @keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95) translateY(10px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .time-logs-header {
@@ -2877,8 +2981,15 @@ svg.dot.filled {
 /* ============================================
    PROJECT MODAL — PM prefix
    ============================================ */
+.modal:has(.task-tracker-project-modal) {
+  max-width: 560px !important;
+  width: fit-content !important;
+}
+
 .task-tracker-project-modal {
   padding: 28px;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .task-tracker-project-modal h2 {
@@ -2978,11 +3089,27 @@ svg.dot.filled {
 }
 
 @keyframes pm-shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-4px); }
-  40% { transform: translateX(4px); }
-  60% { transform: translateX(-3px); }
-  80% { transform: translateX(3px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-4px);
+  }
+
+  40% {
+    transform: translateX(4px);
+  }
+
+  60% {
+    transform: translateX(-3px);
+  }
+
+  80% {
+    transform: translateX(3px);
+  }
 }
 
 .pm-char-count {
@@ -3480,10 +3607,8 @@ svg.dot.filled {
 
 /* Multi-target progress ring */
 .habit-check-btn.partial {
-  background: conic-gradient(
-    var(--habit-color) calc(var(--progress) * 360deg),
-    transparent calc(var(--progress) * 360deg)
-  );
+  background: conic-gradient(var(--habit-color) calc(var(--progress) * 360deg),
+      transparent calc(var(--progress) * 360deg));
   border-color: var(--habit-color);
 }
 
@@ -3506,10 +3631,8 @@ svg.dot.filled {
 }
 
 .habit-check-btn.half {
-  background: conic-gradient(
-    var(--habit-color) 180deg,
-    rgba(255, 255, 255, 0.04) 180deg
-  );
+  background: conic-gradient(var(--habit-color) 180deg,
+      rgba(255, 255, 255, 0.04) 180deg);
   border-color: var(--habit-color);
   color: var(--habit-color);
 }
@@ -3682,7 +3805,10 @@ svg.dot.filled {
    REDUCED MOTION
    ============================================ */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
+
+  *,
+  *::before,
+  *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
@@ -3692,6 +3818,7 @@ svg.dot.filled {
    RESPONSIVE — LARGE SCREENS
    ============================================ */
 @media (min-width: 1400px) {
+
   #calendar-container .day,
   #calendar-container .week-num {
     min-height: 52px;
@@ -3704,6 +3831,7 @@ svg.dot.filled {
    RESPONSIVE — SMALL DESKTOP (≤1100px)
    ============================================ */
 @media (max-width: 1100px) {
+
   /* Task items — tighter */
   .task-tracker-panel .task-item {
     padding: 7px 10px;
@@ -3937,10 +4065,12 @@ svg.dot.filled {
    RESPONSIVE — PHONE (≤480px)
    ============================================ */
 @media (max-width: 480px) {
+
   /* Hide DateTimeWeather bar on phones */
   .dtw-bar {
     display: none !important;
   }
+
   /* Calendar — more air between cells */
   #calendar-container .calendar {
     border-spacing: 5px;
@@ -4221,828 +4351,844 @@ svg.dot.filled {
   .status-btn-sm.done:hover {
     background: rgba(61, 214, 140, 0.2);
   }
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 5px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  .task-item .task-timer,
-  .task-item .task-estimate,
-  .task-item .task-estimate-compare {
-    display: inline-flex !important;
-    font-size: 10px;
-    padding: 2px 7px;
-    border-radius: 5px;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-
-  /* Hide non-essential meta on mobile */
-  .task-item .task-recurring-icon,
-  .task-item .task-deadline,
-  .task-item .task-work-paused,
-  .task-item .task-priority,
-  .task-item .task-work-badge {
-    display: none !important;
-  }
-
-  .task-item .task-project-dot {
-    display: none;
-  }
-
-  .task-item .task-project-emoji {
-    width: 20px;
-    height: 20px;
-    font-size: 10px;
-  }
-
-  /* Actions toggle — always visible on mobile */
-  .task-actions-toggle {
-    opacity: 1 !important;
-    min-width: 36px;
-    min-height: 36px;
-    padding: 6px;
-  }
-
-  /* Checklist — larger touch targets */
-  .checklist-section {
-    padding: 8px 4px 8px 30px;
-  }
-
-  .checklist-item {
-    padding: 8px 6px;
-    gap: 10px;
-    min-height: 40px;
-  }
-
-  .checklist-item input[type="checkbox"] {
-    width: 22px;
-    height: 22px;
-    min-width: 22px;
-    border-radius: 5px;
-  }
-
-  .checklist-item input[type="checkbox"]:checked {
-    background: #5B8DEF;
-    border-color: #5B8DEF;
-  }
-
-  .checklist-title {
-    font-size: 14px;
-  }
-
-  .checklist-remove {
-    opacity: 0.5 !important;
-    min-width: 32px;
-    min-height: 32px;
-  }
-
-  .checklist-add input {
-    padding: 10px 12px;
-    font-size: 14px;
-  }
-
-  .checklist-add button {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-  }
-
-  /* ===== MOBILE HABIT ITEM — spacious ===== */
-  .habit-item {
-    padding: 10px 8px;
-    gap: 8px;
-    min-height: 44px;
-  }
-
-  .habit-check-btn {
-    min-width: 38px;
-    min-height: 38px;
-  }
-
-  .habit-icon {
-    font-size: 22px;
-  }
-
-  .habit-title {
-    font-size: 14px;
-  }
-
-  .habit-progress-text,
-  .habit-streak {
-    font-size: 11px;
-    padding: 3px 8px;
-  }
-
-  .habit-edit-btn,
-  .habit-delete-btn {
-    display: none;
-  }
-
-  /* ===== MOBILE TASK MODAL (tm) — full width, touch-friendly, scrollable ===== */
-  /* Obsidian modal hierarchy: .modal-container > .modal > .modal-content.tm */
-  .modal-container .modal {
-    max-height: 100vh;
-    max-height: 100dvh;
-    padding: 0;
-    overflow: hidden;
-  }
-
-  .tm {
-    max-height: 100vh !important;
-    max-height: 100dvh !important;
-    border-radius: 0 !important;
-    margin: 0 !important;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .tm-header {
-    padding: 14px 14px 10px;
-    position: sticky;
-    top: 0;
-    background: var(--background-primary, #1a1a2e);
-    z-index: 10;
-    border-bottom: 1px solid var(--mcp-glass-border, rgba(255,255,255,0.06));
-  }
-
-  .tm-title {
-    font-size: 18px !important;
-  }
-
-  .tm-field {
-    padding: 8px 14px;
-  }
-
-  .tm-label {
-    font-size: 12px;
-    margin-bottom: 5px;
-  }
-
-  .tm-input,
-  .tm-select,
-  .tm-textarea {
-    font-size: 16px; /* Prevent iOS zoom */
-    height: 40px;
-    border-radius: 8px;
-    padding: 0 12px;
-  }
-
-  .tm-textarea {
-    min-height: 56px;
-    font-size: 16px;
-  }
-
-  /* Row 2 — stack vertically on mobile */
-  .tm-row-2 {
-    flex-direction: column;
-    gap: 8px;
-    padding: 0 14px 8px;
-  }
-
-  /* Priority buttons — wrap with larger touch targets */
-  .tm-pri-btns {
-    gap: 4px;
-  }
-
-  .tm-pri-btn {
-    padding: 10px 8px;
-    min-height: 40px;
-    font-size: 11px;
-    border-radius: 10px;
-  }
-
-  /* Section header */
-  .tm-section-header {
-    padding: 10px 14px 4px;
-  }
-
-  .tm-section-title {
-    font-size: 14px;
-  }
-
-  /* Duration — larger touch targets */
-  .tm-dur-row {
-    padding: 6px 12px;
-    gap: 6px;
-    border-radius: 12px;
-  }
-
-  .tm-dur-input {
-    width: 44px;
-    font-size: 16px;
-    padding: 8px 0;
-  }
-
-  .tm-dur-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 18px;
-    border-radius: 8px;
-  }
-
-  /* Advanced section */
-  .tm-advanced {
-    margin: 4px 14px 12px;
-    border-radius: 14px;
-    overflow: visible;
-  }
-
-  .tm-adv-toggle {
-    padding: 12px 14px;
-  }
-
-  .tm-adv-label {
-    font-size: 13px;
-  }
-
-  /* Advanced rows — stack label + input vertically on mobile */
-  .tm-adv-row {
-    align-items: stretch;
-    gap: 6px;
-    padding: 10px 14px;
-  }
-
-  .tm-adv-label-item {
-    min-width: 0;
-    font-size: 12px;
-  }
-
-  .tm-adv-input {
-    height: 40px;
-    font-size: 16px; /* Prevent iOS zoom */
-    border-radius: 8px;
-  }
-
-  .tm-select.tm-adv-input {
-    height: 40px;
-    font-size: 16px;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    padding-right: 32px;
-  }
-
-  .tm-adv-file-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
-  }
-
-  /* Toggle switch — larger for touch */
-  .tm-toggle {
-    width: 50px;
-    height: 28px;
-    margin-left: 0;
-    margin-top: 4px;
-  }
-
-  .tm-toggle-slider::after {
-    width: 22px;
-    height: 22px;
-  }
-
-  .tm-toggle-input:checked + .tm-toggle-slider::after {
-    transform: translateX(22px);
-  }
-
-  /* Days buttons — wrap on small screens */
-  .tm-days-btns {
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .tm-day-btn {
-    width: 38px;
-    height: 34px;
-    font-size: 12px;
-    border-radius: 8px;
-  }
-
-  /* Footer — full width buttons */
-  .tm-footer {
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px 14px 20px;
-    position: sticky;
-    bottom: 0;
-    background: var(--background-primary, #1a1a2e);
-    border-top: 1px solid var(--mcp-glass-border, rgba(255,255,255,0.06));
-  }
-
-  .tm-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 14px 24px;
-    font-size: 15px;
-    min-height: 48px;
-    border-radius: 12px;
-  }
-
-  /* ===== MOBILE PROJECT MODAL — full width, touch-friendly ===== */
-  .task-tracker-project-modal {
-    padding: 14px;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    max-height: 100vh;
-    max-height: 100dvh;
-  }
-
-  .task-tracker-project-modal h2 {
-    font-size: 18px;
-    margin-bottom: 4px;
-    position: sticky;
-    top: 0;
-    background: var(--background-primary, #1e1e2e);
-    padding: 10px 0;
-    z-index: 10;
-  }
-
-  .task-tracker-modal-subtitle {
-    font-size: 12px;
-    margin-bottom: 14px;
-  }
-
-  /* New project form — compact */
-  .pm-new-project {
-    padding: 14px;
-    margin-bottom: 14px;
-    border-radius: 12px;
-  }
-
-  .pm-section-header {
-    margin-bottom: 10px;
-  }
-
-  .pm-section-title {
-    font-size: 13px;
-  }
-
-  .pm-field {
-    margin-bottom: 12px;
-  }
-
-  .pm-label {
-    font-size: 11px;
-    margin-bottom: 4px;
-  }
-
-  .pm-input {
-    padding: 10px 12px;
-    font-size: 16px; /* Prevent iOS zoom */
-    border-radius: 10px;
-  }
-
-  /* Color + Icon row — stack vertically */
-  .pm-row {
-    flex-direction: column;
-    gap: 14px;
-    margin-bottom: 12px;
-  }
-
-  /* Color grid — larger swatches for touch */
-  .pm-color-swatch {
-    width: 40px;
-    height: 40px;
-  }
-
-  /* Icon section */
-  .pm-icon-custom-input {
-    max-width: none;
-    font-size: 22px;
-    padding: 10px;
-    height: 44px;
-    width: 44px;
-  }
-
-  .pm-icon-apply-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-  }
-
-  .pm-icon-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-  }
-
-  /* Preview */
-  .pm-preview {
-    margin-bottom: 12px;
-  }
-
-  .pm-preview-card {
-    padding: 12px 14px;
-    border-radius: 10px;
-  }
-
-  /* Create button */
-  .pm-create-btn {
-    padding: 14px;
-    font-size: 15px;
-    min-height: 48px;
-    border-radius: 12px;
-  }
-
-  /* Project list */
-  .pm-project-item {
-    padding: 12px 10px;
-    border-radius: 10px;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .pm-project-actions {
-    opacity: 1; /* Always visible on mobile */
-  }
-
-  .pm-action-btn {
-    width: 36px;
-    height: 36px;
-    font-size: 16px;
-  }
-
-  /* Edit modal */
-  .pm-edit-modal {
-    padding: 14px;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  .pm-modal-buttons {
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 16px;
-    padding-top: 14px;
-  }
-
-  .pm-cancel-btn,
-  .pm-save-btn {
-    width: 100%;
-    padding: 14px;
-    font-size: 15px;
-    min-height: 48px;
-    border-radius: 12px;
-    text-align: center;
-    justify-content: center;
-  }
-
-  /* ===== MOBILE TASK ACTIONS — ultra compact ===== */
-  .task-actions-toggle {
-    padding: 2px 4px;
-    font-size: 11px;
-    min-width: 20px;
-    min-height: 20px;
-  }
-
-  .task-actions-menu {
-    min-width: 140px;
-  }
-
-  .task-actions-item {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-
-  /* Task status button — compact on mobile */
-  .task-status-btn {
-    width: 20px;
-    height: 20px;
-    font-size: 9px;
-    flex-shrink: 0;
-  }
-
-  /* Note icon — compact on mobile */
-  .note-icon {
-    font-size: 12px;
-    min-width: 20px;
-    min-height: 20px;
-    flex-shrink: 0;
-  }
-
-  /* Modals — full width mobile, scrollable */
-  .task-tracker-modal,
-  .task-tracker-project-modal {
-    padding: 24px 20px;
-    overflow-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-
-  .task-tracker-modal h2,
-  .task-tracker-project-modal h2 {
-    font-size: 20px;
-    margin-bottom: 24px;
-  }
-
-  .task-tracker-modal-buttons {
-    flex-direction: column;
-    gap: 12px;
-    margin-top: 20px;
-    padding-top: 20px;
-  }
-
-  .task-tracker-modal-buttons button {
-    width: 100%;
-    padding: 16px;
-    font-size: 16px;
-    min-height: 48px;
-  }
-
-  /* Color picker — bigger touch targets */
-  .task-tracker-color-swatch {
-    width: 44px;
-    height: 44px;
-  }
-
-  /* Day picker */
-  .task-tracker-recurrence-day-btn {
-    width: 42px;
-    height: 42px;
-    font-size: 13px;
-  }
-
-  /* Time logs modal */
-  .time-logs-modal {
-    max-height: 55vh;
-  }
-
-  .time-logs-body {
-    max-height: 40vh;
-  }
-
-  /* Group headers */
-  .task-group-header {
-    display: none;
-  }
-
-  /* Project items */
-  .task-tracker-project-item {
-    padding: 14px 12px;
-  }
-
-  .task-tracker-project-name {
-    font-size: 15px;
-  }
-
-  .task-tracker-btn-small {
-    padding: 8px 14px;
-    font-size: 14px;
-    min-height: 40px;
-  }
-
-  /* Mobile-only / desktop-only visibility */
-  .desktop-only {
-    display: none !important;
-  }
-
-  .mobile-only {
-    display: flex !important;
-  }
-
-  /* Kanban dropdown — compact on mobile */
-  .kanban-dropdown-trigger {
-    padding: 4px 10px;
-    font-size: 11px;
-    min-height: 28px;
-    gap: 4px;
-  }
-
-  .kanban-trigger-icon {
-    font-size: 12px;
-  }
-
-  .kanban-trigger-label {
-    font-size: 11px;
-  }
-
-  .kanban-trigger-count {
-    font-size: 9px;
-    padding: 1px 5px;
-  }
-
-  .kanban-trigger-arrow {
-    font-size: 10px;
-  }
-
-  .kanban-dropdown-menu {
-    min-width: 150px;
-  }
-
-  .kanban-dropdown-item {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-
-  /* Task tracker header — compact on mobile */
-  .task-tracker-header {
-    padding: 6px 8px;
-    gap: 6px;
-  }
-
-  .task-tracker-title {
-    font-size: 11px;
-  }
-
-  .task-tracker-date {
-    font-size: 10px;
-    max-width: 80px;
-  }
-
-  .task-tracker-count {
-    font-size: 10px;
-    padding: 2px 6px;
-  }
-
-  .task-tracker-btn {
-    min-width: 28px;
-    min-height: 28px;
-    font-size: 13px;
-    padding: 3px 6px;
-  }
-
-  /* Mobile header */
-  .task-tracker-mob-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
-    padding: 8px 12px;
-    border-bottom: 1px solid var(--mcp-glass-border);
-  }
-
-  .task-tracker-mob-date {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 12px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--mcp-text);
-  }
-
-  /* Mobile filter tabs */
-  .task-tracker-mob-filters {
-    display: flex;
-    gap: 4px;
-    padding: 6px 12px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .task-tracker-mob-filters::-webkit-scrollbar {
-    display: none;
-  }
-
-  .mob-filter-btn {
-    flex-shrink: 0;
-    padding: 6px 12px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--mcp-text-muted);
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    white-space: nowrap;
-  }
-
-  .mob-filter-btn.active {
-    background: var(--mcp-accent);
-    color: #fff;
-    border-color: var(--mcp-accent);
-  }
-
-  .mob-filter-btn:hover:not(.active) {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--mcp-text);
-  }
-
-  /* Mobile project picker */
-  .task-tracker-mob-project-picker {
-    position: relative;
-    flex: 1;
-  }
-
-  .task-tracker-mob-project-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--mcp-text);
-    background: var(--mcp-surface-2);
-    border: 1px solid var(--mcp-glass-border);
-    border-radius: 8px;
-    cursor: pointer;
-    white-space: nowrap;
-  }
-
-  .project-picker-arrow {
-    font-size: 10px;
-    margin-left: auto;
-    transition: transform 0.2s;
-  }
-
-  .project-picker-arrow.rotated {
-    transform: rotate(180deg);
-  }
-
-  .task-tracker-mob-project-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 4px;
-    background: var(--mcp-surface-2);
-    border: 1px solid var(--mcp-glass-border);
-    border-radius: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-    z-index: 100;
-    min-width: 180px;
-    max-height: 240px;
-    overflow-y: auto;
-    padding: 4px;
-  }
-
-  .project-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 100%;
-    padding: 10px 12px;
-    font-size: 13px;
-    color: var(--mcp-text-muted);
-    background: none;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    text-align: left;
-    transition: background 0.15s;
-  }
-
-  .project-dropdown-item:hover {
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--mcp-text);
-  }
-
-  .project-dropdown-item.active {
-    background: var(--mcp-accent-dim);
-    color: var(--mcp-accent);
-  }
-
-  /* Filter bar — compact on mobile */
-  .task-tracker-filter-bar {
-    padding: 4px 0;
-    gap: 4px;
-  }
-
-  .task-tracker-filter-btn {
-    padding: 3px 10px;
-    font-size: 10px;
-    min-height: 26px;
-  }
-
-  /* Search bar — compact on mobile */
-  .task-tracker-search-bar {
-    padding: 4px 0;
-  }
-
-  .task-tracker-search-input {
-    padding: 8px 10px;
-    font-size: 13px;
-  }
-
-  /* Schedule open button */
-  .schedule-open-btn {
-    padding: 12px 16px;
-    font-size: 14px;
-  }
-
-  /* Month goals indicator */
-  .month-goals-single,
-  .month-goals-multi {
-    padding: 10px 14px;
-    font-size: 13px;
-  }
+
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.task-item .task-timer,
+.task-item .task-estimate,
+.task-item .task-estimate-compare {
+  display: inline-flex !important;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Hide non-essential meta on mobile */
+.task-item .task-work-paused {
+  display: none !important;
+}
+
+.task-item .task-project-dot {
+  display: none;
+}
+
+.task-item .task-project-emoji {
+  width: 20px;
+  height: 20px;
+  font-size: 10px;
+}
+
+/* Actions toggle — always visible on mobile */
+.task-actions-toggle {
+  opacity: 1 !important;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 6px;
+}
+
+/* Checklist — larger touch targets */
+.checklist-section {
+  padding: 8px 4px 8px 30px;
+}
+
+.checklist-item {
+  padding: 8px 6px;
+  gap: 10px;
+  min-height: 40px;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 5px;
+}
+
+.checklist-item input[type="checkbox"]:checked {
+  background: #5B8DEF;
+  border-color: #5B8DEF;
+}
+
+.checklist-title {
+  font-size: 14px;
+}
+
+.checklist-remove {
+  opacity: 0.5 !important;
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.checklist-add input {
+  padding: 10px 12px;
+  font-size: 14px;
+}
+
+.checklist-add button {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+}
+
+/* ===== MOBILE HABIT ITEM — spacious ===== */
+.habit-item {
+  padding: 10px 8px;
+  gap: 8px;
+  min-height: 44px;
+}
+
+.habit-check-btn {
+  min-width: 38px;
+  min-height: 38px;
+}
+
+.habit-icon {
+  font-size: 22px;
+}
+
+.habit-title {
+  font-size: 14px;
+}
+
+.habit-progress-text,
+.habit-streak {
+  font-size: 11px;
+  padding: 3px 8px;
+}
+
+.habit-edit-btn,
+.habit-delete-btn {
+  display: none;
+}
+
+/* ===== MOBILE TASK MODAL (tm) — full width, touch-friendly, scrollable ===== */
+/* Obsidian modal hierarchy: .modal-container > .modal > .modal-content.tm */
+.modal-container .modal {
+  max-height: 100vh;
+  max-height: 100dvh;
+  width: 100vw !important;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 16px !important;
+  margin: 0 !important;
+}
+
+.tm {
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  max-height: 100dvh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+}
+
+.tm-header {
+  padding: 14px 14px 10px;
+  position: sticky;
+  top: 0;
+  background: var(--background-primary, #1a1a2e);
+  z-index: 10;
+  border-bottom: 1px solid var(--mcp-glass-border, rgba(255, 255, 255, 0.06));
+}
+
+.tm-title {
+  font-size: 18px !important;
+}
+
+.tm-field {
+  padding: 8px 14px;
+}
+
+.tm-label {
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.tm-input,
+.tm-select,
+.tm-textarea {
+  font-size: 16px;
+  /* Prevent iOS zoom */
+  height: 40px;
+  border-radius: 8px;
+  padding: 0 12px;
+}
+
+.tm-textarea {
+  min-height: 56px;
+  font-size: 16px;
+}
+
+/* Row 2 — stack vertically on mobile */
+.tm-row-2 {
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px 8px;
+}
+
+/* Priority buttons — wrap with larger touch targets */
+.tm-pri-btns {
+  gap: 4px;
+}
+
+.tm-pri-btn {
+  padding: 10px 8px;
+  min-height: 40px;
+  font-size: 11px;
+  border-radius: 10px;
+}
+
+/* Section header */
+.tm-section-header {
+  padding: 10px 14px 4px;
+}
+
+.tm-section-title {
+  font-size: 14px;
+}
+
+/* Duration — larger touch targets */
+.tm-dur-row {
+  padding: 6px 12px;
+  gap: 6px;
+  border-radius: 12px;
+}
+
+.tm-dur-input {
+  width: 44px;
+  font-size: 16px;
+  padding: 8px 0;
+}
+
+.tm-dur-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 18px;
+  border-radius: 8px;
+}
+
+/* Advanced section */
+.tm-advanced {
+  margin: 4px 14px 12px;
+  border-radius: 14px;
+  overflow: visible;
+}
+
+.tm-adv-toggle {
+  padding: 12px 14px;
+}
+
+.tm-adv-label {
+  font-size: 13px;
+}
+
+/* Advanced rows — stack label + input vertically on mobile */
+.tm-adv-row {
+  gap: 6px;
+  padding: 10px 14px;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tm-adv-label-item {
+  min-width: 0;
+  font-size: 12px;
+}
+
+.tm-adv-input {
+  height: 40px;
+  font-size: 16px;
+  /* Prevent iOS zoom */
+  border-radius: 8px;
+}
+
+.tm-select.tm-adv-input {
+  height: 40px;
+  font-size: 16px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+
+.tm-adv-file-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+}
+
+/* Toggle switch — larger for touch */
+.tm-toggle {
+  width: 50px;
+  height: 28px;
+  margin-left: 0;
+  margin-top: 4px;
+}
+
+.tm-toggle-slider::after {
+  width: 22px;
+  height: 22px;
+}
+
+.tm-toggle-input:checked+.tm-toggle-slider::after {
+  transform: translateX(22px);
+}
+
+/* Days buttons — wrap on small screens */
+.tm-days-btns {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tm-day-btn {
+  width: 38px;
+  height: 34px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+
+/* Footer — full width buttons */
+.tm-footer {
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 20px;
+  position: sticky;
+  bottom: 0;
+  background: var(--background-primary, #1a1a2e);
+  border-top: 1px solid var(--mcp-glass-border, rgba(255, 255, 255, 0.06));
+}
+
+.tm-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 24px;
+  font-size: 15px;
+  min-height: 48px;
+  border-radius: 12px;
+}
+
+/* ===== MOBILE PROJECT MODAL — full width, touch-friendly ===== */
+.task-tracker-project-modal {
+  padding: 14px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  max-width: 100vw !important;
+  max-height: 100vh;
+  max-height: 100dvh;
+  border-radius: 0 !important;
+  margin: 0 !important;
+}
+
+.task-tracker-project-modal h2 {
+  font-size: 18px;
+  margin-bottom: 4px;
+  position: sticky;
+  top: 0;
+  background: var(--background-primary, #1e1e2e);
+  padding: 10px 0;
+  z-index: 10;
+}
+
+.task-tracker-modal-subtitle {
+  font-size: 12px;
+  margin-bottom: 14px;
+}
+
+/* New project form — compact */
+.pm-new-project {
+  padding: 14px;
+  margin-bottom: 14px;
+  border-radius: 12px;
+}
+
+.pm-section-header {
+  margin-bottom: 10px;
+}
+
+.pm-section-title {
+  font-size: 13px;
+}
+
+.pm-field {
+  margin-bottom: 12px;
+}
+
+.pm-label {
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.pm-input {
+  padding: 10px 12px;
+  font-size: 16px;
+  /* Prevent iOS zoom */
+  border-radius: 10px;
+}
+
+/* Color + Icon row — stack vertically */
+.pm-row {
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+/* Color grid — larger swatches for touch */
+.pm-color-swatch {
+  width: 40px;
+  height: 40px;
+}
+
+/* Icon section */
+.pm-icon-custom-input {
+  max-width: none;
+  font-size: 22px;
+  padding: 10px;
+  height: 44px;
+  width: 44px;
+}
+
+.pm-icon-apply-btn {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
+.pm-icon-btn {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+}
+
+/* Preview */
+.pm-preview {
+  margin-bottom: 12px;
+}
+
+.pm-preview-card {
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+
+/* Create button */
+.pm-create-btn {
+  padding: 14px;
+  font-size: 15px;
+  min-height: 48px;
+  border-radius: 12px;
+}
+
+/* Project list */
+.pm-project-item {
+  padding: 12px 10px;
+  border-radius: 10px;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pm-project-actions {
+  opacity: 1;
+  /* Always visible on mobile */
+}
+
+.pm-action-btn {
+  width: 36px;
+  height: 36px;
+  font-size: 16px;
+}
+
+/* Edit modal */
+.pm-edit-modal {
+  padding: 14px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  max-width: 100vw !important;
+  max-height: 100vh;
+  max-height: 100dvh;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  width: 100vw !important;
+}
+
+.pm-modal-buttons {
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+}
+
+.pm-cancel-btn,
+.pm-save-btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  min-height: 48px;
+  border-radius: 12px;
+  text-align: center;
+  justify-content: center;
+}
+
+/* ===== MOBILE TASK ACTIONS — ultra compact ===== */
+.task-actions-toggle {
+  padding: 2px 4px;
+  font-size: 11px;
+  min-width: 20px;
+  min-height: 20px;
+}
+
+.task-actions-menu {
+  min-width: 140px;
+}
+
+.task-actions-item {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* Task status button — compact on mobile */
+.task-status-btn {
+  width: 20px;
+  height: 20px;
+  font-size: 9px;
+  flex-shrink: 0;
+}
+
+/* Note icon — compact on mobile */
+.note-icon {
+  font-size: 12px;
+  min-width: 20px;
+  min-height: 20px;
+  flex-shrink: 0;
+}
+
+/* Modals — full width mobile, scrollable */
+.task-tracker-modal,
+.task-tracker-project-modal {
+  padding: 24px 20px;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.task-tracker-modal h2,
+.task-tracker-project-modal h2 {
+  font-size: 20px;
+  margin-bottom: 24px;
+}
+
+.task-tracker-modal-buttons {
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 20px;
+}
+
+.task-tracker-modal-buttons button {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  min-height: 48px;
+}
+
+/* Color picker — bigger touch targets */
+.task-tracker-color-swatch {
+  width: 44px;
+  height: 44px;
+}
+
+/* Day picker */
+.task-tracker-recurrence-day-btn {
+  width: 42px;
+  height: 42px;
+  font-size: 13px;
+}
+
+/* Time logs modal */
+.time-logs-modal {
+  max-height: 55vh;
+}
+
+.time-logs-body {
+  max-height: 40vh;
+}
+
+/* Group headers */
+.task-group-header {
+  display: none;
+}
+
+/* Project items */
+.task-tracker-project-item {
+  padding: 14px 12px;
+}
+
+.task-tracker-project-name {
+  font-size: 15px;
+}
+
+.task-tracker-btn-small {
+  padding: 8px 14px;
+  font-size: 14px;
+  min-height: 40px;
+}
+
+/* Mobile-only / desktop-only visibility */
+.desktop-only {
+  display: none !important;
+}
+
+.mobile-only {
+  display: flex !important;
+}
+
+/* Kanban dropdown — compact on mobile */
+.kanban-dropdown-trigger {
+  padding: 4px 10px;
+  font-size: 11px;
+  min-height: 28px;
+  gap: 4px;
+}
+
+.kanban-trigger-icon {
+  font-size: 12px;
+}
+
+.kanban-trigger-label {
+  font-size: 11px;
+}
+
+.kanban-trigger-count {
+  font-size: 9px;
+  padding: 1px 5px;
+}
+
+.kanban-trigger-arrow {
+  font-size: 10px;
+}
+
+.kanban-dropdown-menu {
+  min-width: 150px;
+}
+
+.kanban-dropdown-item {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+/* Task tracker header — compact on mobile */
+.task-tracker-header {
+  padding: 6px 8px;
+  gap: 6px;
+}
+
+.task-tracker-title {
+  font-size: 11px;
+}
+
+.task-tracker-date {
+  font-size: 10px;
+  max-width: 80px;
+}
+
+.task-tracker-count {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.task-tracker-btn {
+  min-width: 28px;
+  min-height: 28px;
+  font-size: 13px;
+  padding: 3px 6px;
+}
+
+/* Mobile header */
+.task-tracker-mob-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--mcp-glass-border);
+}
+
+.task-tracker-mob-date {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mcp-text);
+}
+
+/* Mobile filter tabs */
+.task-tracker-mob-filters {
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.task-tracker-mob-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.mob-filter-btn {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--mcp-text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.mob-filter-btn.active {
+  background: var(--mcp-accent);
+  color: #fff;
+  border-color: var(--mcp-accent);
+}
+
+.mob-filter-btn:hover:not(.active) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mcp-text);
+}
+
+/* Mobile project picker */
+.task-tracker-mob-project-picker {
+  position: relative;
+  flex: 1;
+}
+
+.task-tracker-mob-project-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--mcp-text);
+  background: var(--mcp-surface-2);
+  border: 1px solid var(--mcp-glass-border);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.project-picker-arrow {
+  font-size: 10px;
+  margin-left: auto;
+  transition: transform 0.2s;
+}
+
+.project-picker-arrow.rotated {
+  transform: rotate(180deg);
+}
+
+.task-tracker-mob-project-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--mcp-surface-2);
+  border: 1px solid var(--mcp-glass-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  min-width: 180px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.project-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: var(--mcp-text-muted);
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.project-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--mcp-text);
+}
+
+.project-dropdown-item.active {
+  background: var(--mcp-accent-dim);
+  color: var(--mcp-accent);
+}
+
+/* Filter bar — compact on mobile */
+.task-tracker-filter-bar {
+  padding: 4px 0;
+  gap: 4px;
+}
+
+.task-tracker-filter-btn {
+  padding: 3px 10px;
+  font-size: 10px;
+  min-height: 26px;
+}
+
+/* Search bar — compact on mobile */
+.task-tracker-search-bar {
+  padding: 4px 0;
+}
+
+.task-tracker-search-input {
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+/* Schedule open button */
+.schedule-open-btn {
+  padding: 12px 16px;
+  font-size: 14px;
+}
+
+/* Month goals indicator */
+.month-goals-single,
+.month-goals-multi {
+  padding: 10px 14px;
+  font-size: 13px;
+}
 }
 
 /* ============================================
    RESPONSIVE — SMALL PHONE (≤360px) — WIDGET
    ============================================ */
 @media (max-width: 360px) {
+
   /* ── Calendar container — no overflow ── */
   #calendar-container {
     overflow: hidden;
@@ -5601,6 +5747,7 @@ svg.dot.filled {
   .task-tracker-panel .task-tracker-list {
     max-height: 35vh;
   }
+
   .habit-tracker-panel {
     max-height: 25vh;
   }
@@ -5686,6 +5833,7 @@ svg.dot.filled {
    TOUCH DEVICES — always show action buttons
    ============================================ */
 @media (hover: none) and (pointer: coarse) {
+
   /* Quick action buttons — always visible on touch */
   .task-tracker-panel .task-quick-actions {
     opacity: 1 !important;
@@ -5827,7 +5975,7 @@ svg.dot.filled {
   border: 1px solid var(--mcp-glass-border, rgba(255, 255, 255, 0.06));
   border-radius: var(--mcp-radius, 14px);
   box-shadow: var(--mcp-shadow, 0 8px 32px rgba(0, 0, 0, 0.15)),
-              var(--mcp-shadow-glow, 0 0 40px rgba(80, 170, 210, 0.06));
+    var(--mcp-shadow-glow, 0 0 40px rgba(80, 170, 210, 0.06));
 }
 
 /* Safe area for devices with notches */
@@ -5901,8 +6049,8 @@ svg.dot.filled {
 
 .schedule-view-container .fc .fc-timegrid-axis-cushion,
 .schedule-view-container .fc .fc-timegrid-slot-label-cushion {
-  color: var(--mcp-text-faint, rgba(200, 210, 220, 0.25));
-  font-size: 10px;
+  color: #b7b8bb;
+  font-size: 11px;
 }
 
 .schedule-view-container .fc .fc-col-header-cell-cushion {
@@ -5986,7 +6134,8 @@ svg.dot.filled {
 
 .schedule-view-container .fc td,
 .schedule-view-container .fc th {
-  border-color: rgba(255, 255, 255, 0.04);
+  border-color: rgb(255 255 255 / 10%);
+  ;
 }
 
 .schedule-view-container .fc .fc-timegrid-now-indicator-line {
@@ -6438,6 +6587,7 @@ svg.dot.filled {
    DISABLE HOVER EFFECTS ON MOBILE
    ============================================ */
 @media (hover: none) and (pointer: coarse) {
+
   /* Calendar day cells — touch feedback */
   #calendar-container .day {
     -webkit-tap-highlight-color: var(--mcp-accent-faint);
@@ -6572,6 +6722,22 @@ svg.dot.filled {
 .sch-event-holiday {
   border-left-width: 3px !important;
   font-weight: 600;
+}
+
+/* Completed tasks in schedule — strikethrough */
+.sch-event-done .sch-event-title {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.sch-event-done .sch-event-time {
+  text-decoration: line-through;
+  opacity: 0.5;
+}
+
+.sch-event-done .sch-event-description {
+  text-decoration: line-through;
+  opacity: 0.4;
 }
 
 /* Тулбар расписания */
@@ -6726,10 +6892,19 @@ svg.dot.filled {
   z-index: 10000;
   animation: dtwTooltipIn 0.15s ease;
 }
+
 @keyframes dtwTooltipIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 .dtw-tooltip-title {
   font-size: 11px;
   font-weight: 600;
@@ -6740,6 +6915,7 @@ svg.dot.filled {
   border-bottom: 1px solid var(--background-modifier-border);
   margin-bottom: 4px;
 }
+
 .dtw-tooltip-row {
   display: flex;
   align-items: center;
@@ -6749,9 +6925,11 @@ svg.dot.filled {
   color: var(--text-normal);
   transition: background 0.1s ease;
 }
+
 .dtw-tooltip-row:hover {
   background: var(--background-modifier-hover);
 }
+
 .dtw-tooltip-status {
   width: 16px;
   text-align: center;
@@ -6759,18 +6937,22 @@ svg.dot.filled {
   color: var(--text-muted);
   flex-shrink: 0;
 }
+
 .dtw-tooltip-status.done {
   color: var(--mcp-success, rgba(80, 200, 160, 0.85));
 }
+
 .dtw-tooltip-status.progress {
   color: var(--mcp-accent, rgba(95, 153, 225, 0.55));
 }
+
 .dtw-tooltip-name {
   flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
 .dtw-tooltip-name.done-name {
   text-decoration: line-through;
   opacity: 0.5;
@@ -6815,12 +6997,29 @@ svg.dot.filled {
   will-change: transform, opacity;
 }
 
-.dashboard-card:nth-child(1) { animation-delay: 0s; }
-.dashboard-card:nth-child(2) { animation-delay: 0.08s; }
-.dashboard-card:nth-child(3) { animation-delay: 0.16s; }
-.dashboard-card:nth-child(4) { animation-delay: 0.24s; }
-.dashboard-card:nth-child(5) { animation-delay: 0.32s; }
-.dashboard-card:nth-child(6) { animation-delay: 0.40s; }
+.dashboard-card:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.dashboard-card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.dashboard-card:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.dashboard-card:nth-child(4) {
+  animation-delay: 0.24s;
+}
+
+.dashboard-card:nth-child(5) {
+  animation-delay: 0.32s;
+}
+
+.dashboard-card:nth-child(6) {
+  animation-delay: 0.40s;
+}
 
 .markdown-preview-view .dashboard-card:hover,
 .markdown-source-view .dashboard-card:hover {
@@ -6837,7 +7036,7 @@ svg.dot.filled {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 48%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.04) 52%, transparent 70%);
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.04) 48%, rgba(255, 255, 255, 0.07) 50%, rgba(255, 255, 255, 0.04) 52%, transparent 70%);
   transform: translateX(-110%);
   transition: transform 1.2s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
@@ -6918,14 +7117,32 @@ svg.dot.filled {
 }
 
 @keyframes dashboardCardIn {
-  0% { opacity: 0; transform: translateY(24px) scale(0.96); }
-  60% { opacity: 0.8; transform: translateY(-2px) scale(1.005); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+
+  60% {
+    opacity: 0.8;
+    transform: translateY(-2px) scale(1.005);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes linkSlideIn {
-  from { opacity: 0; transform: translateX(-10px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 /* Dashboard responsive */
@@ -6944,8 +7161,8 @@ svg.dot.filled {
     0 4px 16px rgba(0, 0, 0, 0.2),
     0 1px 3px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.015);
-    max-height: 400px;
-    overflow-y: auto;
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .theme-dark .dashboard-card:hover {
@@ -7001,6 +7218,11 @@ svg.dot.filled {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }

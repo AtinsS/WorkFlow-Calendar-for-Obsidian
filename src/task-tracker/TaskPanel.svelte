@@ -45,6 +45,7 @@
   let showSearch = false;
   let showProjectPicker = false;
   let searchQuery = "";
+  let sortMode: "time" | "priority" = "time";
 
   $: currentDate = $selectedDate;
   $: allTasksForDate = currentDate
@@ -83,6 +84,9 @@
   $: taskGroups = (showAllDates
     ? groupTasksByDateAndProject(filteredTasks, $projects)
     : groupTasksByProject(filteredTasks, $projects)) as any[];
+  $: sortedDisplayTasks = sortMode === "priority"
+    ? sortTasksByPriority(filteredTasks)
+    : sortTasksChronologically(filteredTasks);
   $: totalCount = allTasksForDate.length;
   $: doneCount = allTasksForDate.filter((t) => t.status === "done").length;
 
@@ -126,6 +130,51 @@
       if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
       return (a.createdAt || 0) - (b.createdAt || 0);
     });
+  }
+
+  function sortTasksChronologically(taskList: ITask[]): ITask[] {
+    return [...taskList].sort((a, b) => {
+      // Выполненные задачи — в конец
+      if (a.status === "done" && b.status === "done") return (b.updatedAt || 0) - (a.updatedAt || 0);
+      if (a.status === "done") return 1;
+      if (b.status === "done") return -1;
+      // Сортировка по scheduledTime: от раннего к позднему
+      const aTime = a.scheduledTime || "";
+      const bTime = b.scheduledTime || "";
+      if (aTime && bTime) return aTime.localeCompare(bTime);
+      if (aTime) return -1;
+      if (bTime) return 1;
+      // Без времени — по sortOrder и дате создания
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+  }
+
+  const PRIORITY_ORDER: Record<string, number> = { high: 0, medium: 1, low: 2 };
+
+  function sortTasksByPriority(taskList: ITask[]): ITask[] {
+    return [...taskList].sort((a, b) => {
+      // Выполненные задачи — в конец
+      if (a.status === "done" && b.status === "done") return (b.updatedAt || 0) - (a.updatedAt || 0);
+      if (a.status === "done") return 1;
+      if (b.status === "done") return -1;
+      // Сначала по приоритету: high → medium → low
+      const aPri = PRIORITY_ORDER[a.priority] ?? 3;
+      const bPri = PRIORITY_ORDER[b.priority] ?? 3;
+      if (aPri !== bPri) return aPri - bPri;
+      // Одинаковый приоритет — по времени
+      const aTime = a.scheduledTime || "";
+      const bTime = b.scheduledTime || "";
+      if (aTime && bTime) return aTime.localeCompare(bTime);
+      if (aTime) return -1;
+      if (bTime) return 1;
+      if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+  }
+
+  function toggleSortMode() {
+    sortMode = sortMode === "time" ? "priority" : "time";
   }
 
   function groupTasksByDateAndProject(taskList: ITask[], projectList: IProject[]): { dateUID: string; dateLabel: string; groups: { project: IProject | null; tasks: ITask[] }[] }[] {
@@ -288,6 +337,11 @@
       </div>
       <button class="task-tracker-btn icon-btn" class:active={showSearch}
         on:click|stopPropagation={toggleSearch} title="Поиск">🔍</button>
+      <button class="task-tracker-btn sort-btn" class:active={sortMode === "priority"}
+        on:click|stopPropagation={toggleSortMode}
+        title={sortMode === "time" ? "По времени" : "По приоритету"}>
+        {sortMode === "time" ? "🕐" : "🔺"}
+      </button>
       <button class="task-tracker-btn add-btn" on:click|stopPropagation={openCreateTask}>+</button>
       <div class="task-tracker-menu-wrapper">
         <button class="task-tracker-btn" on:click|stopPropagation={toggleMenu} title="Ещё">⋮</button>
@@ -343,6 +397,11 @@
           title={currentDate ? "Все задачи" : "Сегодня"}>📋</button>
         <button class="task-tracker-btn schedule-btn" on:click|stopPropagation={() => onOpenSchedule?.()} title="Расписание">📅</button>
         <KanbanTabs />
+        <button class="task-tracker-btn sort-btn" class:active={sortMode === "priority"}
+          on:click|stopPropagation={toggleSortMode}
+          title={sortMode === "time" ? "По времени" : "По приоритету"}>
+          {sortMode === "time" ? "🕐" : "🔺"}
+        </button>
         <button class="task-tracker-btn icon-btn" class:active={showSearch} on:click|stopPropagation={toggleSearch} title="Поиск">🔍</button>
         <button class="task-tracker-btn add-btn" on:click|stopPropagation={openCreateTask}>+</button>
         <div class="task-tracker-menu-wrapper">
@@ -366,13 +425,7 @@
     </div>
   {/if}
 
-  <div class="task-tracker-filters">
-    <button class="filter-btn" class:active={$activeTab === "all"} on:click={() => activeTab.set("all")}>Все</button>
-    <button class="filter-btn" class:active={$activeTab === "todo"} on:click={() => activeTab.set("todo")}>Сделать</button>
-    <button class="filter-btn" class:active={$activeTab === "progress"} on:click={() => activeTab.set("progress")}>В работе</button>
-    <button class="filter-btn" class:active={$activeTab === "paused"} on:click={() => activeTab.set("paused")}>На паузе</button>
-    <button class="filter-btn" class:active={$activeTab === "done"} on:click={() => activeTab.set("done")}>Готово</button>
-  </div>
+
 
   <div class="task-tracker-body">
     <div class="task-tracker-list">
@@ -393,10 +446,8 @@
           {/each}
         {/each}
       {:else}
-        {#each taskGroups as group (group.project?.id || "none")}
-          {#each group.tasks as task (task.id)}
-            <TaskItem {task} {appInstance} on:complete={(e) => handleTaskComplete(e.detail.task)} on:delete={(e) => handleTaskDelete(e.detail.task)} />
-          {/each}
+        {#each sortedDisplayTasks as task (task.id)}
+          <TaskItem {task} {appInstance} on:complete={(e) => handleTaskComplete(e.detail.task)} on:delete={(e) => handleTaskDelete(e.detail.task)} />
         {/each}
       {/if}
     </div>

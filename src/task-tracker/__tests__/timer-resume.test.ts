@@ -8,20 +8,22 @@ import {
 } from "../TimerManager";
 
 describe("formatDuration", () => {
-  it("returns '< 1 мин' for zero or negative", () => {
-    expect(formatDuration(0)).toBe("< 1 мин");
-    expect(formatDuration(-100)).toBe("< 1 мин");
+  it("returns '0:00' for zero or negative", () => {
+    expect(formatDuration(0)).toBe("0:00");
+    expect(formatDuration(-100)).toBe("0:00");
   });
 
-  it("formats minutes only", () => {
-    expect(formatDuration(60000)).toBe("1 мин");
-    expect(formatDuration(300000)).toBe("5 мин");
+  it("formats minutes and seconds", () => {
+    expect(formatDuration(60000)).toBe("1:00");
+    expect(formatDuration(300000)).toBe("5:00");
+    expect(formatDuration(90000)).toBe("1:30");
   });
 
-  it("formats hours and minutes", () => {
-    expect(formatDuration(3600000)).toBe("1 ч");
-    expect(formatDuration(5400000)).toBe("1 ч 30 мин");
-    expect(formatDuration(7200000)).toBe("2 ч");
+  it("formats hours, minutes and seconds", () => {
+    expect(formatDuration(3600000)).toBe("1:00:00");
+    expect(formatDuration(5400000)).toBe("1:30:00");
+    expect(formatDuration(7200000)).toBe("2:00:00");
+    expect(formatDuration(3661000)).toBe("1:01:01");
   });
 });
 
@@ -49,8 +51,8 @@ describe("Timer resume logic — accumulated time display", () => {
     const currentSessionElapsed = 30000; // 30 seconds into new session after resume
 
     const displayTime = currentSessionElapsed + totalWorkTimeBeforePause;
-    // 150000ms = 2 min 30 sec → formatDuration floors to "2 мин"
-    expect(formatDuration(displayTime)).toBe("2 мин");
+    // 150000ms = 2 min 30 sec
+    expect(formatDuration(displayTime)).toBe("2:30");
   });
 
   it("fresh start should show only elapsed (totalWorkTime = 0)", () => {
@@ -58,14 +60,14 @@ describe("Timer resume logic — accumulated time display", () => {
     const elapsed = 60000; // 1 minute
 
     const displayTime = elapsed + totalWorkTime;
-    expect(formatDuration(displayTime)).toBe("1 мин");
+    expect(formatDuration(displayTime)).toBe("1:00");
   });
 
   it("pause shows accumulated totalWorkTime", () => {
     // When paused, timerDisplay is null, and the template shows:
     // formatDuration(task.totalWorkTime)
     const totalWorkTime = 3660000; // 1 hour 1 minute
-    expect(formatDuration(totalWorkTime)).toBe("1 ч 1 мин");
+    expect(formatDuration(totalWorkTime)).toBe("1:01:00");
   });
 
   it("multiple pause/resume cycles accumulate correctly", () => {
@@ -79,7 +81,7 @@ describe("Timer resume logic — accumulated time display", () => {
     // Cycle 3: resume, work 2 min → pause → totalWorkTime += 120000
     totalWorkTime += 120000;
     expect(totalWorkTime).toBe(600000);
-    expect(formatDuration(totalWorkTime)).toBe("10 мин");
+    expect(formatDuration(totalWorkTime)).toBe("10:00");
   });
 
   it("resume display = currentSessionElapsed + totalWorkTime", () => {
@@ -90,8 +92,8 @@ describe("Timer resume logic — accumulated time display", () => {
     const currentSessionElapsed = 45000;
 
     const display = formatDuration(currentSessionElapsed + totalWorkTime);
-    // 645000ms = 10 min 45 sec → "10 мин"
-    expect(display).toBe("10 мин");
+    // 645000ms = 10 min 45 sec
+    expect(display).toBe("10:45");
   });
 
   it("resume display shows hours when accumulated time crosses hour boundary", () => {
@@ -103,7 +105,7 @@ describe("Timer resume logic — accumulated time display", () => {
 
     const display = formatDuration(currentSessionElapsed + totalWorkTime);
     // 3900000ms = 65 minutes = 1 hour 5 minutes
-    expect(display).toBe("1 ч 5 мин");
+    expect(display).toBe("1:05:00");
   });
 });
 
@@ -145,7 +147,7 @@ describe("resumeTimer", () => {
     const elapsed = getActiveTimer("task-3");
     const displayTime = elapsed + totalWorkTime;
     // ~720000ms = 12 minutes
-    expect(formatDuration(displayTime)).toBe("12 мин");
+    expect(formatDuration(displayTime)).toBe("12:00");
   });
 
   it("stopTimer after resumeTimer returns correct duration", () => {

@@ -7,10 +7,11 @@
   import interactionPlugin from "@fullcalendar/interaction";
 
   import type CalendarPlugin from "../main";
-  import type { ITask } from "../task-tracker/types";
+  import type { ITask, IChecklistItem } from "../task-tracker/types";
   import {
     tasks,
     projects,
+    checklists,
     updateTask,
     updateTaskStatus,
     removeTask,
@@ -593,6 +594,13 @@
     return get(tasks).find((t) => t.id === taskId) || null;
   }
 
+  /** Получить чек-лист для задачи */
+  function getTaskChecklist(taskId: string): IChecklistItem[] {
+    return get(checklists)
+      .filter((c) => c.taskId === taskId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
   function renderEventContent(eventInfo: any) {
     const { time, event } = eventInfo;
 
@@ -708,6 +716,13 @@
       }
     }
 
+    const checklistItems = getTaskChecklist(task.id);
+    const checklistDone = checklistItems.filter((c) => c.checked).length;
+    const checklistTotal = checklistItems.length;
+    const checklistBadge = checklistTotal > 0
+      ? `<span class="sch-checklist-badge" title="Чек-лист: ${checklistDone}/${checklistTotal}">☑ ${checklistDone}/${checklistTotal}</span>`
+      : "";
+
     const descriptionHtml =
       showDescription && task.description
         ? `<span class="sch-event-description">${task.description}</span>`
@@ -720,6 +735,7 @@
             ${displayTime ? `<span class="sch-event-time${overdueHtml ? " sch-time-overdue" : ""}">${displayTime}</span>` : ""}
             <span class="sch-event-title">${event.title}</span>
             ${statusHtml}
+            ${checklistBadge}
             ${workBadge}
             ${noteBadge}
             ${priorityBadge}
@@ -790,6 +806,63 @@
     }
     if (lines.length > 0) {
       el.setAttribute("title", lines.join("\n"));
+    }
+
+    // Hover → show checklist tooltip
+    const checklistItems = getTaskChecklist(task.id);
+    if (checklistItems.length > 0) {
+      el.addEventListener("mouseenter", () => {
+        // Remove native title to avoid double tooltip
+        el.removeAttribute("title");
+
+        const tooltip = document.createElement("div");
+        tooltip.className = "sch-checklist-tooltip";
+
+        const done = checklistItems.filter((c) => c.checked).length;
+        let html = `<div class="sch-checklist-tooltip-title">Чек-лист (${done}/${checklistItems.length}):</div>`;
+        for (const item of checklistItems) {
+          const icon = item.checked ? "✅" : "⬜";
+          const strikeStyle = item.checked ? ' style="text-decoration:line-through;opacity:0.6"' : "";
+          html += `<div class="sch-checklist-tooltip-item"${strikeStyle}><span>${icon}</span> ${item.title}</div>`;
+        }
+        tooltip.innerHTML = html;
+
+        document.body.appendChild(tooltip);
+        const rect = el.getBoundingClientRect();
+        tooltip.style.left = `${rect.right + 8}px`;
+        tooltip.style.top = `${rect.top}px`;
+
+        // Keep tooltip within viewport
+        requestAnimationFrame(() => {
+          const tr = tooltip.getBoundingClientRect();
+          if (tr.right > window.innerWidth) {
+            tooltip.style.left = `${rect.left - tr.width - 8}px`;
+          }
+          if (tr.bottom > window.innerHeight) {
+            tooltip.style.top = `${Math.max(4, window.innerHeight - tr.height - 8)}px`;
+          }
+        });
+
+        el.addEventListener("mouseleave", () => {
+          tooltip.remove();
+          // Restore native title
+          const restoreLines: string[] = [];
+          restoreLines.push(task.title);
+          if (task.description) restoreLines.push(task.description);
+          if (task.recurrence) {
+            const recMap: Record<string, string> = { daily: "Ежедневно", weekly: "Еженедельно", monthly: "Ежемесячно" };
+            let recText = `Повторение: ${recMap[task.recurrence.type] || task.recurrence.type}`;
+            if (task.recurrence.until) recText += ` (до ${task.recurrence.until.replace(/^day-/, "")})`;
+            restoreLines.push(recText);
+          }
+          if (task.estimatedTime) {
+            const h = Math.floor(task.estimatedTime / 60);
+            const m = task.estimatedTime % 60;
+            restoreLines.push(`Ожидаемое: ${h > 0 ? h + "ч " : ""}${m > 0 ? m + "м" : ""}`);
+          }
+          if (restoreLines.length > 0) el.setAttribute("title", restoreLines.join("\n"));
+        }, { once: true });
+      });
     }
 
     // Double-click → open task editor
@@ -1195,15 +1268,18 @@
     menu.style.zIndex = "9999";
 
     // Кнопки меню
+    const priorityIcon = task.priority === "high" ? "!" : task.priority === "medium" ? "~" : "";
+    const priorityPrefix = priorityIcon ? `${priorityIcon} ` : "";
+
     const items = [
       // Редактирование только для незавершённых задач
       ...(task.status !== "done"
-        ? [{ label: ` ${"📝 Редактировать"}`, action: () => contextEditTask() }]
+        ? [{ label: `${priorityPrefix}📝 Редактировать`, action: () => contextEditTask() }]
         : []),
       ...(task.boundNotePath
         ? [
             {
-              label: `${"📄 Открыть заметку"}`,
+              label: `${priorityPrefix}📄 Открыть заметку`,
               action: () => contextOpenNote(),
             },
           ]
@@ -2454,6 +2530,11 @@
       padding: 1px 4px;
     }
 
+    :global(.sch-checklist-badge) {
+      font-size: 8px;
+      padding: 1px 3px;
+    }
+
     :global(.sch-duration) {
       font-size: 8px;
     }
@@ -2670,6 +2751,59 @@
     :global(.sch-event-title) {
       font-size: 10px;
     }
+  }
+
+  /* ===== Checklist badge ===== */
+  :global(.sch-checklist-badge) {
+    font-size: 9px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(100, 200, 140, 0.2);
+    color: rgba(150, 220, 180, 0.9);
+    flex-shrink: 0;
+    white-space: nowrap;
+    line-height: 1.3;
+  }
+
+  /* ===== Checklist hover tooltip ===== */
+  :global(.sch-checklist-tooltip) {
+    position: fixed;
+    z-index: 10001;
+    min-width: 160px;
+    max-width: 280px;
+    max-height: 240px;
+    overflow-y: auto;
+    padding: 8px 10px;
+    background: var(--background-primary, #1e1e2e);
+    border: 1px solid var(--background-modifier-border, rgba(255, 255, 255, 0.1));
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    font-family: var(--font-interface);
+    font-size: 12px;
+    color: var(--text-normal, #e8ecf0);
+    pointer-events: none;
+  }
+
+  :global(.sch-checklist-tooltip-title) {
+    font-weight: 600;
+    font-size: 11px;
+    color: var(--text-muted, rgba(200, 210, 220, 0.6));
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  :global(.sch-checklist-tooltip-item) {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 0;
+    font-size: 12px;
+    line-height: 1.35;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Weather tooltip on day header hover */

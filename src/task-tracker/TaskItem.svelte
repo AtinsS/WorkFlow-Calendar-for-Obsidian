@@ -42,9 +42,8 @@
   let timerDisplay = "";
 
   function updateTimerDisplay() {
-    const active = getActiveTimer(task.id);
-    if (active && typeof active === "object") {
-      const elapsed = Math.floor((Date.now() - (active as any).startedAt) / 1000) + ((active as any).elapsedBefore || 0);
+    const elapsed = getActiveTimer(task.id);
+    if (elapsed !== null && elapsed > 0) {
       timerDisplay = formatDuration(elapsed);
     } else {
       timerDisplay = "";
@@ -57,7 +56,11 @@
   // Computed
   $: hasDeadline = !!task.deadline;
   $: scheduledTimePassed = (() => {
-    if (!task.scheduledTime || task.status === "done") return false;
+    if (!task.scheduledTime || task.status === "done" || task.status === "paused" || task.status === "progress") return false;
+    const today = window.moment?.().format("YYYY-MM-DD");
+    if (!today) return false;
+    const taskDate = task.dateUID?.match(/^day-(\d{4}-\d{2}-\d{2})/)?.[1];
+    if (taskDate !== today) return false;
     const [h, m] = task.scheduledTime.split(":").map(Number);
     const now = new Date();
     return now.getHours() > h || (now.getHours() === h && now.getMinutes() >= m);
@@ -256,17 +259,17 @@
       </span>
     {/if}
 
-    {#if task.priority === "high"}
-      <span class="task-priority-badge high">❗ Высокий</span>
-    {:else if task.priority === "medium"}
-      <span class="task-priority-badge medium">⚡ Средний</span>
+    {#if task.isWorkTask}
+      <span class="task-work-badge">💼 Рабочая</span>
+    {/if}
+
+    {#if task.recurrence}
+      <span class="task-recurring-icon" title="Повторяющаяся задача">🔄</span>
     {/if}
 
     {#if task.scheduledTime}
       {#if task.status === "done"}
         <span class="task-scheduled done">✓ Готово</span>
-      {:else if task.status === "progress"}
-        <span class="task-scheduled in-progress">🔥 В работе</span>
       {:else}
         <span class="task-scheduled {scheduledTimePassed ? 'passed' : ''}">
           {scheduledTimePassed ? "⚠" : "🕐"} {task.scheduledTime}{#if task.endTime} — {task.endTime}{/if}
