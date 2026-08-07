@@ -4465,7 +4465,7 @@ svg.dot.filled {
 
 .habit-edit-btn,
 .habit-delete-btn {
-  display: none;
+  opacity: 1;
 }
 
 /* ===== MOBILE TASK MODAL (tm) — full width, touch-friendly, scrollable ===== */

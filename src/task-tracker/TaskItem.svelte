@@ -44,7 +44,7 @@
   function updateTimerDisplay() {
     const elapsed = getActiveTimer(task.id);
     if (elapsed !== null && elapsed > 0) {
-      timerDisplay = formatDuration(elapsed);
+      timerDisplay = formatDuration(elapsed + (task.totalWorkTime || 0));
     } else {
       timerDisplay = "";
     }

@@ -57,6 +57,7 @@
   let skipNextRefetch = false;
   let isDragging = false;
   let suppressRefetch = false;
+  let currentViewType = "dayGridMonth";
 
   // Weather state
   let weatherByDate: Map<string, DayWeather> = new Map();
@@ -535,6 +536,7 @@
       },
       datesSet: (info: any) => {
         const view = info.view;
+        currentViewType = view.type;
         const viewType =
           view.type === "dayGridMonth"
             ? "Месяц"
@@ -613,6 +615,11 @@
     const isDeadlineEvent = event.extendedProps?.isDeadlineEvent as boolean;
 
     if (isDeadlineEvent) {
+      if (currentViewType === "dayGridMonth") {
+        return {
+          html: `<div class="sch-event-inline sch-event-inline-deadline"><span class="sch-inline-time">⏰</span></div>`,
+        };
+      }
       return {
         html: `
           <div class="sch-event sch-event-compact sch-event-deadline">
@@ -620,6 +627,21 @@
             <span class="sch-event-title">${event.title}</span>
           </div>
         `,
+      };
+    }
+
+    // Month view: compact inline badge — only time + status
+    if (currentViewType === "dayGridMonth") {
+      const displayTime = task.scheduledTime || "";
+      const statusIcon = task.status === "progress" ? "🔥"
+        : task.status === "paused" ? "☕"
+        : task.status === "done" ? "✓"
+        : "";
+      const statusClass = `sch-inline-${task.status}`;
+      const timeHtml = displayTime ? `<span class="sch-inline-time">${displayTime}</span>` : "";
+      const statusHtml = statusIcon ? `<span class="sch-inline-status ${statusClass}">${statusIcon}</span>` : "";
+      return {
+        html: `<div class="sch-event-inline">${timeHtml}${statusHtml}<span class="sch-inline-title">${event.title}</span></div>`,
       };
     }
 
@@ -734,6 +756,8 @@
           <div class="sch-event-header">
             ${displayTime ? `<span class="sch-event-time${overdueHtml ? " sch-time-overdue" : ""}">${displayTime}</span>` : ""}
             <span class="sch-event-title">${event.title}</span>
+          </div>
+          <div class="sch-event-badges">
             ${statusHtml}
             ${checklistBadge}
             ${workBadge}
@@ -808,61 +832,47 @@
       el.setAttribute("title", lines.join("\n"));
     }
 
-    // Hover → show checklist tooltip
+    // Hover on checklist badge → show checklist tooltip
     const checklistItems = getTaskChecklist(task.id);
     if (checklistItems.length > 0) {
-      el.addEventListener("mouseenter", () => {
-        // Remove native title to avoid double tooltip
-        el.removeAttribute("title");
+      const badge = el.querySelector(".sch-checklist-badge") as HTMLElement | null;
+      if (badge) {
+        badge.removeAttribute("title");
+        badge.addEventListener("mouseenter", () => {
+          const tooltip = document.createElement("div");
+          tooltip.className = "sch-checklist-tooltip";
 
-        const tooltip = document.createElement("div");
-        tooltip.className = "sch-checklist-tooltip";
-
-        const done = checklistItems.filter((c) => c.checked).length;
-        let html = `<div class="sch-checklist-tooltip-title">Чек-лист (${done}/${checklistItems.length}):</div>`;
-        for (const item of checklistItems) {
-          const icon = item.checked ? "✅" : "⬜";
-          const strikeStyle = item.checked ? ' style="text-decoration:line-through;opacity:0.6"' : "";
-          html += `<div class="sch-checklist-tooltip-item"${strikeStyle}><span>${icon}</span> ${item.title}</div>`;
-        }
-        tooltip.innerHTML = html;
-
-        document.body.appendChild(tooltip);
-        const rect = el.getBoundingClientRect();
-        tooltip.style.left = `${rect.right + 8}px`;
-        tooltip.style.top = `${rect.top}px`;
-
-        // Keep tooltip within viewport
-        requestAnimationFrame(() => {
-          const tr = tooltip.getBoundingClientRect();
-          if (tr.right > window.innerWidth) {
-            tooltip.style.left = `${rect.left - tr.width - 8}px`;
+          const done = checklistItems.filter((c) => c.checked).length;
+          let html = `<div class="sch-checklist-tooltip-title">Чек-лист (${done}/${checklistItems.length}):</div>`;
+          for (const item of checklistItems) {
+            const icon = item.checked ? "✅" : "⬜";
+            const strikeStyle = item.checked ? ' style="text-decoration:line-through;opacity:0.6"' : "";
+            html += `<div class="sch-checklist-tooltip-item"${strikeStyle}><span>${icon}</span> ${item.title}</div>`;
           }
-          if (tr.bottom > window.innerHeight) {
-            tooltip.style.top = `${Math.max(4, window.innerHeight - tr.height - 8)}px`;
-          }
+          tooltip.innerHTML = html;
+
+          document.body.appendChild(tooltip);
+          const rect = badge.getBoundingClientRect();
+          tooltip.style.left = `${rect.right + 8}px`;
+          tooltip.style.top = `${rect.top}px`;
+
+          requestAnimationFrame(() => {
+            const tr = tooltip.getBoundingClientRect();
+            if (tr.right > window.innerWidth) {
+              tooltip.style.left = `${rect.left - tr.width - 8}px`;
+            }
+            if (tr.bottom > window.innerHeight) {
+              tooltip.style.top = `${Math.max(4, window.innerHeight - tr.height - 8)}px`;
+            }
+          });
+
+          const removeTooltip = () => {
+            tooltip.remove();
+            badge.removeEventListener("mouseleave", removeTooltip);
+          };
+          badge.addEventListener("mouseleave", removeTooltip);
         });
-
-        el.addEventListener("mouseleave", () => {
-          tooltip.remove();
-          // Restore native title
-          const restoreLines: string[] = [];
-          restoreLines.push(task.title);
-          if (task.description) restoreLines.push(task.description);
-          if (task.recurrence) {
-            const recMap: Record<string, string> = { daily: "Ежедневно", weekly: "Еженедельно", monthly: "Ежемесячно" };
-            let recText = `Повторение: ${recMap[task.recurrence.type] || task.recurrence.type}`;
-            if (task.recurrence.until) recText += ` (до ${task.recurrence.until.replace(/^day-/, "")})`;
-            restoreLines.push(recText);
-          }
-          if (task.estimatedTime) {
-            const h = Math.floor(task.estimatedTime / 60);
-            const m = task.estimatedTime % 60;
-            restoreLines.push(`Ожидаемое: ${h > 0 ? h + "ч " : ""}${m > 0 ? m + "м" : ""}`);
-          }
-          if (restoreLines.length > 0) el.setAttribute("title", restoreLines.join("\n"));
-        }, { once: true });
-      });
+      }
     }
 
     // Double-click → open task editor
@@ -1996,6 +2006,49 @@
     overflow: hidden;
   }
 
+  /* Month view inline badge */
+  :global(.sch-event-inline) {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 4px;
+    font-size: 10px;
+    line-height: 1.3;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  :global(.sch-event-inline .sch-inline-time) {
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+  :global(.sch-event-inline .sch-inline-status) {
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+  :global(.sch-event-inline .sch-inline-title) {
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    font-size: 10px;
+  }
+  :global(.sch-event-inline .sch-inline-done) {
+    color: rgba(130, 220, 170, 0.95);
+  }
+  :global(.sch-event-inline .sch-inline-progress) {
+    color: rgba(255, 200, 100, 0.95);
+  }
+  :global(.sch-event-inline .sch-inline-paused) {
+    color: rgba(200, 180, 140, 0.9);
+  }
+  :global(.sch-event-inline-deadline .sch-inline-time) {
+    color: rgba(255, 150, 150, 0.95);
+  }
+
   :global(.sch-event-compact .sch-event-header) {
     display: flex;
     align-items: center;
@@ -2149,6 +2202,15 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    min-width: 0;
+  }
+
+  :global(.sch-event-badges) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 2px;
     min-width: 0;
   }
 
@@ -2401,6 +2463,11 @@
       gap: 4px;
     }
 
+    :global(.sch-event-badges) {
+      gap: 4px;
+      margin-top: 1px;
+    }
+
     :global(.sch-event-status) {
       font-size: 8.5px;
       padding: 1px 4px;
@@ -2489,6 +2556,11 @@
 
     :global(.sch-event-header) {
       gap: 3px;
+    }
+
+    :global(.sch-event-badges) {
+      gap: 3px;
+      margin-top: 1px;
     }
 
     :global(.sch-event-title) {
