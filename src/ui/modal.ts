@@ -1,4 +1,5 @@
-import { App, Modal } from "obsidian";
+import type { App } from "obsidian";
+import { CustomModal } from "./CustomModal";
 
 interface IConfirmationDialogParams {
   cta: string;
@@ -7,30 +8,35 @@ interface IConfirmationDialogParams {
   title: string;
 }
 
-export class ConfirmationModal extends Modal {
+export class ConfirmationModal extends CustomModal {
+  private config: IConfirmationDialogParams;
+
   constructor(app: App, config: IConfirmationDialogParams) {
     super(app);
+    this.config = config;
+  }
 
-    const { cta, onAccept, text, title } = config;
+  onOpen(): void {
+    const { cta, onAccept, text, title } = this.config;
 
     this.contentEl.createEl("h2", { text: title });
     this.contentEl.createEl("p", { text });
 
-    this.contentEl.createDiv("modal-button-container", (buttonsEl) => {
-      buttonsEl
-        .createEl("button", { text: "Never mind" })
-        .addEventListener("click", () => this.close());
+    const buttonsEl = this.contentEl.createDiv("wf-modal-buttons");
 
-      buttonsEl
-        .createEl("button", {
-          cls: "mod-cta",
-          text: cta,
-        })
-        .addEventListener("click", async (e) => {
-          await onAccept(e);
-          this.close();
-        });
-    });
+    buttonsEl
+      .createEl("button", { text: "Never mind", cls: "wf-btn-cancel" })
+      .addEventListener("click", () => this.close());
+
+    buttonsEl
+      .createEl("button", {
+        cls: "wf-btn-confirm",
+        text: cta,
+      })
+      .addEventListener("click", async (e) => {
+        await onAccept(e);
+        this.close();
+      });
   }
 }
 

@@ -1,4 +1,6 @@
-import { App, Modal, Setting } from "obsidian";
+import { Setting } from "obsidian";
+import type { App } from "obsidian";
+import { CustomModal } from "../ui/CustomModal";
 
 import type { IHabit } from "./types";
 
@@ -8,7 +10,7 @@ const DEFAULT_HABIT_COLORS = [
   "#fd79a8", "#636e72",
 ];
 
-export class HabitModal extends Modal {
+export class HabitModal extends CustomModal {
   private habit: IHabit | null;
   private onSubmit: (habit: Partial<IHabit>) => void;
 
@@ -41,14 +43,13 @@ export class HabitModal extends Modal {
   }
 
   onOpen(): void {
-    const { contentEl } = this;
-    contentEl.addClass("task-tracker-modal");
+    this.containerEl.addClass("wf-habit-modal");
 
-    contentEl.createEl("h2", {
+    this.contentEl.createEl("h2", {
       text: this.habit ? "Редактировать привычку" : "Новая привычка",
     });
 
-    new Setting(contentEl)
+    new Setting(this.contentEl)
       .setName("Название")
       .addText((text) =>
         text
@@ -59,7 +60,7 @@ export class HabitModal extends Modal {
           })
       );
 
-    new Setting(contentEl)
+    new Setting(this.contentEl)
       .setName("Иконка")
       .setDesc("Эмодзи или символ")
       .addText((text) =>
@@ -72,7 +73,7 @@ export class HabitModal extends Modal {
       );
 
     // Color picker
-    const colorSetting = new Setting(contentEl).setName("Цвет");
+    const colorSetting = new Setting(this.contentEl);
     const colorGrid = colorSetting.settingEl.createDiv({
       cls: "task-tracker-color-grid",
     });
@@ -92,7 +93,7 @@ export class HabitModal extends Modal {
       });
     }
 
-    new Setting(contentEl)
+    new Setting(this.contentEl)
       .setName("Частота")
       .addDropdown((dropdown) => {
         dropdown.addOption("daily", "Ежедневно");
@@ -107,7 +108,7 @@ export class HabitModal extends Modal {
 
     // Days of week — для frequency=weekly
     // Visual order: Mon-Sun, moment convention: 0=Sun,1=Mon,...,6=Sat
-    this.customDaysSetting = new Setting(contentEl).setName("Дни недели");
+    this.customDaysSetting = new Setting(this.contentEl).setName("Дни недели");
     const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
     const dayIndices = [1, 2, 3, 4, 5, 6, 0];
     const daysContainer = this.customDaysSetting.settingEl.createDiv({
@@ -136,7 +137,7 @@ export class HabitModal extends Modal {
     }
 
     // Monthly day picker — для frequency=monthly
-    this.monthlyDaySetting = new Setting(contentEl)
+    this.monthlyDaySetting = new Setting(this.contentEl)
       .setName("День месяца")
       .setDesc("День месяца, когда выполнять привычку")
       .addText((text) => {
@@ -155,7 +156,7 @@ export class HabitModal extends Modal {
 
     this.updateFrequencySettingsVisibility();
 
-    const buttonsEl = contentEl.createDiv("task-tracker-modal-buttons");
+    const buttonsEl = this.contentEl.createDiv("task-tracker-modal-buttons");
 
     const cancelBtn = buttonsEl.createEl("button", { text: "Отмена" });
     cancelBtn.addEventListener("click", () => this.close());

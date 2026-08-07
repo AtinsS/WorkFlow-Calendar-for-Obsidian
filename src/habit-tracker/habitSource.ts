@@ -20,8 +20,10 @@ function getLogsMap(): Map<string, number> {
     cachedLogs = current;
     cachedMap = new Map();
     for (const log of current) {
-      if (!log.completed) continue;
-      cachedMap.set(log.date, (cachedMap.get(log.date) || 0) + 1);
+      // Count both 100% (completed) and 50% (count >= 1, not completed)
+      if (log.completed || log.count >= 1) {
+        cachedMap.set(log.date, (cachedMap.get(log.date) || 0) + 1);
+      }
     }
   }
   return cachedMap;

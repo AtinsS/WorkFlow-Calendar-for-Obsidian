@@ -1,5 +1,6 @@
-import { App, Modal } from "obsidian";
+import type { App } from "obsidian";
 import { get } from "svelte/store";
+import { CustomModal } from "../ui/CustomModal";
 
 import type { IProject } from "./types";
 import { DEFAULT_PROJECT_COLORS } from "./types";
@@ -43,7 +44,7 @@ function renderIconPicker(
   const inputWrap = customRow.createDiv("pm-icon-input-wrap");
   const input = inputWrap.createEl("input", {
     cls: "pm-icon-custom-input",
-    attr: { type: "text", placeholder: "Вставьте эмодзи...", maxlength: "10", value: currentIcon },
+    attr: { type: "text", placeholder: "📁", maxlength: "1", value: currentIcon },
   });
   const applyBtn = inputWrap.createEl("button", { text: "✓", cls: "pm-icon-apply-btn" });
 
@@ -95,51 +96,56 @@ function renderIconPicker(
   return input;
 }
 
-export class ProjectModal extends Modal {
-  constructor(app: App) {
-    super(app);
-  }
-
+export class ProjectModal extends CustomModal {
   onOpen(): void {
-    const { contentEl } = this;
-    contentEl.addClass("task-tracker-project-modal");
+    this.containerEl.addClass("wf-project-modal");
 
-    contentEl.createEl("h2", { text: "Управление проектами" });
-    contentEl.createEl("p", {
+    this.contentEl.createEl("h2", { text: "Управление проектами" });
+    this.contentEl.createEl("p", {
       text: "Создайте и настройте проекты для организации задач",
-      cls: "task-tracker-modal-subtitle",
+      cls: "wf-modal-subtitle",
     });
 
-    this.renderNewProjectForm(contentEl);
-    this.renderProjectList(contentEl);
+    this.renderNewProjectForm(this.contentEl);
+    this.renderProjectList(this.contentEl);
   }
 
   private renderNewProjectForm(container: HTMLElement): void {
     const section = container.createDiv("pm-new-project");
 
-    const header = section.createDiv("pm-section-header");
+    const header = section.createDiv("pm-section-header pm-section-toggle");
     header.createEl("span", { text: "+", cls: "pm-section-icon" });
     header.createEl("span", { text: "Новый проект", cls: "pm-section-title" });
+    const chevron = header.createEl("span", { text: "▾", cls: "pm-chevron" });
+
+    const body = section.createDiv("pm-section-body");
+
+    let isExpanded = true;
+    header.addEventListener("click", () => {
+      isExpanded = !isExpanded;
+      body.style.display = isExpanded ? "" : "none";
+      chevron.textContent = isExpanded ? "▾" : "▸";
+    });
 
     let newName = "";
     let newColor = DEFAULT_PROJECT_COLORS[0];
     let newIcon = "📁";
 
     // Name input
-    const nameField = section.createDiv("pm-field");
+    const nameField = body.createDiv("pm-field");
     nameField.createEl("label", { text: "Название проекта", cls: "pm-label" });
     const nameInput = nameField.createEl("input", {
       cls: "pm-input",
-      attr: { type: "text", placeholder: "Введите название...", maxlength: "50" },
+      attr: { type: "text", placeholder: "Введите название проекта...", maxlength: "60" },
     });
-    const charCount = nameField.createEl("span", { text: "0/50", cls: "pm-char-count" });
+    const charCount = nameField.createEl("span", { text: "0/60", cls: "pm-char-count" });
     nameInput.addEventListener("input", () => {
       newName = nameInput.value;
-      charCount.textContent = `${newName.length}/50`;
+      charCount.textContent = `${newName.length}/60`;
     });
 
     // Color + Icon row
-    const row = section.createDiv("pm-row");
+    const row = body.createDiv("pm-row");
 
     // Color picker
     const colorSection = row.createDiv("pm-color-section");
@@ -166,7 +172,7 @@ export class ProjectModal extends Modal {
     });
 
     // Preview
-    const preview = section.createDiv("pm-preview");
+    const preview = body.createDiv("pm-preview");
     preview.createEl("label", { text: "Предпросмотр", cls: "pm-label" });
     const previewCard = preview.createDiv("pm-preview-card");
 
@@ -186,7 +192,7 @@ export class ProjectModal extends Modal {
     nameInput.addEventListener("input", updatePreview);
 
     // Create button
-    const createBtn = section.createEl("button", {
+    const createBtn = body.createEl("button", {
       text: "Создать проект",
       cls: "pm-create-btn",
     });
@@ -268,6 +274,11 @@ export class ProjectModal extends Modal {
         }
       });
     });
+
+    // Footer tip
+    const footer = container.createDiv("pm-footer-tip");
+    footer.createEl("span", { cls: "pm-footer-tip-icon", text: "💡" });
+    footer.createEl("span", { text: "Вы можете редактировать название, цвет и иконку проекта в любой момент" });
   }
 
   private openEditProject(project: IProject): void {
@@ -279,19 +290,14 @@ export class ProjectModal extends Modal {
   }
 
   private rerender(): void {
-    this.onClose();
-    this.onOpen();
-  }
-
-  onClose(): void {
     this.contentEl.empty();
+    this.onOpen();
   }
 }
 
-class EditProjectModal extends Modal {
+class EditProjectModal extends CustomModal {
   private project: IProject;
   private onClosed: () => void;
-  private didClose = false;
 
   constructor(app: App, project: IProject, onClosed: () => void) {
     super(app);
@@ -300,18 +306,17 @@ class EditProjectModal extends Modal {
   }
 
   onOpen(): void {
-    const { contentEl } = this;
-    contentEl.addClass("task-tracker-project-modal");
-    contentEl.addClass("pm-edit-modal");
+    this.containerEl.addClass("wf-project-modal");
+    this.containerEl.addClass("wf-edit-modal");
 
-    contentEl.createEl("h2", { text: "Редактировать проект" });
+    this.contentEl.createEl("h2", { text: "Редактировать проект" });
 
     let name = this.project.name;
     let color = this.project.color;
     let icon = this.project.icon;
 
     // Name
-    const nameField = contentEl.createDiv("pm-field");
+    const nameField = this.contentEl.createDiv("pm-field");
     nameField.createEl("label", { text: "Название проекта", cls: "pm-label" });
     const nameInput = nameField.createEl("input", {
       cls: "pm-input",
@@ -320,7 +325,7 @@ class EditProjectModal extends Modal {
     nameInput.addEventListener("input", () => { name = nameInput.value; });
 
     // Color
-    const colorSection = contentEl.createDiv("pm-color-section");
+    const colorSection = this.contentEl.createDiv("pm-color-section");
     colorSection.createEl("label", { text: "Цвет проекта", cls: "pm-label" });
     const colorGrid = colorSection.createDiv("pm-color-grid");
 
@@ -336,13 +341,13 @@ class EditProjectModal extends Modal {
     });
 
     // Icon
-    const iconSection = contentEl.createDiv("pm-icon-section");
+    const iconSection = this.contentEl.createDiv("pm-icon-section");
     renderIconPicker(iconSection, icon, (emoji) => {
       icon = emoji;
     });
 
     // Buttons
-    const buttonsEl = contentEl.createDiv("pm-modal-buttons");
+    const buttonsEl = this.contentEl.createDiv("pm-modal-buttons");
 
     const cancelBtn = buttonsEl.createEl("button", { text: "Отмена", cls: "pm-cancel-btn" });
     cancelBtn.addEventListener("click", () => this.close());
@@ -367,9 +372,6 @@ class EditProjectModal extends Modal {
   }
 
   onClose(): void {
-    if (this.didClose) return;
-    this.didClose = true;
-    this.contentEl.empty();
     this.onClosed();
   }
 }
