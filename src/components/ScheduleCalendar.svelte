@@ -654,7 +654,9 @@
     const showOverdue = scheduleDisplay.scheduleShowOverdue !== false;
     const showDescription = scheduleDisplay.scheduleShowDescription !== false;
 
-    const displayTime = showTime ? time || task.scheduledTime || "" : "";
+    const startTime = showTime ? time || task.scheduledTime || "" : "";
+    const endTimeStr = showTime && startTime && task.endTime ? task.endTime : "";
+    const displayTime = endTimeStr ? `${startTime} — ${endTimeStr}` : startTime;
     const statusLabel = showStatus
       ? task.status === "progress"
         ? "В работе"
@@ -1125,7 +1127,6 @@
     if (dropDebounceTimer) clearTimeout(dropDebounceTimer);
     dropDebounceTimer = setTimeout(() => {
       dropDebounceTimer = null;
-      skipNextRefetch = true;
       try {
         const updates: Record<string, any> = { 
           estimatedTime: Math.max(15, durationMin),
