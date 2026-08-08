@@ -229,6 +229,7 @@
     const updated = monthData.mainAccountCategories.map(c =>
       c.id === id ? { ...c, ...changes } : c
     );
+    monthData = { ...monthData, mainAccountCategories: updated };
     updateMonthData(monthKey, { mainAccountCategories: updated });
   }
 
@@ -256,6 +257,7 @@
     const updated = (monthData.monthGoals || []).map(g =>
       g.id === id ? { ...g, ...changes } : g
     );
+    monthData = { ...monthData, monthGoals: updated };
     updateMonthData(monthKey, { monthGoals: updated });
   }
 
@@ -285,6 +287,7 @@
     const updated = monthData.savingsCategories.map(c =>
       c.id === id ? { ...c, ...changes } : c
     );
+    monthData = { ...monthData, savingsCategories: updated };
     updateMonthData(monthKey, { savingsCategories: updated });
   }
 

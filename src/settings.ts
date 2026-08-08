@@ -22,8 +22,15 @@ export interface ISettings {
   localeOverride: ILocaleOverride;
 
   // Task Tracker settings
-  showTaskTracker: boolean;
   taskTrackerCollapsed: boolean;
+
+  // Hello view settings
+  userName?: string;
+  helloShowHabits?: boolean;
+  helloShowTasksBtn?: boolean;
+  helloShowAnalyticsBtn?: boolean;
+  helloShowFinanceBtn?: boolean;
+  helloShowScheduleBtn?: boolean;
 
   // Task-Note sync settings
   syncAllTasksToNotes: boolean;
@@ -32,7 +39,6 @@ export interface ISettings {
   timeLogCleanupThreshold: number;
 
   // Habit Tracker settings
-  showHabitTracker: boolean;
   habitLogCleanupThreshold: number;
 
   // Sync settings
@@ -73,6 +79,21 @@ export interface ISettings {
   accentColor?: string;
   glassBgColor?: string;
   glassOpacity?: number;
+
+  // Color settings
+  bgColor?: string;
+  surfaceColor?: string;
+  surface2Color?: string;
+  surfaceHoverColor?: string;
+  successColor?: string;
+  dangerColor?: string;
+  warningColor?: string;
+  amberColor?: string;
+  glassBorderColor?: string;
+  glassHighlightColor?: string;
+  textColor?: string;
+  textMutedColor?: string;
+  textFaintColor?: string;
 
   // Schedule display settings
   scheduleShowTime: boolean;
@@ -125,7 +146,12 @@ export const defaultSettings = Object.freeze({
 
   localeOverride: "system-default",
 
-  showTaskTracker: true,
+  helloShowHabits: true,
+  helloShowTasksBtn: true,
+  helloShowAnalyticsBtn: true,
+  helloShowFinanceBtn: true,
+  helloShowScheduleBtn: true,
+
   taskTrackerCollapsed: false,
 
   syncAllTasksToNotes: false,
@@ -133,7 +159,6 @@ export const defaultSettings = Object.freeze({
   autoCleanupThreshold: 180,
   timeLogCleanupThreshold: 180,
 
-  showHabitTracker: true,
   habitLogCleanupThreshold: 1000,
 
   syncToVault: false,
@@ -157,6 +182,21 @@ export const defaultSettings = Object.freeze({
   accentColor: "#5f99e1",
   glassBgColor: "#1e2332",
   glassOpacity: 55,
+
+  // Color defaults
+  bgColor: "#0E0F13",
+  surfaceColor: "#171A21",
+  surface2Color: "#1E222B",
+  surfaceHoverColor: "#252A36",
+  successColor: "#3DD68C",
+  dangerColor: "#F06565",
+  warningColor: "#F5A623",
+  amberColor: "#F5A623",
+  glassBorderColor: "rgba(255, 255, 255, 0.06)",
+  glassHighlightColor: "rgba(255, 255, 255, 0.02)",
+  textColor: "#E8ECF0",
+  textMutedColor: "#b7b8bb",
+  textFaintColor: "#3A3F4B",
 
   scheduleShowTime: true,
   scheduleShowStatus: true,
@@ -232,6 +272,33 @@ export function applyGlassBgColor(hex: string, opacity?: number): void {
   );
 }
 
+export function applyAllColors(options: ISettings): void {
+  const root = document.documentElement;
+
+  const setIfHas = (cssVar: string, value?: string) => {
+    if (value) root.style.setProperty(cssVar, value);
+  };
+
+  setIfHas("--mcp-bg", options.bgColor);
+  setIfHas("--mcp-surface", options.surfaceColor);
+  setIfHas("--mcp-surface-2", options.surface2Color);
+  setIfHas("--mcp-surface-hover", options.surfaceHoverColor);
+  setIfHas("--mcp-success", options.successColor);
+  setIfHas("--mcp-danger", options.dangerColor);
+  setIfHas("--mcp-warning", options.warningColor);
+  setIfHas("--mcp-amber", options.amberColor);
+  setIfHas("--mcp-text", options.textColor);
+  setIfHas("--mcp-text-muted", options.textMutedColor);
+  setIfHas("--mcp-text-faint", options.textFaintColor);
+
+  if (options.glassBorderColor) {
+    root.style.setProperty("--mcp-glass-border", options.glassBorderColor);
+  }
+  if (options.glassHighlightColor) {
+    root.style.setProperty("--mcp-glass-highlight", options.glassHighlightColor);
+  }
+}
+
 export function appHasPeriodicNotesPluginLoaded(): boolean {
   // Undocumented periodic-notes plugin API
   const appWithPlugins = window.app as unknown as {
@@ -295,6 +362,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     const tabBar = this.containerEl.createDiv({ cls: "settings-tab-bar" });
     const tabs: { key: string; label: string }[] = [
       { key: "general", label: "Общее" },
+      { key: "colors", label: "Цвета" },
       { key: "schedule", label: "Расписание" },
       { key: "sync", label: "Синхронизация" },
       { key: "notifications", label: "Уведомления" },
@@ -330,12 +398,14 @@ export class CalendarSettingsTab extends PluginSettingTab {
     const general = tabContainers["general"];
     this.addShowStatusBarSetting(general);
     this.addDtwShowOnAllPagesSetting(general);
-    general.createEl("h3", { text: "Панели" });
-    this.addShowTaskTrackerSetting(general);
-    this.addShowHabitTrackerSetting(general);
-    general.createEl("h3", { text: "Внешний вид" });
-    this.addAccentColorSetting(general);
-    this.addGlassBgColorSetting(general);
+    this.addUserNameSetting(general);
+
+    // Colors tab
+    const colors = tabContainers["colors"];
+    colors.createEl("h3", { text: "Внешний вид" });
+    this.addAccentColorSetting(colors);
+    this.addGlassBgColorSetting(colors);
+    this.addColorSettings(colors);
 
     // Schedule tab
     const schedule = tabContainers["schedule"];
@@ -387,6 +457,84 @@ export class CalendarSettingsTab extends PluginSettingTab {
     }
   }
 
+  addUserNameSetting(container: HTMLElement): void {
+    new Setting(container)
+      .setName("Ваше имя")
+      .setDesc("Имя будет отображаться в приветствии")
+      .addText((text) => {
+        text
+          .setPlaceholder("Введите имя...")
+          .setValue(this.plugin.options.userName || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ userName: value });
+          });
+        text.inputEl.style.maxWidth = "250px";
+      });
+
+    new Setting(container)
+      .setName("Показывать привычки в приветствии")
+      .setDesc("Отображать карточку привычек на сегодня в блоке приветствия")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.helloShowHabits !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ helloShowHabits: value });
+        });
+      });
+
+    new Setting(container)
+      .setName("Кнопки навигации в приветствии")
+      .setDesc("Выберите, какие кнопки отображать в приветствии");
+
+    new Setting(container)
+      .setName("Кнопка «Задачи»")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.helloShowTasksBtn !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ helloShowTasksBtn: value });
+        });
+      });
+
+    new Setting(container)
+      .setName("Кнопка «Аналитика»")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.helloShowAnalyticsBtn !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ helloShowAnalyticsBtn: value });
+        });
+      });
+
+    new Setting(container)
+      .setName("Кнопка «Финансы»")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.helloShowFinanceBtn !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ helloShowFinanceBtn: value });
+        });
+      });
+
+    new Setting(container)
+      .setName("Кнопка «Расписание»")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.helloShowScheduleBtn !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ helloShowScheduleBtn: value });
+        });
+      });
+
+    // Instructions for adding hello block
+    const helloInstructions = container.createDiv({ cls: "settings-banner" });
+    helloInstructions.createEl("h4", { text: "👋 Приветствие" });
+    helloInstructions.createEl("p", {
+      text: "Чтобы добавить приветствие с виджетом привычек, создайте блок кода в любой заметке:",
+    });
+    const codeBlock = helloInstructions.createEl("pre");
+    codeBlock.createEl("code", { text: "```hello\n```" });
+    codeBlock.style.cssText = "background: var(--background-secondary); padding: 8px 12px; border-radius: 6px; font-size: 13px; margin: 8px 0;";
+    helloInstructions.createEl("p", {
+      text: "Или вставьте через правое меню: ПКМ → Вставить приветствие",
+    });
+  }
+
   addShowStatusBarSetting(container: HTMLElement): void {
     new Setting(container)
       .setName("Панель информации")
@@ -418,18 +566,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
   }
 
-  addShowTaskTrackerSetting(container: HTMLElement): void {
-    new Setting(container)
-      .setName("Показывать трекер задач")
-      .setDesc("Отображать панель трекера задач под календарём")
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.showTaskTracker);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ showTaskTracker: value });
-        });
-      });
-  }
-
   private getVaultFolders(): string[] {
     const folders: string[] = [];
     const root = this.app.vault.getRoot();
@@ -443,41 +579,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
     };
     walk(root);
     return folders.sort();
-  }
-
-  addShowHabitTrackerSetting(container: HTMLElement): void {
-    new Setting(container)
-      .setName("Показывать трекер привычек")
-      .setDesc("Отображать панель трекера привычек под календарём")
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.showHabitTracker);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ showHabitTracker: value });
-        });
-      });
-
-    new Setting(container)
-      .setName("Лимит логов привычек")
-      .setDesc(
-        "Максимальное количество записей логов привычек. При превышении старые записи удаляются автоматически.",
-      )
-      .addText((text) => {
-        text
-          .setPlaceholder("1000")
-          .setValue(
-            String(this.plugin.options.habitLogCleanupThreshold || 1000),
-          )
-          .onChange(async (value) => {
-            const num = parseInt(value);
-            if (!isNaN(num) && num >= 50) {
-              await this.plugin.writeOptions({ habitLogCleanupThreshold: num });
-            }
-          });
-        text.inputEl.type = "number";
-        text.inputEl.min = "50";
-        text.inputEl.max = "10000";
-        text.inputEl.style.maxWidth = "100px";
-      });
   }
 
   addScheduleDisplaySettings(container: HTMLElement): void {
@@ -680,6 +781,184 @@ export class CalendarSettingsTab extends PluginSettingTab {
               ?.setText(`Непрозрачность фона стеклянных панелей: ${value}%`);
           });
       });
+  }
+
+  addColorSettings(container: HTMLElement): void {
+    container.createEl("h3", { text: "Цвета интерфейса" });
+
+    // Main colors
+    container.createEl("h4", { text: "Основные цвета" });
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет фона",
+      "Основной цвет фона приложения",
+      "bgColor",
+      "#0E0F13"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет поверхности",
+      "Цвет панелей и карточек",
+      "surfaceColor",
+      "#171A21"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет поверхности 2",
+      "Вторичный цвет поверхностей",
+      "surface2Color",
+      "#1E222B"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет при наведении",
+      "Цвет при наведении на элементы",
+      "surfaceHoverColor",
+      "#252A36"
+    );
+
+    // Semantic colors
+    container.createEl("h4", { text: "Семантические цвета" });
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет успеха",
+      "Для завершённых задач и положительных действий",
+      "successColor",
+      "#3DD68C"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет опасности",
+      "Для просроченных задач и ошибок",
+      "dangerColor",
+      "#F06565"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет предупреждений",
+      "Для предупреждений и важных уведомлений",
+      "warningColor",
+      "#F5A623"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Цвет янтаря",
+      "Для дедлайнов и особых выделений",
+      "amberColor",
+      "#F5A623"
+    );
+
+    // Text colors
+    container.createEl("h4", { text: "Цвета текста" });
+
+    this.addColorPickerSetting(
+      container,
+      "Основной текст",
+      "Цвет основного текста",
+      "textColor",
+      "#E8ECF0"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Приглушённый текст",
+      "Цвет вторичного текста",
+      "textMutedColor",
+      "#b7b8bb"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Тусклый текст",
+      "Цвет менее важного текста",
+      "textFaintColor",
+      "#3A3F4B"
+    );
+
+    // Glass panel colors
+    container.createEl("h4", { text: "Стеклянные панели" });
+
+    this.addColorPickerSetting(
+      container,
+      "Граница панелей",
+      "Цвет границ стеклянных панелей",
+      "glassBorderColor",
+      "rgba(255, 255, 255, 0.06)"
+    );
+
+    this.addColorPickerSetting(
+      container,
+      "Подсветка панелей",
+      "Цвет подсветки стеклянных панелей",
+      "glassHighlightColor",
+      "rgba(255, 255, 255, 0.02)"
+    );
+
+    // Reset all button
+    new Setting(container)
+      .setName("Сбросить все цвета")
+      .setDesc("Вернуть все цвета к значениям по умолчанию")
+      .addButton((btn) =>
+        btn
+          .setButtonText("Сбросить все")
+          .setWarning()
+          .onClick(async () => {
+            await this.plugin.writeOptions({
+              bgColor: "#0E0F13",
+              surfaceColor: "#171A21",
+              surface2Color: "#1E222B",
+              surfaceHoverColor: "#252A36",
+              successColor: "#3DD68C",
+              dangerColor: "#F06565",
+              warningColor: "#F5A623",
+              amberColor: "#F5A623",
+              glassBorderColor: "rgba(255, 255, 255, 0.06)",
+              glassHighlightColor: "rgba(255, 255, 255, 0.02)",
+              textColor: "#E8ECF0",
+              textMutedColor: "#b7b8bb",
+              textFaintColor: "#3A3F4B",
+            });
+            this.display();
+          }),
+      );
+  }
+
+  private addColorPickerSetting(
+    container: HTMLElement,
+    name: string,
+    desc: string,
+    key: string,
+    defaultValue: string
+  ): void {
+    const currentColor = (this.plugin.options as any)[key] || defaultValue;
+
+    new Setting(container)
+      .setName(name)
+      .setDesc(desc)
+      .addColorPicker((picker) => {
+        picker.setValue(currentColor).onChange(async (value) => {
+          await this.plugin.writeOptions({ [key]: value } as any);
+          applyAllColors(this.plugin.options);
+        });
+      })
+      .addButton((btn) =>
+        btn
+          .setButtonText("Сбросить")
+          .setTooltip("Вернуть цвет по умолчанию")
+          .onClick(async () => {
+            await this.plugin.writeOptions({ [key]: defaultValue } as any);
+            applyAllColors(this.plugin.options);
+            this.display();
+          })
+      );
   }
 
   addSyncToVaultSetting(container: HTMLElement): void {

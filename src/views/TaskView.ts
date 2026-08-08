@@ -4,9 +4,6 @@ import TaskPanel from "../task-tracker/TaskPanel.svelte";
 import HabitPanel from "../habit-tracker/HabitPanel.svelte";
 import { get } from "svelte/store";
 import { selectedDate, projects, taskFilter } from "../task-tracker/stores";
-import { getMonthGoals } from "../finance/storage";
-import { financeData } from "../finance/storage";
-import type { MonthGoal } from "../finance/types";
 import { settings } from "../ui/stores";
 import moment from "moment";
 import { getDateUID } from "obsidian-daily-notes-interface";
@@ -16,11 +13,8 @@ export default class TaskView extends ItemView {
   private habitPanel: HabitPanel;
   private projectSidebar: HTMLElement | null = null;
   private panelsContainer: HTMLElement | null = null;
-  private goalsContainer: HTMLElement | null = null;
-  private goalsUnsub: (() => void) | null = null;
   private tasksUnsub: (() => void) | null = null;
   private projectsUnsub: (() => void) | null = null;
-  private currentMonthKey = "";
 
   constructor(leaf: WorkspaceLeaf) {
     super(leaf);
@@ -39,7 +33,6 @@ export default class TaskView extends ItemView {
   }
 
   onClose(): Promise<void> {
-    if (this.goalsUnsub) { this.goalsUnsub(); this.goalsUnsub = null; }
     if (this.tasksUnsub) { this.tasksUnsub(); this.tasksUnsub = null; }
     if (this.projectsUnsub) { this.projectsUnsub(); this.projectsUnsub = null; }
     if (this.taskPanel) { this.taskPanel.$destroy(); }
@@ -67,21 +60,8 @@ export default class TaskView extends ItemView {
     this.projectSidebar = sidebar.createDiv({ cls: "task-view-sidebar-list" });
 
     // Panels
-    this.goalsContainer = document.createElement("div");
-    this.goalsContainer.className = "month-goals-indicator";
-
     const panelsCard = mainContent.createDiv({ cls: "task-view-panels" });
-    panelsCard.appendChild(this.goalsContainer);
     this.panelsContainer = panelsCard.createDiv({ cls: "panels-container" });
-
-    // Goals
-    setTimeout(() => {
-      if (!this.goalsContainer) return;
-      this.updateGoalsIndicator();
-      this.goalsUnsub = financeData.subscribe(() => {
-        this.updateGoalsIndicator(this.currentMonthKey);
-      });
-    }, 300);
 
     // Task panel
     if (currentSettings.showTaskTracker !== false) {
@@ -277,51 +257,6 @@ export default class TaskView extends ItemView {
 }
 `;
     document.head.appendChild(style);
-  }
-
-  private updateGoalsIndicator(monthKey?: string): void {
-    if (!this.goalsContainer) return;
-    if (!monthKey) {
-      const now = new Date();
-      monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    }
-    const goals = getMonthGoals(monthKey);
-    this.renderGoalsIndicator(goals, monthKey);
-  }
-
-  private renderGoalsIndicator(goals: MonthGoal[], _monthKey: string): void {
-    if (!this.goalsContainer) return;
-    this.goalsContainer.empty();
-    if (goals.length === 0) return;
-
-    if (goals.length === 1) {
-      const goal = goals[0];
-      const remaining = (goal.targetAmount || 0) - (goal.currentAmount || 0);
-      const remainingText = remaining > 0 ? `Осталось: ${remaining.toLocaleString("ru-RU")} ₽` : remaining === 0 ? "✓ Достигнуто" : `+${Math.abs(remaining).toLocaleString("ru-RU")} ₽`;
-      const wrapper = this.goalsContainer.createDiv({ cls: "month-goals-single" });
-      wrapper.createEl("span", { text: goal.icon || "🎯", cls: "month-goals-icon" });
-      const textEl = wrapper.createEl("span", { cls: "month-goals-text" });
-      textEl.createEl("strong", { text: goal.name || "Цель" });
-      textEl.createEl("span", { text: ` — ${remainingText}`, cls: "month-goals-remaining" });
-      const navBtn = wrapper.createEl("button", { text: "💰", cls: "month-goals-nav-btn" });
-      navBtn.addEventListener("click", () => {
-        const plugin = (this.app as any).plugins?.plugins?.["calendar"];
-        if (plugin) plugin.activateFinanceView();
-      });
-    } else {
-      const wrapper = this.goalsContainer.createDiv({ cls: "month-goals-multi" });
-      wrapper.createEl("span", { text: "🎯", cls: "month-goals-icon" });
-      const summary = goals.map((g) => {
-        const rem = (g.targetAmount || 0) - (g.currentAmount || 0);
-        return `${g.icon || "🎯"} ${g.name || "Цель"}: ${rem > 0 ? `ост. ${rem.toLocaleString("ru-RU")} ₽` : "✓"}`;
-      }).join(" | ");
-      wrapper.createEl("span", { text: summary, cls: "month-goals-text" });
-      const navBtn = wrapper.createEl("button", { text: "💰", cls: "month-goals-nav-btn" });
-      navBtn.addEventListener("click", () => {
-        const plugin = (this.app as any).plugins?.plugins?.["calendar"];
-        if (plugin) plugin.activateFinanceView();
-      });
-    }
   }
 
   private renderProjectSidebar(): void {

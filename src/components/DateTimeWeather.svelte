@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
   import { tasks } from "../task-tracker/stores";
+  import { habits, habitLogs, toggleHabitCompletion } from "../habit-tracker/stores";
   import { settings } from "../ui/stores";
   import { financeData } from "../finance/storage";
   import { getMonthGoals } from "../finance/storage";
@@ -17,14 +18,15 @@
   let weather: DayWeather | null = null;
   let unsubTasks: (() => void) | null = null;
   let unsubFinance: (() => void) | null = null;
+  let unsubHabits: (() => void) | null = null;
   let monthGoals: { name: string; icon: string; remaining: number; done: boolean }[] = [];
 
-  interface TaskItem {
-    title: string;
-    status: string;
-  }
-  let todayTaskList: TaskItem[] = [];
-  let inProgressTaskList: TaskItem[] = [];
+  let todayTaskList: { title: string; status: string }[] = [];
+  let inProgressTaskList: { title: string; status: string }[] = [];
+
+  let todayHabitList: { id: string; title: string; icon: string; color: string; completed: boolean; partial: boolean; count: number; targetCount: number }[] = [];
+  let habitDoneCount = 0;
+  let habitTotalCount = 0;
 
   let activeTooltip: HTMLDivElement | null = null;
 
@@ -73,6 +75,51 @@
     }
   }
 
+  function showHabitTooltip(target: Element) {
+    removeTooltip();
+    const rect = target.getBoundingClientRect();
+    const tooltip = document.createElement("div");
+    tooltip.className = "dtw-tooltip dtw-habit-tooltip";
+
+    let html = `<div class="dtw-tooltip-title">Привычки на сегодня</div>`;
+    for (const h of todayHabitList) {
+      const statusClass = h.completed ? " done" : h.partial ? " progress" : "";
+      const nameClass = h.completed ? " done-name" : "";
+      const icon = h.completed ? "✓" : h.partial ? "◆" : "○";
+      html += `<div class="dtw-tooltip-row dtw-habit-row" data-habit-id="${h.id}" data-target="${h.targetCount}">
+        <span class="dtw-tooltip-status${statusClass}">${icon}</span>
+        <span class="dtw-habit-item-icon">${h.icon}</span>
+        <span class="dtw-tooltip-name${nameClass}">${h.title}</span>
+      </div>`;
+    }
+    tooltip.innerHTML = html;
+
+    // Add click handlers
+    tooltip.querySelectorAll(".dtw-habit-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const id = row.getAttribute("data-habit-id") || "";
+        const target = parseInt(row.getAttribute("data-target") || "1", 10);
+        handleToggleHabitInTooltip(id, target);
+      });
+    });
+
+    document.body.appendChild(tooltip);
+    const tooltipWidth = tooltip.offsetWidth || 260;
+    let left = rect.left + rect.width / 2 - tooltipWidth / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tooltipWidth - 8));
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${rect.bottom + 4}px`;
+
+    requestAnimationFrame(() => {
+      const cr = tooltip.getBoundingClientRect();
+      if (cr.bottom > window.innerHeight) {
+        tooltip.style.top = `${rect.top - cr.height - 4}px`;
+      }
+    });
+
+    activeTooltip = tooltip;
+  }
+
   $: dateStr = now.toLocaleDateString("ru-RU", {
     weekday: "long",
     day: "numeric",
@@ -111,6 +158,57 @@
     });
   }
 
+  function updateHabits() {
+    const dateStr = moment().format("YYYY-MM-DD");
+    const allHabits = get(habits);
+    const allLogs = get(habitLogs);
+
+    const activeHabits = allHabits.filter((h) => {
+      if (h.archived) return false;
+      const m = moment(dateStr, "YYYY-MM-DD");
+      if (h.frequency === "weekly" && h.customDays && h.customDays.length > 0) {
+        return h.customDays.includes(m.day());
+      }
+      if (h.frequency === "monthly") {
+        return m.date() === (h.monthlyDay || 1);
+      }
+      return true;
+    });
+
+    todayHabitList = activeHabits.map((h) => {
+      const log = allLogs.find((l) => l.habitId === h.id && l.date === dateStr);
+      const count = log?.count || 0;
+      const completed = log?.completed || false;
+      const partial = count > 0 && !completed;
+      return {
+        id: h.id,
+        title: h.title,
+        icon: h.icon,
+        color: h.color,
+        completed,
+        partial,
+        count,
+        targetCount: h.targetCount || 1,
+      };
+    });
+
+    habitDoneCount = todayHabitList.filter((h) => h.completed).length;
+    habitTotalCount = todayHabitList.length;
+  }
+
+  function handleToggleHabitInTooltip(habitId: string, targetCount: number) {
+    const dateStr = moment().format("YYYY-MM-DD");
+    toggleHabitCompletion(habitId, dateStr, targetCount);
+    updateHabits();
+    // Re-render tooltip
+    if (activeTooltip) {
+      const target = document.querySelector(".dtw-habits-trigger");
+      if (target) {
+        showHabitTooltip(target as HTMLElement);
+      }
+    }
+  }
+
   async function loadWeather() {
     const s = $settings;
     if (!s.weatherEnabled) return;
@@ -131,8 +229,10 @@
     }, 10000);
     unsubTasks = tasks.subscribe(() => updateStats());
     unsubFinance = financeData.subscribe(() => updateMonthGoal());
+    unsubHabits = habits.subscribe(() => updateHabits());
     updateStats();
     updateMonthGoal();
+    updateHabits();
     loadWeather();
   });
 
@@ -140,6 +240,7 @@
     if (timer) clearInterval(timer);
     unsubTasks?.();
     unsubFinance?.();
+    unsubHabits?.();
     removeTooltip();
   });
 </script>
@@ -189,6 +290,21 @@
     >
       <span class="dtw-icon">▶️</span>
       <span>В работе: {inProgressCount}</span>
+    </span>
+  {/if}
+  {#if habitTotalCount > 0}
+    <span class="dtw-sep"></span>
+    <span
+      class="dtw-item dtw-hoverable dtw-habits-trigger"
+      on:click={() => { const el = document.querySelector('.dtw-habits-trigger'); if (el) showHabitTooltip(el); }}
+      on:mouseenter={(e) => {
+        if (todayHabitList.length > 0)
+          showTooltip(e.currentTarget, "Привычки", todayHabitList.map(h => ({ status: h.completed ? "done" : h.partial ? "progress" : "todo", name: `${h.icon} ${h.title}` })));
+      }}
+      on:mouseleave={removeTooltip}
+    >
+      <span class="dtw-icon">🔄</span>
+      <span>Привычки: {habitDoneCount} / {habitTotalCount}</span>
     </span>
   {/if}
   {#if monthGoals.length > 0}
@@ -267,5 +383,22 @@
     .dtw-item {
       padding: 0 6px;
     }
+  }
+
+  .dtw-habit-tooltip .dtw-habit-row {
+    cursor: pointer;
+    transition: background 0.15s ease;
+    border-radius: 4px;
+    padding: 4px 6px;
+    margin: 0 -6px;
+  }
+
+  .dtw-habit-tooltip .dtw-habit-row:hover {
+    background: var(--background-modifier-hover);
+  }
+
+  .dtw-habit-tooltip .dtw-habit-item-icon {
+    font-size: 12px;
+    flex-shrink: 0;
   }
 </style>

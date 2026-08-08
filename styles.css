@@ -2347,8 +2347,13 @@ svg.dot.filled {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
   backdrop-filter: blur(4px);
+  z-index: 15;
+}
+
+/* Ensure Obsidian's SuggestModal/Modal appears above custom modals */
+.modal {
+  z-index: 10001;
 }
 
 .wf-modal-container {
@@ -3056,6 +3061,10 @@ svg.dot.filled {
 
 .wf-project-modal .wf-modal-content {
   padding: 0;
+}
+
+.wf-edit-modal .wf-modal-content {
+  padding: 24px;
 }
 
 .wf-project-modal h2 {

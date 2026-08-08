@@ -1,4 +1,5 @@
 import moment from "moment";
+import "moment/locale/ru";
 import type { Moment, WeekSpec } from "moment";
 import { App, Plugin, WorkspaceLeaf } from "obsidian";
 
@@ -26,6 +27,7 @@ import {
   ISettings,
   applyAccentColor,
   applyGlassBgColor,
+  applyAllColors,
 } from "./settings";
 import { TFile } from "obsidian";
 import CalendarView from "./view";
@@ -49,6 +51,7 @@ import { initFinancialAnalyticsStores, reloadFinancialAnalyticsStores, immediate
 import CalendarNav from "./components/CalendarNav.svelte";
 import DateTimeWeather from "./components/DateTimeWeather.svelte";
 import Dashboard from "./dashboard/Dashboard.svelte";
+import HelloView from "./components/HelloView.svelte";
 import { NotificationService } from "./services/NotificationService";
 import { initGistSync } from "./services/GistSyncService";
 import { initSingularitySync, cleanupSingularitySync } from "./services/SingularitySyncService";
@@ -360,6 +363,20 @@ export default class CalendarPlugin extends Plugin {
       new Dashboard({ target: el, props: { appInstance: this.app } });
     });
 
+    // Register hello code block processor
+    safeRegisterMarkdownCodeBlockProcessor("hello", (_source, el) => {
+      new HelloView({
+        target: el,
+        props: {
+          userName: this.options.userName || "",
+          onOpenTasks: () => this.activateTaskView(),
+          onOpenAnalytics: () => this.activateHabitAnalyticsView(),
+          onOpenFinance: () => this.activateFinanceView(),
+          onOpenSchedule: () => this.activateScheduleView(),
+        },
+      });
+    });
+
     // Right-click menu: insert blocks
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu) => {
@@ -389,6 +406,19 @@ export default class CalendarPlugin extends Plugin {
               }
             });
         });
+        menu.addItem((item) => {
+          item.setTitle("Вставить приветствие")
+            .setIcon("hand")
+            .onClick(() => {
+              const view = this.app.workspace.activeLeaf?.view;
+              if (view && "editor" in view) {
+                const editor = (view as any).editor;
+                const cursor = editor.getCursor();
+                editor.replaceRange("```hello\n```", cursor);
+                editor.setCursor({ line: cursor.line + 1, ch: 0 });
+              }
+            });
+        });
       })
     );
 
@@ -401,6 +431,7 @@ export default class CalendarPlugin extends Plugin {
     if (this.options.glassBgColor) {
       applyGlassBgColor(this.options.glassBgColor, this.options.glassOpacity);
     }
+    applyAllColors(this.options);
 
     // Sync notification settings to vault on load so GitHub Actions always has current data.
     // MUST await before initTaskStores — otherwise this async write reads stale vault
