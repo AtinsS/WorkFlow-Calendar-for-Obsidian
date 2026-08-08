@@ -178,6 +178,16 @@ export function addTask(
   tasks.update((current) => [...current, task]);
   debouncedSave();
 
+  // Auto-create note for task if syncAllTasksToNotes is enabled
+  const currentSettings = get(settings);
+  if (currentSettings.syncAllTasksToNotes && pluginInstance) {
+    import("./noteTasks").then(({ ensureNoteForTask }) => {
+      ensureNoteForTask(task, pluginInstance.app).catch((e) =>
+        console.error("[Calendar Plugin] Failed to create note for task:", e)
+      );
+    });
+  }
+
   // Если задача с повторением и не является экземпляром — генерируем до конца месяца
   if (task.recurrence && !task.isRecurringInstance) {
     // Даём время на обновление store, затем генерируем
@@ -194,6 +204,20 @@ export function updateTask(id: string, changes: Partial<ITask>): void {
     )
   );
   debouncedSave();
+
+  // Sync task changes to note if task has a notePath
+  if (changes.status !== undefined || changes.completed !== undefined || changes.title !== undefined) {
+    const allTasks = get(tasks);
+    const task = allTasks.find((t) => t.id === id);
+    if (task?.notePath && pluginInstance) {
+      import("./noteTasks").then(({ syncTaskToFrontmatter }) => {
+        syncTaskToFrontmatter(task, pluginInstance.app).catch((e) =>
+          console.error("[Calendar Plugin] Failed to sync task to note:", e)
+        );
+      });
+    }
+  }
+
   // Only run cleanup check if we're approaching the threshold
   if (changes.completed !== undefined) {
     const allTasks = get(tasks);
@@ -348,6 +372,19 @@ export function updateTaskStatus(id: string, status: TaskStatus): void {
     notifyStatusChange(task?.title || "Задача", "Продолжена");
   } else {
     setTaskStatus(id, status);
+  }
+
+  // Sync status change to note if task has a notePath
+  if (task?.notePath && pluginInstance) {
+    import("./noteTasks").then(({ syncTaskToFrontmatter }) => {
+      const updatedTasks = get(tasks);
+      const updatedTask = updatedTasks.find((t) => t.id === id);
+      if (updatedTask) {
+        syncTaskToFrontmatter(updatedTask, pluginInstance.app).catch((e) =>
+          console.error("[Calendar Plugin] Failed to sync task status to note:", e)
+        );
+      }
+    });
   }
 
   debouncedSave();

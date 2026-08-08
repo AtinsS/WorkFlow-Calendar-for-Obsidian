@@ -437,7 +437,7 @@ export default class CalendarPlugin extends Plugin {
     // MUST await before initTaskStores — otherwise this async write reads stale vault
     // data and overwrites the entire calendar-data.json before stores finish loading.
     await syncNotificationSettingsOnLoad(this.app, {
-      syncToVault: !!this.options.syncToVault,
+      syncToVault: true,
       overdueCheckEnabled: !!this.options.overdueCheckEnabled,
       ntfyTopic: this.options.ntfyTopic,
     }).catch((e) => console.warn("[Calendar] Failed to sync notification settings to vault:", e));

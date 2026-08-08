@@ -161,7 +161,7 @@ export const defaultSettings = Object.freeze({
 
   habitLogCleanupThreshold: 1000,
 
-  syncToVault: false,
+  syncToVault: true,
 
   notificationsEnabled: false,
   reminderMinutesBefore: 5,
@@ -416,9 +416,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // Sync tab
     const sync = tabContainers["sync"];
-    sync.createEl("h3", { text: "Синхронизация" });
-    this.addSyncToVaultSetting(sync);
-    this.addSyncAdvice(sync);
     sync.createEl("h3", { text: "Синхронизация задач с заметками" });
     this.addTaskNoteSyncSettings(sync);
     this.addGitHubGistSettings(sync);
@@ -961,38 +958,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
       );
   }
 
-  addSyncToVaultSetting(container: HTMLElement): void {
-    new Setting(container)
-      .setName("Синхронизация в корень хранилища")
-      .setDesc(
-        "Сохранять данные в папку calendar-data/ в корне хранилища вместо папки плагина. Позволяет синхронизировать задачи и привычки через Obsidian Sync, iCloud или Git.",
-      )
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.syncToVault);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ syncToVault: value });
-        });
-      });
-  }
-
-  addSyncAdvice(container: HTMLElement): void {
-    const desc = document.createElement("div");
-    desc.addClass("setting-item-description");
-    desc.style.marginTop = "8px";
-    desc.innerHTML = `
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>Remotely Save:</b> В настройках плагина добавьте папку <code>calendar-data/</code> в список синхронизируемых файлов (Include Files).
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>Obsidian Sync:</b> Включите синхронизацию файлов — папка <code>calendar-data/</code> будет синхронизирована автоматически.
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>iCloud / Google Drive:</b> Убедитесь, что хранилище синхронизируется полностью.
-      </p>
-    `;
-    container.appendChild(desc);
-  }
-
   addTaskNoteSyncSettings(container: HTMLElement): void {
     new Setting(container)
       .setName("Создавать Task заметку для каждой задачи")
@@ -1350,7 +1315,6 @@ priority: medium
   }
 
   private async syncNotificationSettingsToVault(overrides?: { overdueCheckEnabled?: boolean; ntfyTopic?: string }): Promise<void> {
-    if (!this.plugin.options.syncToVault) return;
     const { saveNotificationSyncSettings } = await import("./io/vaultStorage");
     const payload = {
       overdueCheckEnabled: overrides?.overdueCheckEnabled ?? this.plugin.options.overdueCheckEnabled,
