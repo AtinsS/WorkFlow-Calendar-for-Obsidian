@@ -249,7 +249,7 @@
   </div>
 
   {#if showDescription && task.description}
-    <div class="task-description">{task.description}</div>
+    <div class="wf-task-description">{task.description}</div>
   {/if}
 
   <div class="task-item-row-meta">

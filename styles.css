@@ -6541,7 +6541,7 @@ svg.dot.filled {
   margin-top: 4px;
 }
 
-.task-description {
+.wf-task-description {
   padding: 8px 4px 8px 30px;
   font-size: 12px;
   color: var(--mcp-text-muted);
