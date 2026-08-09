@@ -1289,7 +1289,7 @@ priority: medium
       .setDesc("GitHub репозиторий с vault (формат: owner/repo)")
       .addText((text) => {
         text
-          .setPlaceholder("AtinsS/ObsidianVaultRaven")
+          .setPlaceholder("ссылка на репозиторий")
           .setValue(this.plugin.options.vaultRepo || "")
           .onChange(async (value) => {
             await this.plugin.writeOptions({ vaultRepo: value });
