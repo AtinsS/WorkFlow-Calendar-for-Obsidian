@@ -6,6 +6,9 @@ export function normalizePath(): string {
   return "";
 }
 
+// Mock requestUrl for API client tests
+export const requestUrl = jest.fn().mockResolvedValue({ status: 200, text: "{}", json: {} });
+
 // Minimal mock implementations used by tests
 export class TFolder {
   path = "";

@@ -3,11 +3,15 @@ name: Overdue Task Check
 on:
   schedule:
     # каждые 30 мин
-    - cron: '0,30 * * * *'
+    - cron: "0,30 * * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: overdue-task-check
+  cancel-in-progress: true
 
 jobs:
   check:
@@ -20,118 +24,172 @@ jobs:
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
         run: |
-          TASKS_FILE="calendar-data/tasks.json"
+          set -euo pipefail
+
+          TASKS_FILE="calendar-data/taskTracker.json"
+          LEGACY_TASKS_FILE="calendar-data/tasks.json"
           NOTIF_FILE="calendar-data/notifications.json"
 
+          if [ ! -f "$TASKS_FILE" ] && [ -f "$LEGACY_TASKS_FILE" ]; then
+            TASKS_FILE="$LEGACY_TASKS_FILE"
+          fi
+
           if [ ! -f "$TASKS_FILE" ]; then
-            echo "No tasks file found at $TASKS_FILE, skipping"
+            echo "No task tracker file found at calendar-data/taskTracker.json, skipping"
             exit 0
           fi
 
-          python3 -c "
-          import json, os, subprocess, sys
+          mkdir -p "$(dirname "$NOTIF_FILE")"
+          export TASKS_FILE NOTIF_FILE
+
+          python3 <<'PY'
+          import json
+          import os
+          import subprocess
+          import sys
           from datetime import datetime, timedelta, timezone
+          from urllib.parse import quote
 
-          tasks_file = '$TASKS_FILE'
-          notif_file = '$NOTIF_FILE'
+          tasks_file = os.environ["TASKS_FILE"]
+          notif_file = os.environ["NOTIF_FILE"]
 
-          with open(tasks_file) as f:
+          with open(tasks_file, encoding="utf-8") as f:
               tasks_data = json.load(f)
 
           notif_data = {}
           if os.path.exists(notif_file):
-              with open(notif_file) as f:
+              with open(notif_file, encoding="utf-8") as f:
                   notif_data = json.load(f)
 
           ns = notif_data
-          if not ns.get('overdueCheckEnabled'):
-              print('Overdue check disabled in settings, skipping')
+          if not ns.get("overdueCheckEnabled"):
+              print("Overdue check disabled in settings, skipping")
               sys.exit(0)
 
-          topic = ns.get('ntfyTopic') or os.environ.get('NTFY_TOPIC')
-          tasks = tasks_data.get('tasks', [])
+          topic = (os.environ.get("NTFY_TOPIC") or ns.get("ntfyTopic") or "").strip()
+          if not topic:
+              print("NTFY_TOPIC secret or ntfyTopic setting is empty")
+              sys.exit(1)
+
+          tasks = tasks_data.get("tasks", [])
 
           msk = timezone(timedelta(hours=3))
           now = datetime.now(msk)
-          today = now.strftime('%Y-%m-%d')
-          now_str = now.strftime('%H:%M')
-          tomorrow = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+          today = now.strftime("%Y-%m-%d")
+          now_str = now.strftime("%H:%M")
+          tomorrow = (now + timedelta(days=1)).strftime("%Y-%m-%d")
 
-          last_check = ns.get('lastOverdueCheck', '')
-          today_checks = ns.get('overdueChecksToday', [])
+          last_check = ns.get("lastOverdueCheck", "")
+          today_checks = ns.get("overdueChecksToday", [])
           if not last_check.startswith(today):
               today_checks = []
 
           notifications = []
 
-          for t in tasks:
-              status = t.get('status', '')
-              completed = t.get('completed', False)
+          def has_date(value, date):
+              return isinstance(value, str) and date in value
 
-              if status == 'done' or completed:
+          def add_once(key, message):
+              if key in today_checks:
+                  return
+              notifications.append(message)
+              today_checks.append(key)
+
+          for task in tasks:
+              status = task.get("status", "")
+              completed = task.get("completed", False)
+
+              if status == "done" or completed:
                   continue
 
-              title = t.get('title', 'Задача')
-              tid = t.get('id', title)
-              sched = t.get('scheduledTime', '')
-              date_uid = t.get('dateUID', '')
+              title = task.get("title", "Задача")
+              task_id = task.get("id", title)
+              sched = task.get("scheduledTime", "")
+              date_uid = task.get("dateUID", "")
 
-              check_key = f'overdue:{tid}'
-              if sched and today in date_uid:
-                  if sched <= now_str and status == 'todo' and check_key not in today_checks:
-                      notifications.append(f'Просрочено: {title} (было в {sched})')
-                      today_checks.append(check_key)
+              if sched and has_date(date_uid, today) and sched <= now_str and status == "todo":
+                  add_once(
+                      f"overdue:{task_id}",
+                      f"Просрочено: {title} (было в {sched})",
+                  )
 
-              deadline = t.get('deadline', '')
-              deadline_time = t.get('deadlineTime', '')
-              dl_key = f'dl-today:{tid}'
-              if deadline and today in deadline:
-                  if deadline_time and deadline_time <= now_str and dl_key not in today_checks:
-                      notifications.append(f'Дедлайн истёк: {title} ({deadline_time})')
-                      today_checks.append(dl_key)
-                  elif not deadline_time and dl_key not in today_checks:
-                      notifications.append(f'Дедлайн сегодня: {title}')
-                      today_checks.append(dl_key)
+              deadline = task.get("deadline", "")
+              deadline_time = task.get("deadlineTime", "")
+              if deadline and has_date(deadline, today):
+                  if deadline_time and deadline_time <= now_str:
+                      add_once(
+                          f"dl-today:{task_id}",
+                          f"Дедлайн истёк: {title} ({deadline_time})",
+                      )
+                  elif not deadline_time:
+                      add_once(
+                          f"dl-today:{task_id}",
+                          f"Дедлайн сегодня: {title}",
+                      )
 
-              dl_tomorrow_key = f'dl-tomorrow:{tid}'
-              if deadline and tomorrow in deadline:
-                  if dl_tomorrow_key not in today_checks:
-                      time_part = f' в {deadline_time}' if deadline_time else ''
-                      notifications.append(f'Дедлайн завтра: {title}{time_part}')
-                      today_checks.append(dl_tomorrow_key)
+              if deadline and has_date(deadline, tomorrow):
+                  time_part = f" в {deadline_time}" if deadline_time else ""
+                  add_once(
+                      f"dl-tomorrow:{task_id}",
+                      f"Дедлайн завтра: {title}{time_part}",
+                  )
 
-              est_key = f'est:{tid}'
-              est = t.get('estimatedTime', 0)
-              work = t.get('totalWorkTime', 0)
-              if est > 0 and work > 0 and status == 'progress':
-                  if work > est * 60 * 1000 and est_key not in today_checks:
-                      notifications.append(f'Превышен лимит: {title} (заявлено {est}м)')
-                      today_checks.append(est_key)
+              estimated_minutes = task.get("estimatedTime", 0) or 0
+              total_work_ms = task.get("totalWorkTime", 0) or 0
+              if (
+                  estimated_minutes > 0
+                  and total_work_ms > estimated_minutes * 60 * 1000
+                  and status == "progress"
+              ):
+                  add_once(
+                      f"est:{task_id}",
+                      f"Превышен лимит: {title} (заявлено {estimated_minutes}м)",
+                  )
 
           if notifications:
-              msg = '\n'.join(notifications)
+              msg = "\n".join(notifications)
               print(msg)
-              subprocess.run([
-                  'curl', '-s', '-d', msg,
-                  '-H', 'Title: WorkLIfe Calendar',
-                  '-H', 'Priority: high',
-                  '-H', 'Tags: warning',
-                  f'https://ntfy.sh/{topic}'
-              ])
+              subprocess.run(
+                  [
+                      "curl",
+                      "--fail",
+                      "--silent",
+                      "--show-error",
+                      "--data-binary",
+                      msg,
+                      "-H",
+                      "Title: WorkLife Calendar",
+                      "-H",
+                      "Priority: high",
+                      "-H",
+                      "Tags: warning",
+                      f"https://ntfy.sh/{quote(topic, safe='')}",
+                  ],
+                  check=True,
+              )
           else:
-              print('No overdue tasks')
+              print("No overdue tasks")
 
-          ns['lastOverdueCheck'] = now.strftime('%Y-%m-%dT%H:%M')
-          ns['overdueChecksToday'] = today_checks[-100:]
-          with open(notif_file, 'w') as f:
-              json.dump(notif_data, f, indent=2)
-          "
+          ns["lastOverdueCheck"] = now.strftime("%Y-%m-%dT%H:%M")
+          ns["overdueChecksToday"] = today_checks[-100:]
+          with open(notif_file, "w", encoding="utf-8") as f:
+              json.dump(notif_data, f, indent=2, ensure_ascii=False)
+              f.write("\n")
+          PY
 
       - name: Commit updated notifications
         if: success()
         run: |
+          set -euo pipefail
+
+          NOTIF_FILE="calendar-data/notifications.json"
+          if [ ! -f "$NOTIF_FILE" ]; then
+            echo "No notifications state file to commit"
+            exit 0
+          fi
+
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git add calendar-data/notifications.json
+          git add "$NOTIF_FILE"
           git diff --staged --quiet || git commit -m "Update dedup state after overdue check"
           git push

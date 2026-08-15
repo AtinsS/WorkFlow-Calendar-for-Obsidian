@@ -6,6 +6,7 @@
 import moment from "moment";
 import type { TaskStatus } from "src/task-tracker/types";
 import type { SingularityTask } from "./singularityApi";
+import { quillDeltaToMarkdown } from "./quillDeltaParser";
 
 // --- Constants ---
 
@@ -43,28 +44,41 @@ export function emojiToHex(emoji: string | undefined): string | undefined {
 
 // --- Date conversion ---
 
-/** Converts local dateUID ("day-2026-08-02T00:00:00+03:00" or "day-2026-08-01") to ISO-8601 datetime in UTC */
+/** Returns the local timezone offset as "+HH:MM" or "-HH:MM" */
+function getLocalTimezoneOffset(): string {
+  const offset = new Date().getTimezoneOffset(); // minutes, positive = west of UTC
+  const sign = offset <= 0 ? "+" : "-";
+  const abs = Math.abs(offset);
+  const h = String(Math.floor(abs / 60)).padStart(2, "0");
+  const m = String(abs % 60).padStart(2, "0");
+  return `${sign}${h}:${m}`;
+}
+
+/** Converts local dateUID ("day-2026-08-02T00:00:00+03:00" or "day-2026-08-01") to ISO-8601 datetime with local timezone offset.
+ *  SingularityApp expects dates with timezone offset, not UTC. */
 export function dateUIDToISO(dateUID: string, scheduledTime?: string): string | undefined {
   const raw = dateUID.replace(/^day-/, "");
   if (!raw) return undefined;
 
+  // Extract date part (YYYY-MM-DD) from the dateUID
+  const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (!dateMatch) return undefined;
+  const datePart = dateMatch[1];
+
+  const tzOffset = getLocalTimezoneOffset();
+
   if (scheduledTime && /^\d{1,2}:\d{2}$/.test(scheduledTime)) {
-    // Extract date part (YYYY-MM-DD) from the dateUID
-    const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
-    if (!dateMatch) return undefined;
+    // Has explicit time — send as datetime with timezone offset
     const [h, m] = scheduledTime.split(":").map(Number);
-    const local = new Date(`${dateMatch[1]}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00`);
-    return local.toISOString();
+    return `${datePart}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00${tzOffset}`;
   }
 
-  // Parse the dateUID which may include timezone offset (e.g. "2026-08-02T00:00:00+03:00")
-  const d = new Date(raw);
-  if (isNaN(d.getTime())) return undefined;
-  return d.toISOString();
+  // Date only — send at noon local time to avoid day boundary issues
+  return `${datePart}T12:00:00${tzOffset}`;
 }
 
 /** Converts ISO-8601 datetime to local dateUID format matching getDateUID from obsidian-daily-notes-interface.
- *  Format: "day-YYYY-MM-DDTHH:mm:ssZ" (moment startOf day with local timezone offset) */
+ *  Format: "day-YYYY-MM-DDTHH:mm:ss+TZ" (moment startOf day with local timezone offset) */
 export function isoToDateUID(iso: string): string {
   const m = moment(iso);
   if (!m.isValid()) return `day-${moment().startOf("day").format()}`;
@@ -103,10 +117,22 @@ export function singularityPriorityToLocal(p: number | undefined): "high" | "med
 
 /** Extracts local status from a SingularityApp task */
 export function statusFromRemote(task: SingularityTask): { status: TaskStatus; completed: boolean } {
-  if (task.journalDate) {
+  // Trashed → treat as done (deleted)
+  if (task.deleteDate) {
     return { status: "done", completed: true };
   }
 
+  // Archived or checked=1 → done
+  if (task.journalDate || task.checked === 1) {
+    return { status: "done", completed: true };
+  }
+
+  // checked=2 → cancelled (treat as done)
+  if (task.checked === 2) {
+    return { status: "done", completed: true };
+  }
+
+  // Status tags (custom tags used to persist progress/paused states)
   if (task.tags) {
     for (const tag of task.tags) {
       if (tag === `${STATUS_TAG_PREFIX}done`) return { status: "done", completed: true };
@@ -122,6 +148,7 @@ export function statusFromRemote(task: SingularityTask): { status: TaskStatus; c
 
 /** Builds the API body for creating a task remotely */
 export function buildCreateTaskBody(task: {
+  id: string;
   title: string;
   dateUID: string;
   description?: string;
@@ -131,13 +158,17 @@ export function buildCreateTaskBody(task: {
   endTime?: string;
   deadline?: string;
   deadlineTime?: string;
+  status: TaskStatus;
 }, projectMap: Record<string, string>): Record<string, unknown> {
   const body: Record<string, unknown> = { title: task.title };
+
   // SingularityApp requires full ISO-8601 datetime for start
   const start = dateUIDToISO(task.dateUID, task.scheduledTime);
   if (start) body.start = start;
+
   // useTime = true enables time display in SingularityApp UI
   if (task.scheduledTime) body.useTime = true;
+
   // timeLength = duration in minutes (computed from scheduledTime → endTime)
   if (task.scheduledTime && task.endTime) {
     const [sh, sm] = task.scheduledTime.split(":").map(Number);
@@ -145,21 +176,38 @@ export function buildCreateTaskBody(task: {
     const durationMin = (eh * 60 + em) - (sh * 60 + sm);
     if (durationMin > 0) body.timeLength = durationMin;
   }
+
   // Deadline (separate concept — дедлайн)
   if (task.deadline) {
     const deadline = dateUIDToISO(task.deadline, task.deadlineTime);
     if (deadline) body.deadline = deadline;
   }
+
   if (task.description) body.note = task.description;
   body.priority = priorityToSingularity(task.priority);
+
   if (task.projectId && projectMap[task.projectId]) {
     body.projectId = projectMap[task.projectId];
   }
+
+  // External ID for reliable matching on subsequent syncs
+  body.externalId = task.id;
+
+  // Tags: always include status tag
+  const tags: string[] = [`${STATUS_TAG_PREFIX}${task.status}`];
+  body.tags = tags;
+
+  // If task is already done, set journalDate to archive immediately
+  if (task.status === "done") {
+    body.journalDate = new Date().toISOString();
+  }
+
   return body;
 }
 
 /** Builds the API body for updating a task remotely */
 export function buildUpdateTaskBody(task: {
+  id: string;
   title: string;
   dateUID: string;
   description?: string;
@@ -174,11 +222,14 @@ export function buildUpdateTaskBody(task: {
   const body: Record<string, unknown> = {};
   body.title = task.title;
   if (task.description !== undefined) body.note = task.description || "";
+
   // SingularityApp requires full ISO-8601 datetime for start
   const start = dateUIDToISO(task.dateUID, task.scheduledTime);
   if (start) body.start = start;
+
   // useTime = true enables time display in SingularityApp UI
   if (task.scheduledTime) body.useTime = true;
+
   // timeLength = duration in minutes (computed from scheduledTime → endTime)
   if (task.scheduledTime && task.endTime) {
     const [sh, sm] = task.scheduledTime.split(":").map(Number);
@@ -186,28 +237,35 @@ export function buildUpdateTaskBody(task: {
     const durationMin = (eh * 60 + em) - (sh * 60 + sm);
     if (durationMin > 0) body.timeLength = durationMin;
   }
+
   // Deadline (separate concept — дедлайн)
   if (task.deadline) {
     const deadline = dateUIDToISO(task.deadline, task.deadlineTime);
     if (deadline) body.deadline = deadline;
   }
+
   body.priority = priorityToSingularity(task.priority);
+
   if (task.projectId && projectMap[task.projectId]) {
     body.projectId = projectMap[task.projectId];
   }
-  // Status tags are managed separately via updateTaskStatusTag() to preserve non-status tags.
-  // Do NOT set journalDate here — it archives the task in SingularityApp.
+
+  // Include status tag in the update body (replaces separate pushStatusTag call)
+  body.tags = [`${STATUS_TAG_PREFIX}${task.status}`];
+
   return body;
 }
 
-/** Extracts time "HH:MM" from ISO datetime if it's not midnight */
+/** Extracts time "HH:MM" from ISO datetime (in local timezone). Returns undefined if midnight or no time. */
 export function isoToScheduledTime(iso: string): string | undefined {
-  // Parse as UTC then convert to local time
-  const d = new Date(iso);
-  if (isNaN(d.getTime())) return undefined;
-  const h = d.getHours();
-  const min = d.getMinutes();
-  if (h === 0 && min === 0) return undefined; // no explicit time set
+  // Use moment for reliable timezone-aware parsing
+  const m = moment(iso);
+  if (!m.isValid()) return undefined;
+  const h = m.hours();
+  const min = m.minutes();
+  // If time is exactly 12:00 — likely a date-only value we sent at noon, not an explicit time
+  if (h === 12 && min === 0) return undefined;
+  if (h === 0 && min === 0) return undefined;
   return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
 }
 
@@ -229,9 +287,11 @@ export function buildLocalTaskFromRemote(remote: SingularityTask, reverseProject
 } {
   const { status, completed } = statusFromRemote(remote);
   // start is always full ISO-8601 datetime: "2026-08-01T14:30:00.000Z"
+  // Tasks without start date get today's date as fallback (they need a dateUID to exist in local store)
   const dateUID = remote.start ? isoToDateUID(remote.start) : `day-${moment().startOf("day").format()}`;
-  // Only extract scheduledTime if the task has useTime enabled (user explicitly set a time)
-  const scheduledTime = remote.start && remote.useTime ? isoToScheduledTime(remote.start) : undefined;
+  // Extract scheduledTime from start datetime if it's not midnight/noon (date-only values)
+  // Don't require useTime flag — SingularityApp may not set it consistently
+  const scheduledTime = remote.start ? isoToScheduledTime(remote.start) : undefined;
   // endTime: compute from start + timeLength (SingularityApp stores duration, not end time)
   let endTime: string | undefined;
   let estimatedTime: number | undefined;
@@ -252,7 +312,7 @@ export function buildLocalTaskFromRemote(remote: SingularityTask, reverseProject
   }
   return {
     title: remote.title || "Без названия",
-    description: remote.note || undefined,
+    description: remote.note ? quillDeltaToMarkdown(remote.note) : undefined,
     status,
     completed,
     dateUID,

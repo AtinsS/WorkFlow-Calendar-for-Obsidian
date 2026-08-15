@@ -121,7 +121,7 @@
   filter: drop-shadow(0 0 4px var(--mcp-accent-glow));
 }
 
-table {
+#calendar-container table {
   margin-left: 0;
   margin-top: 0;
 }
@@ -1179,128 +1179,65 @@ svg.dot.filled {
 }
 
 /* ============================================
-   KANBAN TABS (dropdown)
+   KANBAN TABS (flat horizontal list)
    ============================================ */
-.kanban-dropdown-wrapper {
-  position: relative;
+.kanban-tabs-flat {
+  display: flex;
+  gap: 4px;
+  padding: 6px 0;
+  flex-wrap: wrap;
 }
 
-.kanban-dropdown-trigger {
+.kanban-tab-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border-radius: 10px;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: var(--mcp-surface-2);
   color: var(--mcp-text-muted);
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
   transition: all var(--mcp-transition-fast);
+  white-space: nowrap;
 }
 
-.kanban-dropdown-trigger:hover {
+.kanban-tab-btn:hover {
   background: var(--mcp-accent-dim);
   border-color: rgba(124, 92, 252, 0.3);
   color: var(--mcp-accent);
 }
 
-.kanban-trigger-icon {
-  font-size: 13px;
+.kanban-tab-btn.active {
+  background: var(--mcp-accent);
+  color: #fff;
+  border-color: var(--mcp-accent);
 }
 
-.kanban-trigger-label {
+.kanban-tab-icon {
   font-size: 12px;
 }
 
-.kanban-trigger-count {
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--mcp-accent);
-  background: var(--mcp-accent-dim);
-  padding: 2px 6px;
-  border-radius: 8px;
-  min-width: 18px;
-  text-align: center;
+.kanban-tab-label {
+  font-size: 11px;
 }
 
-.kanban-trigger-arrow {
-  font-size: 10px;
-  transition: transform var(--mcp-transition-fast);
-  margin-left: 2px;
-}
-
-.kanban-trigger-arrow.rotated {
-  transform: rotate(180deg);
-}
-
-.kanban-dropdown-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 6px;
-  background: #171A21;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 14px;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
-  z-index: 1000;
-  min-width: 180px;
-  overflow: hidden;
-  padding: 6px;
-}
-
-.kanban-dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  padding: 10px 14px;
-  font-size: 13px;
-  color: var(--mcp-text-muted);
-  background: none;
-  border: none;
-  border-radius: 10px;
-  cursor: pointer;
-  text-align: left;
-  white-space: nowrap;
-  transition: all var(--mcp-transition-fast);
-}
-
-.kanban-dropdown-item:hover {
-  background: var(--mcp-surface-hover);
-  color: var(--mcp-text);
-}
-
-.kanban-dropdown-item.active {
-  background: var(--mcp-accent-dim);
-  color: var(--mcp-accent);
-}
-
-.kanban-item-icon {
-  font-size: 14px;
-  width: 20px;
-  text-align: center;
-}
-
-.kanban-item-label {
-  flex: 1;
-}
-
-.kanban-item-count {
+.kanban-tab-count {
   font-size: 10px;
   font-weight: 600;
   color: var(--mcp-text-muted);
-  background: var(--mcp-surface-2);
+  background: rgba(255, 255, 255, 0.08);
   padding: 1px 5px;
-  border-radius: 8px;
-  min-width: 16px;
+  border-radius: 6px;
+  min-width: 14px;
   text-align: center;
 }
 
-.kanban-dropdown-item.active .kanban-item-count {
-  background: var(--mcp-accent-dim);
-  color: var(--mcp-accent);
+.kanban-tab-btn.active .kanban-tab-count {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 /* ============================================
@@ -2351,10 +2288,7 @@ svg.dot.filled {
   z-index: 15;
 }
 
-/* Ensure Obsidian's SuggestModal/Modal appears above custom modals */
-.modal {
-  z-index: 10001;
-}
+/* Note: do NOT set z-index on bare .modal — it conflicts with Obsidian's own modal styles */
 
 .wf-modal-container {
   position: relative;

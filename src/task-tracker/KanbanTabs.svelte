@@ -32,56 +32,23 @@
     { key: "done", icon: "✅", label: "Готово" },
   ];
 
-  $: currentTab = tabs.find((t) => t.key === $activeTab) || tabs[0];
-
-  let showDropdown = false;
-
   function setTab(tab: TaskStatus) {
     activeTab.set(tab);
-    showDropdown = false;
-  }
-
-  function toggleDropdown() {
-    showDropdown = !showDropdown;
-  }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      showDropdown = false;
-    }
   }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
-
-<div class="kanban-dropdown-wrapper">
-  <button
-    class="kanban-dropdown-trigger"
-    on:click|stopPropagation={toggleDropdown}
-  >
-    <span class="kanban-trigger-icon">{currentTab.icon}</span>
-    <span class="kanban-trigger-label">{currentTab.label}</span>
-    {#if counts[currentTab.key] > 0}
-      <span class="kanban-trigger-count">{counts[currentTab.key]}</span>
-    {/if}
-    <span class="kanban-trigger-arrow" class:rotated={showDropdown}>&#9662;</span>
-  </button>
-  {#if showDropdown}
-    <div class="kanban-dropdown-menu" on:click|stopPropagation role="menu">
-      {#each tabs as tab (tab.key)}
-        <button
-          class="kanban-dropdown-item"
-          class:active={$activeTab === tab.key}
-          role="menuitem"
-          on:click={() => setTab(tab.key)}
-        >
-          <span class="kanban-item-icon">{tab.icon}</span>
-          <span class="kanban-item-label">{tab.label}</span>
-          {#if counts[tab.key] > 0}
-            <span class="kanban-item-count">{counts[tab.key]}</span>
-          {/if}
-        </button>
-      {/each}
-    </div>
-  {/if}
+<div class="kanban-tabs-flat">
+  {#each tabs as tab (tab.key)}
+    <button
+      class="kanban-tab-btn"
+      class:active={$activeTab === tab.key}
+      on:click={() => setTab(tab.key)}
+    >
+      <span class="kanban-tab-icon">{tab.icon}</span>
+      <span class="kanban-tab-label">{tab.label}</span>
+      {#if counts[tab.key] > 0}
+        <span class="kanban-tab-count">{counts[tab.key]}</span>
+      {/if}
+    </button>
+  {/each}
 </div>

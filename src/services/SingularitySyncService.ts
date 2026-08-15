@@ -13,9 +13,7 @@ import {
   verifyToken,
   getAllTasks,
   createTask as apiCreateTask,
-  getTask as apiGetTask,
   updateTask as apiUpdateTask,
-  deleteTask as apiDeleteTask,
   getProjects as apiGetProjects,
   createProject as apiCreateProject,
   updateProject as apiUpdateProject,
@@ -46,7 +44,6 @@ import {
   buildUpdateHabitBody,
   buildReverseHabitMap,
   singularityColorToHex,
-  STATUS_TAG_PREFIX,
 } from "./singularityMapper";
 
 // --- Constants ---
@@ -106,6 +103,7 @@ let syncMap: SingularitySyncMap = createEmptySyncMap();
 let loaded = false;
 let skipNextPush = false; // flag to prevent re-push after updateTask(singularityId)
 let skipNextProjectPush = false; // flag to prevent re-push after addProject from pull
+const skipPushTaskIds = new Set<string>(); // per-task skip flags to prevent missed pushes
 
 function createEmptySyncMap(): SingularitySyncMap {
   return { tasks: {}, projects: {}, projectMap: {}, habits: {}, habitMap: {}, habitDoneSnapshot: {}, checklistMap: {}, lastFullPullAt: 0, version: 1 };
@@ -115,6 +113,14 @@ function createEmptySyncMap(): SingularitySyncMap {
 
 function delay(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function isDryRun(): boolean {
+  return !!get(settings).singularitySyncDryRun;
+}
+
+function dryLog(action: string, detail: string): void {
+  console.log(`[SingularitySync][DRY RUN] ${action}: ${detail}`);
 }
 
 // --- Sync Map Persistence ---
@@ -233,22 +239,6 @@ function isEnabled(): boolean {
 
 // --- Push Logic ---
 
-const ALL_STATUS_TAGS = [`${STATUS_TAG_PREFIX}done`, `${STATUS_TAG_PREFIX}progress`, `${STATUS_TAG_PREFIX}paused`];
-
-/** Manages status tags on a remote task: removes old status tags, adds the current one */
-async function pushStatusTag(token: string, remoteTaskId: string, status: string): Promise<void> {
-  try {
-    const remote = await apiGetTask(token, remoteTaskId);
-    const existingTags = (remote.tags || []).filter((t) => !ALL_STATUS_TAGS.includes(t));
-    const statusTag = `${STATUS_TAG_PREFIX}${status}`;
-    const newTags = [...existingTags, statusTag];
-    await delay(API_CALL_DELAY_MS);
-    await apiUpdateTask(token, remoteTaskId, { tags: newTags });
-  } catch (e) {
-    console.warn(`[SingularitySync] Failed to push status tag for ${remoteTaskId}:`, e);
-  }
-}
-
 async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ pushed: number; errors: number }> {
   const token = getToken();
   if (!token || !pluginInstance) return { pushed: 0, errors: 0 };
@@ -260,8 +250,22 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
   console.log(`[SingularitySync] Push: ${localTasks.length} local tasks, ${Object.keys(syncMap.tasks).length} in syncMap`);
 
   // 1. Push new/updated tasks
+  // All tasks including recurring instances are synced as normal tasks
+  // (SingularityApp API doesn't support recurrence, so each instance is independent)
+  const excludeTagsRaw = get(settings).singularitySyncExcludeTags || "";
+  const excludeTags = excludeTagsRaw.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
+
   for (const task of localTasks) {
-    if (task.isRecurringInstance && task.parentTaskId) continue; // skip recurring instances
+    // Skip tasks with excluded tags
+    if (excludeTags.length > 0 && task.tags?.some(t => excludeTags.includes(t.toLowerCase()))) {
+      continue;
+    }
+
+    // Skip tasks that were just updated from pull (per-task skip flag)
+    if (skipPushTaskIds.has(task.id)) {
+      skipPushTaskIds.delete(task.id);
+      continue;
+    }
 
     try {
       const syncEntry = syncMap.tasks[task.id];
@@ -270,19 +274,43 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
         // Task already synced — check if local is newer
         if (task.updatedAt <= syncEntry.lastPushedAt) continue;
 
-        // UPDATE: build body via mapper
+        // UPDATE: build body via mapper (now includes status tags)
         const body = buildUpdateTaskBody(task, projectMap);
-        await apiUpdateTask(token, syncEntry.singularityId, body);
-        // Push status tag separately (preserves non-status tags)
-        await pushStatusTag(token, syncEntry.singularityId, task.status);
+        if (isDryRun()) {
+          dryLog("UPDATE task", `${task.title} (${syncEntry.singularityId}) body=${JSON.stringify(body)}`);
+        } else {
+          await apiUpdateTask(token, syncEntry.singularityId, body);
+        }
+
+        // If task is done, archive it in SingularityApp (set journalDate)
+        if (task.status === "done" || task.completed) {
+          if (isDryRun()) {
+            dryLog("ARCHIVE task", `${task.title} (${syncEntry.singularityId})`);
+          } else {
+            try {
+              await apiUpdateTask(token, syncEntry.singularityId, {
+                journalDate: new Date().toISOString(),
+              });
+            } catch (e) {
+              console.warn(`[SingularitySync] Failed to archive task ${task.title}:`, e);
+            }
+          }
+        }
+
         syncMap.tasks[task.id] = {
           ...syncEntry,
           lastPushedAt: Date.now(),
         };
         pushed++;
       } else {
-        // CREATE: build body via mapper
+        // CREATE: build body via mapper (now includes externalId, tags, deadline)
         const body = buildCreateTaskBody(task, projectMap);
+        if (isDryRun()) {
+          dryLog("CREATE task", `${task.title} body=${JSON.stringify(body)}`);
+          pushed++;
+          continue;
+        }
+
         console.log(`[SingularitySync] Create task "${task.title}" endTime="${task.endTime}" scheduledTime="${task.scheduledTime}" → body:`, JSON.stringify(body));
         const created = await apiCreateTask(token, body as Parameters<typeof apiCreateTask>[1]);
 
@@ -293,13 +321,8 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
 
         console.log(`[SingularitySync] Created task "${task.title}" → remote id: ${created.id}`);
 
-        // Push status tag for newly created task
-        if (task.status !== "todo") {
-          await pushStatusTag(token, created.id, task.status);
-        }
-
-        // Set flag BEFORE updateTask to prevent re-push via store subscription
-        skipNextPush = true;
+        // Set per-task flag BEFORE updateTask to prevent re-push via store subscription
+        skipPushTaskIds.add(task.id);
 
         // Update local task with singularityId
         const { updateTask } = await import("src/task-tracker/stores");
@@ -328,15 +351,23 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
     }
   }
 
-  // 2. Delete remotely tasks that were removed locally
+  // 2. Soft-delete remotely tasks that were removed locally
+  // Use PATCH with deleteDate (corzina) instead of hard DELETE
   const localIds = new Set(localTasks.map((t) => t.id));
   for (const [localId, entry] of Object.entries(syncMap.tasks)) {
     if (!localIds.has(localId)) {
-      try {
-        await apiDeleteTask(token, entry.singularityId);
+      if (isDryRun()) {
+        dryLog("SOFT-DELETE task", `remote ${entry.singularityId} (local ${localId} removed)`);
         pushed++;
-      } catch {
-        // Task already deleted or network error — ignore, clean up mapping below
+      } else {
+        try {
+          await apiUpdateTask(token, entry.singularityId, {
+            deleteDate: new Date().toISOString(),
+          });
+          pushed++;
+        } catch {
+          // Task already deleted or network error — ignore, clean up mapping below
+        }
       }
       // Always remove from sync map — task no longer exists locally
       delete syncMap.tasks[localId];
@@ -372,9 +403,23 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
     console.log(`[SingularitySync] Pull: ${remoteTasks.length} remote tasks, ${localTasks.length} local tasks, ${reverseMap.size} in syncMap`);
 
     for (const remote of remoteTasks) {
-      // Skip trashed tasks
+      // Trashed tasks — if they were synced locally, mark for deletion
       if (remote.deleteDate) {
-        console.log(`[SingularitySync] Pull skip (trashed): ${remote.id}(${remote.title})`);
+        const localId = reverseMap.get(remote.id);
+        if (localId) {
+          const localExists = localTasks.some((t) => t.id === localId);
+          if (localExists) {
+            if (isDryRun()) {
+              dryLog("DELETE local task", `${remote.title} (${remote.id}) → local ${localId} (trashed remotely)`);
+            } else {
+              const { removeTask } = await import("src/task-tracker/stores");
+              skipNextPush = true; // global flag needed — task won't exist in store after removal
+              removeTask(localId);
+            }
+            pulled++;
+          }
+          delete syncMap.tasks[localId];
+        }
         continue;
       }
 
@@ -389,19 +434,28 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
             continue;
           }
 
-          const remoteUpdated = parseRemoteUpdatedAt(remote.updatedAt);
+          const remoteUpdated = parseRemoteUpdatedAt(remote.updatedAt) || parseRemoteUpdatedAt(remote.modificatedDate);
           const syncEntry = syncMap.tasks[localId];
           const remoteData = buildLocalTaskFromRemote(remote, reverseProjectMap);
           const statusChanged = remoteData.status !== localTask.status;
+          const descriptionChanged = remoteData.description !== undefined && remoteData.description !== localTask.description;
+          const titleChanged = remoteData.title !== localTask.title;
+          const dateChanged = remoteData.dateUID !== localTask.dateUID;
+          const timeChanged = remoteData.scheduledTime !== localTask.scheduledTime;
+          const deadlineChanged = remoteData.deadline !== localTask.deadline;
 
-          if (statusChanged || (remoteUpdated > localTask.updatedAt && remoteUpdated > (syncEntry?.lastPulledAt || 0))) {
-            const { updateTask } = await import("src/task-tracker/stores");
-            skipNextPush = true;
-            updateTask(localId, {
-              ...remoteData,
-              singularityId: remote.id,
-              projectId: remoteData.projectId ?? localTask.projectId,
-            });
+          if (statusChanged || descriptionChanged || titleChanged || dateChanged || timeChanged || deadlineChanged || (remoteUpdated > localTask.updatedAt && remoteUpdated > (syncEntry?.lastPulledAt || 0))) {
+            if (isDryRun()) {
+              dryLog("UPDATE local task", `${remote.title} (${remote.id}) → local ${localId} statusChanged=${statusChanged}`);
+            } else {
+              const { updateTask } = await import("src/task-tracker/stores");
+              skipPushTaskIds.add(localId);
+              updateTask(localId, {
+                ...remoteData,
+                singularityId: remote.id,
+                projectId: remoteData.projectId ?? localTask.projectId,
+              });
+            }
 
             syncMap.tasks[localId] = {
               ...syncEntry,
@@ -409,16 +463,20 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
               lastPulledAt: Date.now(),
             };
             pulled++;
-            console.log(`[SingularitySync] Pull updated: ${remote.id}(${remote.title}) → local ${localId} statusChanged=${statusChanged}`);
           } else {
             console.log(`[SingularitySync] Pull skip (not newer): ${remote.id}(${remote.title}) remoteUpdated=${remoteUpdated} localUpdated=${localTask.updatedAt}`);
           }
         } else {
           // READ (create new): remote task doesn't exist locally
           const remoteData = buildLocalTaskFromRemote(remote, reverseProjectMap);
+          if (isDryRun()) {
+            dryLog("CREATE local task", `${remote.title} (${remote.id}) dateUID=${remoteData.dateUID}`);
+            pulled++;
+            continue;
+          }
+
           console.log(`[SingularitySync] Pull creating: ${remote.id}(${remote.title}) dateUID=${remoteData.dateUID} scheduledTime=${remoteData.scheduledTime}`);
           const { addTask } = await import("src/task-tracker/stores");
-          skipNextPush = true;
           const newTask = addTask({
             title: remoteData.title,
             description: remoteData.description,
@@ -438,6 +496,7 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
             ...(remoteData.deadlineTime ? { deadlineTime: remoteData.deadlineTime } : {}),
           });
 
+          skipPushTaskIds.add(newTask.id);
           syncMap.tasks[newTask.id] = {
             singularityId: remote.id,
             lastPushedAt: Date.now(),
@@ -454,23 +513,28 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
       }
     }
 
-    // 3. Detect remotely deleted tasks — remove locally if they were synced
+    // 3. Delete local tasks whose remote counterparts are missing from the API response
+    // (deleted in SingularityApp). Only if we successfully fetched all tasks.
     const remoteIds = new Set(remoteTasks.map((t) => t.id));
-    const { removeTask } = await import("src/task-tracker/stores");
+    const { removeTask: removeTaskForDeleted } = await import("src/task-tracker/stores");
     const currentLocalTasks = get(tasks);
     for (const [localId, entry] of Object.entries(syncMap.tasks)) {
       if (!remoteIds.has(entry.singularityId)) {
-        // Task was deleted remotely — delete locally
         const localExists = currentLocalTasks.some((t) => t.id === localId);
         if (localExists) {
-          skipNextPush = true;
-          removeTask(localId);
+          if (isDryRun()) {
+            dryLog("DELETE local task", `remote ${entry.singularityId} missing from API → local ${localId}`);
+          } else {
+            skipNextPush = true;
+            removeTaskForDeleted(localId);
+          }
           pulled++;
-          console.log(`[SingularitySync] Pull deleted (removed remotely): ${entry.singularityId} → local ${localId}`);
+          console.log(`[SingularitySync] Pull deleted (missing from remote): ${entry.singularityId} → local ${localId}`);
         }
         delete syncMap.tasks[localId];
       }
     }
+    // Tasks are only deleted locally when the remote explicitly has deleteDate set (handled above).
 
     console.log(`[SingularitySync] Pull complete: ${pulled} tasks pulled, ${errors} errors`);
     await saveSyncMap();
@@ -584,7 +648,7 @@ function startPolling(): void {
 
   pollInterval = setInterval(() => {
     if (isEnabled() && !syncing) {
-      doSync("pull");
+      doSync("both");
     }
   }, intervalMs);
 }
@@ -623,10 +687,14 @@ export async function initSingularitySync(plugin: CalendarPlugin): Promise<void>
 
   // Subscribe to store changes for push
   unsubscribers.push(
-    tasks.subscribe(() => {
+    tasks.subscribe((currentTasks) => {
       if (skipNextPush) {
         skipNextPush = false;
         return;
+      }
+      // Clear per-task skip flags for tasks that are still in the store
+      for (const task of currentTasks) {
+        skipPushTaskIds.delete(task.id);
       }
       if (loaded && isEnabled()) schedulePush();
     })
@@ -821,10 +889,15 @@ export async function syncProjects(): Promise<Record<string, string>> {
       // Local project deleted — also delete remote
       if (!localProjectIds.has(mapLocalId)) {
         shouldRemove = true;
-        const deleted = await apiDeleteProject(token, remoteId);
-        if (deleted) {
+        if (isDryRun()) {
+          dryLog("DELETE remote project", `${remoteId} (local ${mapLocalId} removed)`);
           deletedRemoteIds.add(remoteId);
-          console.log(`[SingularitySync] Deleted remote project ${remoteId} (local ${mapLocalId} removed)`);
+        } else {
+          const deleted = await apiDeleteProject(token, remoteId);
+          if (deleted) {
+            deletedRemoteIds.add(remoteId);
+            console.log(`[SingularitySync] Deleted remote project ${remoteId} (local ${mapLocalId} removed)`);
+          }
         }
       }
       // Remote project deleted/trashed
@@ -885,8 +958,12 @@ export async function syncProjects(): Promise<Record<string, string>> {
               const updateBody: Record<string, unknown> = {};
               if (colorChanged) updateBody.color = local.color;
               if (emojiChanged) updateBody.emoji = localEmojiHex;
-              await apiUpdateProject(token, remoteId, updateBody);
-              console.log(`[SingularitySync] Updated remote project "${local.name}" color/emoji:`, updateBody);
+              if (isDryRun()) {
+                dryLog("UPDATE remote project", `"${local.name}" (${remoteId}) body=${JSON.stringify(updateBody)}`);
+              } else {
+                await apiUpdateProject(token, remoteId, updateBody);
+                console.log(`[SingularitySync] Updated remote project "${local.name}" color/emoji:`, updateBody);
+              }
             } catch (e) {
               if (e instanceof Error && e.name === "SingularityNotFoundError") {
                 // Project was trashed — clean up mapping
@@ -934,6 +1011,12 @@ export async function syncProjects(): Promise<Record<string, string>> {
       } else {
         // No remote match — create project remotely
         try {
+          if (isDryRun()) {
+            dryLog("CREATE remote project", `"${local.name}" color=${local.color} icon=${local.icon}`);
+            created++;
+            continue;
+          }
+
           const remote = await apiCreateProject(token, {
             title: local.name,
             color: local.color || undefined,
@@ -1042,6 +1125,9 @@ export async function syncHabits(): Promise<Record<string, string>> {
     let localHabits = get(habits);
 
     console.log(`[SingularitySync] Habits: ${remoteHabits.length} remote, ${localHabits.length} local, ${Object.keys(habitMap).length} mapped`);
+    if (remoteHabits.length > 0) {
+      console.log(`[SingularitySync] Remote habits: ${remoteHabits.map(h => `${h.id}(${h.title})`).join(", ")}`);
+    }
 
     const mappedRemoteIds = new Set(Object.values(habitMap));
 
@@ -1053,10 +1139,14 @@ export async function syncHabits(): Promise<Record<string, string>> {
         const remoteId = habitMap[mapLocalId];
         // Delete remotely if the remote habit still exists
         if (remoteHabitIds.has(remoteId)) {
-          try {
-            await apiDeleteHabit(token, remoteId);
-            console.log(`[SingularitySync] Deleted remote habit ${remoteId} (local removed)`);
-          } catch { /* already deleted */ }
+          if (isDryRun()) {
+            dryLog("DELETE remote habit", `${remoteId} (local removed)`);
+          } else {
+            try {
+              await apiDeleteHabit(token, remoteId);
+              console.log(`[SingularitySync] Deleted remote habit ${remoteId} (local removed)`);
+            } catch { /* already deleted */ }
+          }
         }
         mappedRemoteIds.delete(remoteId);
         delete habitMap[mapLocalId];
@@ -1125,6 +1215,12 @@ export async function syncHabits(): Promise<Record<string, string>> {
       } else {
         // Create remote habit
         try {
+          if (isDryRun()) {
+            dryLog("CREATE remote habit", `"${local.title}" color=${local.color}`);
+            created++;
+            continue;
+          }
+
           const remote = await apiCreateHabit(token, buildCreateHabitBody(local));
           if (remote.id) {
             habitMap[local.id] = remote.id;
@@ -1157,6 +1253,7 @@ export async function syncHabits(): Promise<Record<string, string>> {
       skipNextHabitPush = true;
       const { addHabit } = await import("src/habit-tracker/stores");
       const remoteData = buildLocalHabitFromRemote(remote);
+      console.log(`[SingularitySync] Creating local habit from remote: "${remoteData.title}" color=${remoteData.color}`);
       const newHabit = addHabit({
         title: remoteData.title,
         icon: remoteData.icon,
@@ -1222,6 +1319,11 @@ async function syncHabitProgress(token: string, habitMap: Record<string, string>
       (rp) => rp.date >= dateFrom && rp.date <= dateTo
     );
     console.log(`[SingularitySync] Habit progress: ${remoteProgress.length} remote entries (of ${allRemoteProgress.length} total)`);
+    if (remoteProgress.length > 0) {
+      console.log(`[SingularitySync] Remote progress samples: ${remoteProgress.slice(0, 3).map(rp => `${rp.habit}@${rp.date}=${rp.progress}`).join(", ")}`);
+    }
+    console.log(`[SingularitySync] Syncable habit IDs: ${[...syncableHabitIds].join(", ")}`);
+    console.log(`[SingularitySync] Reverse habit map: ${JSON.stringify([...reverseHabitMap.entries()].slice(0, 5))}`);
 
     const { getHabitProgressOnDate, setHabitProgress } = await import("src/habit-tracker/stores");
 
@@ -1304,21 +1406,18 @@ async function syncHabitProgress(token: string, habitMap: Record<string, string>
           // Convert local progress to remote: 0→1(cancel), 1→1, 2→2
           const remoteProgValue = localProg === 0 ? 1 : localProg === 1 ? 1 : 2;
           try {
-            await apiCreateHabitProgress(token, { habit: remoteId, date, progress: remoteProgValue });
-            await delay(API_CALL_DELAY_MS);
-          } catch {
-            // 409 — entry already exists. Delete old one, create new.
+            // Check if entry already exists — delete first to avoid 409
             const existingEntry = allRemoteProgress.find(
               (rp) => rp.habit === remoteId && rp.date === date
             );
             if (existingEntry) {
-              try {
-                await apiDeleteHabitProgress(token, existingEntry.id);
-                await delay(API_CALL_DELAY_MS);
-                await apiCreateHabitProgress(token, { habit: remoteId, date, progress: remoteProgValue });
-                await delay(API_CALL_DELAY_MS);
-              } catch { /* ignore */ }
+              await apiDeleteHabitProgress(token, existingEntry.id);
+              await delay(API_CALL_DELAY_MS);
             }
+            await apiCreateHabitProgress(token, { habit: remoteId, date, progress: remoteProgValue });
+            await delay(API_CALL_DELAY_MS);
+          } catch (e) {
+            console.warn(`[SingularitySync] Failed to push habit progress ${remoteId} ${date}:`, e);
           }
         }
       }
@@ -1389,8 +1488,8 @@ export async function syncChecklists(): Promise<void> {
             const checkedChanged = remoteChecked !== local.checked;
 
             if (titleChanged || checkedChanged) {
-              // Determine which side is newer using modificatedDate from API
-              const remoteModMs = remote.modificatedDate ? Number(remote.modificatedDate) : 0;
+              // Determine which side is newer using modificatedDate from API (ISO string, not number)
+              const remoteModMs = remote.modificatedDate ? new Date(remote.modificatedDate).getTime() : 0;
               const localModMs = local.updatedAt || 0;
 
               if (remoteModMs > localModMs) {
@@ -1430,7 +1529,7 @@ export async function syncChecklists(): Promise<void> {
           matchedRemoteIds.add(match.id);
           // Bidirectional sync of checked status
           if (!!match.done !== local.checked) {
-            const remoteModMs = match.modificatedDate ? Number(match.modificatedDate) : 0;
+            const remoteModMs = match.modificatedDate ? new Date(match.modificatedDate).getTime() : 0;
             const localModMs = local.updatedAt || 0;
             if (remoteModMs > localModMs) {
               // Remote is newer — pull to local

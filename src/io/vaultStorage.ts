@@ -411,6 +411,19 @@ export async function saveNotificationSyncSettings(
   });
 }
 
+export async function updateNotificationModuleData(
+  app: App,
+  updater: (existing: Record<string, unknown>) => Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  let updated: Record<string, unknown> = {};
+  await enqueueModuleWrite("notifications", async () => {
+    const existing = await loadModuleData(app, "notifications");
+    updated = updater(existing);
+    await saveModuleData(app, "notifications", updated);
+  });
+  return updated;
+}
+
 /**
  * Sync notification settings to vault on plugin load.
  * This ensures the latest settings are always available

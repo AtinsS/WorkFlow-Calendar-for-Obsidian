@@ -1,9 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import moment from "moment";
-  import { habits, habitLogs, toggleHabitCompletion } from "../habit-tracker/stores";
   import { settings } from "../ui/stores";
-  import type { IHabit } from "../habit-tracker/types";
 
   export let onOpenTasks: (() => void) | undefined = undefined;
   export let onOpenAnalytics: (() => void) | undefined = undefined;
@@ -25,7 +23,6 @@
   });
 
   $: userName = $settings.userName || "";
-  $: showHabits = $settings.helloShowHabits !== false;
   $: showTasksBtn = $settings.helloShowTasksBtn !== false;
   $: showAnalyticsBtn = $settings.helloShowAnalyticsBtn !== false;
   $: showFinanceBtn = $settings.helloShowFinanceBtn !== false;
@@ -34,38 +31,9 @@
   $: greetingText = hour < 6 ? "Доброй ночи" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
   $: greeting = userName ? `${greetingText}, ${userName}` : greetingText;
   $: greetingEmoji = hour < 6 ? "🌙" : hour < 12 ? "☀️" : hour < 18 ? "🌤" : "🌆";
-  $: dateStr = now.format("YYYY-MM-DD");
-  $: weekday = RU_DAYS[now.day()];
   $: monthName = RU_MONTHS[now.month()];
   $: year = now.format("YYYY");
-  $: dateDisplay = `${now.date()} ${monthName} ${year}, ${weekday}`;
-
-  $: activeHabits = $habits.filter((h) => {
-    if (h.archived) return false;
-    const m = moment(dateStr, "YYYY-MM-DD");
-    if (h.frequency === "weekly" && h.customDays && h.customDays.length > 0) {
-      return h.customDays.includes(m.day());
-    }
-    if (h.frequency === "monthly") {
-      return m.date() === (h.monthlyDay || 1);
-    }
-    return true;
-  });
-
-  $: habitStates = activeHabits.map((h) => {
-    const log = $habitLogs.find((l) => l.habitId === h.id && l.date === dateStr);
-    const count = log?.count || 0;
-    const completed = log?.completed || false;
-    const partial = count > 0 && !completed;
-    return { habit: h, count, completed, partial };
-  });
-
-  $: doneCount = habitStates.filter((s) => s.completed).length;
-  $: totalCount = habitStates.length;
-
-  function handleToggleHabit(habit: IHabit) {
-    toggleHabitCompletion(habit.id, dateStr, habit.targetCount || 1);
-  }
+  $: dateDisplay = `${now.date()} ${monthName} ${year}, ${RU_DAYS[now.day()]}`;
 </script>
 
 <div class="hello">
@@ -102,46 +70,6 @@
       </button>
     {/if}
   </div>
-
-  <!-- Habits -->
-  {#if showHabits}
-    <div class="hello-card">
-      <div class="hello-card-head">
-        <span class="hello-card-title">Привычки на сегодня</span>
-        {#if totalCount > 0}
-          <span class="hello-card-badge">{doneCount}/{totalCount}</span>
-        {/if}
-      </div>
-      <div class="hello-card-body">
-        {#if habitStates.length > 0}
-          <div class="hello-habit-list">
-            {#each habitStates as hs (hs.habit.id)}
-              <button class="hello-habit" class:done={hs.completed} class:partial={hs.partial} on:click={() => handleToggleHabit(hs.habit)}>
-                <span class="hello-habit-check" class:checked={hs.completed} class:half={hs.partial} style="--hc: {hs.habit.color}">
-                  {#if hs.completed}
-                    <svg class="hello-check-svg" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  {:else if hs.partial}
-                    <svg class="hello-check-svg" viewBox="0 0 12 12"><path d="M3 6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-                  {/if}
-                </span>
-                <span class="hello-habit-icon">{hs.habit.icon}</span>
-                <span class="hello-habit-name" class:strike={hs.completed}>{hs.habit.title}</span>
-                {#if hs.habit.targetCount > 1}
-                  <span class="hello-habit-cnt">{hs.count}/{hs.habit.targetCount}</span>
-                {/if}
-              </button>
-            {/each}
-          </div>
-        {:else}
-          <div class="hello-empty">Нет привычек на сегодня</div>
-        {/if}
-      </div>
-      <button class="hello-card-btn" on:click={onOpenTasks}>
-        <span>Открыть привычки</span>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-      </button>
-    </div>
-  {/if}
 </div>
 
 <style>

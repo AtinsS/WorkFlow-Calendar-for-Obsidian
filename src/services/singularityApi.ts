@@ -1,9 +1,9 @@
 /**
  * SingularityApp REST API v2 client.
- * Uses Node.js https module for full control over responses (including error bodies).
+ * Uses Obsidian's requestUrl() for cross-platform compatibility (desktop + mobile).
  */
 
-import https from "https";
+import { requestUrl } from "obsidian";
 
 const BASE_URL = "https://api.singularity-app.com/v2";
 
@@ -22,11 +22,13 @@ export interface SingularityTask {
   projectId?: string;
   journalDate?: string; // set = archived/done
   deleteDate?: string; // set = trashed
+  checked?: number; // 0=unchecked, 1=checked/done, 2=cancelled
   updatedAt?: string; // ISO datetime
   createdAt?: string;
   tags?: string[];
   isNote?: boolean;
   parent?: string; // parent task ID for subtasks
+  modificatedDate?: string; // last modification timestamp
 }
 
 export interface SingularityProject {
@@ -80,49 +82,6 @@ function authHeaders(token: string): Record<string, string> {
   };
 }
 
-interface RawResponse {
-  status: number;
-  headers: Record<string, string | string[] | undefined>;
-  body: string;
-}
-
-function rawRequest(options: {
-  url: string;
-  method: string;
-  headers: Record<string, string>;
-  body?: string;
-}): Promise<RawResponse> {
-  return new Promise((resolve, reject) => {
-    const parsed = new URL(options.url);
-    const reqOptions: https.RequestOptions = {
-      hostname: parsed.hostname,
-      port: parsed.port || 443,
-      path: parsed.pathname + parsed.search,
-      method: options.method,
-      headers: options.headers,
-    };
-
-    const req = https.request(reqOptions, (res) => {
-      let data = "";
-      res.on("data", (chunk: Buffer) => { data += chunk.toString(); });
-      res.on("end", () => {
-        resolve({
-          status: res.statusCode || 0,
-          headers: res.headers as Record<string, string | string[] | undefined>,
-          body: data,
-        });
-      });
-    });
-
-    req.on("error", (e) => reject(e));
-
-    if (options.body) {
-      req.write(options.body);
-    }
-    req.end();
-  });
-}
-
 async function apiRequest<T>(
   token: string,
   method: string,
@@ -140,14 +99,16 @@ async function apiRequest<T>(
         console.log(`[SingularityApp] ${method} ${path} body:`, requestBody);
       }
 
-      const response = await rawRequest({
+      const response = await requestUrl({
         url,
-        method,
+        method: method as "GET" | "POST" | "PATCH" | "DELETE",
         headers: authHeaders(token),
         body: requestBody,
+        throw: false,
       });
 
-      const { status, body: responseText } = response;
+      const status = response.status;
+      const responseText = typeof response.text === "string" ? response.text : JSON.stringify(response.json);
 
       // Retry on rate limit (429) and transient server errors (5xx)
       if (status === 429 || (status >= 500 && status < 600)) {
@@ -297,10 +258,10 @@ export async function getAllTasks(
   }
 ): Promise<SingularityTask[]> {
   const allTasks: SingularityTask[] = [];
-  const pageSize = 100;
+  const pageSize = 1000;
   let offset = 0;
 
-  while (allTasks.length < 2000) {
+  while (allTasks.length < 10000) {
     const batch = await getTasks(token, {
       ...params,
       maxCount: pageSize,
@@ -312,8 +273,8 @@ export async function getAllTasks(
     if (batch.length < pageSize) break;
     offset += pageSize;
 
-    // Safety: max 2000 tasks
-    if (allTasks.length >= 2000) break;
+    // Safety: max 10000 tasks
+    if (allTasks.length >= 10000) break;
   }
 
   return allTasks;
@@ -327,6 +288,11 @@ export async function createTask(
     note?: string;
     priority?: number;
     projectId?: string;
+    deadline?: string;
+    useTime?: boolean;
+    timeLength?: number;
+    tags?: string[];
+    externalId?: string;
     isNote?: boolean;
   }
 ): Promise<SingularityTask> {
@@ -351,9 +317,14 @@ export async function updateTask(
     note?: string;
     priority?: number;
     projectId?: string;
+    deadline?: string;
+    useTime?: boolean;
+    timeLength?: number;
     journalDate?: string;
     deleteDate?: string;
     tags?: string[];
+    externalId?: string;
+    checked?: number;
   }
 ): Promise<void> {
   await apiRequest<void>(token, "PATCH", `/task/${id}`, body);

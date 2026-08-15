@@ -162,11 +162,12 @@ priority: medium
 
 1. Включите в настройках плагина **«Синхронизация в корень хранилища»**.
 2. Скопируйте папку `examples` из репозитория плагина в корень вашего хранилища и переименуйте её в `.github`.
-3. Создайте [GitHub Fine-grained Token](https://github.com/settings/personal-access-tokens) с доступом только к вашему репозиторию (Contents: Read-only). Или [Classic Token](https://github.com/settings/tokens) со скопом `repo`.
-4. Добавьте токен как секрет `NTFY_TOPIC` в настройки вашего репозитория на GitHub (Settings → Secrets → Actions).
-5. Настройте автоматический `git push` (например, через плагин Obsidian Git).
+3. Включите в настройках плагина проверку просроченных задач через GitHub Actions.
+4. Добавьте topic из ntfy.sh как секрет `NTFY_TOPIC` в настройки вашего репозитория на GitHub (Settings → Secrets → Actions). Если секрет не задан, workflow возьмёт topic из `calendar-data/notifications.json`.
+5. Убедитесь, что в репозиторий попадают файлы `calendar-data/taskTracker.json` и `calendar-data/notifications.json`.
+6. Настройте автоматический `git push` (например, через плагин Obsidian Git).
 
-> **Примечание:** GitHub Actions workflow использует ntfy.sh для отправки уведомлений — токен нужен только для чтения задач из репозитория, а не для отправки уведомлений напрямую.
+> **Примечание:** отдельный GitHub Personal Access Token для этого workflow не нужен. Action читает задачи из файла `calendar-data/taskTracker.json` в текущем репозитории и отправляет уведомления в `https://ntfy.sh/<topic>`.
 
 ---
 

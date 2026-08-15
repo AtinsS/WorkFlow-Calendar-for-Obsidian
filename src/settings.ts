@@ -6,6 +6,11 @@ import { get } from "svelte/store";
 
 import { DEFAULT_WORDS_PER_DOT } from "src/constants";
 import { FolderSuggestModal } from "./modals/FolderSuggestModal";
+import {
+  clearNotificationHistory,
+  loadNotificationDiagnostics,
+  recordNotificationEvent,
+} from "./services/notificationTelemetry";
 
 import type CalendarPlugin from "./main";
 
@@ -23,10 +28,16 @@ export interface ISettings {
 
   // Task Tracker settings
   taskTrackerCollapsed: boolean;
+  showTaskTracker?: boolean; // show/hide task tracker in sidebar
+  showSchedule?: boolean; // show/hide schedule view
+
+  // Dashboard widget settings
+  dashboardShowTasks?: boolean;
+  dashboardShowHabits?: boolean;
+  dashboardShowFinance?: boolean;
 
   // Hello view settings
   userName?: string;
-  helloShowHabits?: boolean;
   helloShowTasksBtn?: boolean;
   helloShowAnalyticsBtn?: boolean;
   helloShowFinanceBtn?: boolean;
@@ -121,6 +132,8 @@ export interface ISettings {
   singularityAutoSync?: boolean;
   singularitySyncInterval?: number; // minutes, default 5
   singularitySyncDirection?: "both" | "push" | "pull";
+  singularitySyncDryRun?: boolean; // log actions without making API calls
+  singularitySyncExcludeTags?: string; // comma-separated tags to exclude from sync
   singularityLastSync?: number; // epoch ms
   singularityProjectMap?: Record<string, string>; // localProjectId -> singularityProjectId
 
@@ -146,13 +159,17 @@ export const defaultSettings = Object.freeze({
 
   localeOverride: "system-default",
 
-  helloShowHabits: true,
+  dashboardShowTasks: true,
+  dashboardShowHabits: true,
+  dashboardShowFinance: true,
   helloShowTasksBtn: true,
   helloShowAnalyticsBtn: true,
   helloShowFinanceBtn: true,
   helloShowScheduleBtn: true,
 
   taskTrackerCollapsed: false,
+  showTaskTracker: true,
+  showSchedule: true,
 
   syncAllTasksToNotes: false,
   tasksFolderPath: "Tasks",
@@ -219,6 +236,8 @@ export const defaultSettings = Object.freeze({
   singularityAutoSync: false,
   singularitySyncInterval: 5,
   singularitySyncDirection: "both" as "both" | "push" | "pull",
+  singularitySyncDryRun: false,
+  singularitySyncExcludeTags: "",
   singularityProjectMap: {},
 
   navBtnColor: "",
@@ -400,6 +419,58 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addDtwShowOnAllPagesSetting(general);
     this.addUserNameSetting(general);
 
+    general.createEl("h4", { text: "Виджеты дашборда" });
+
+    new Setting(general)
+      .setName("Виджет задач на сегодня")
+      .setDesc("Показывать количество задач и прогресс-бар в дашборде")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.dashboardShowTasks !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ dashboardShowTasks: value });
+        });
+      });
+
+    new Setting(general)
+      .setName("Виджет привычек")
+      .setDesc("Показывать streak и выполненные привычки в дашборде")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.dashboardShowHabits !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ dashboardShowHabits: value });
+        });
+      });
+
+    new Setting(general)
+      .setName("Виджет финансов")
+      .setDesc("Показывать баланс месяца и прогресс цели в дашборде")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.dashboardShowFinance !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ dashboardShowFinance: value });
+        });
+      });
+
+    new Setting(general)
+      .setName("Показывать трекер задач")
+      .setDesc("Отображать панель задач в боковой панели и ribbon-иконку")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.showTaskTracker !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ showTaskTracker: value });
+        });
+      });
+
+    new Setting(general)
+      .setName("Показывать расписание")
+      .setDesc("Отображать вид расписания и ribbon-иконку")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.showSchedule !== false);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ showSchedule: value });
+        });
+      });
+
     // Colors tab
     const colors = tabContainers["colors"];
     colors.createEl("h3", { text: "Внешний вид" });
@@ -466,16 +537,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
             await this.plugin.writeOptions({ userName: value });
           });
         text.inputEl.style.maxWidth = "250px";
-      });
-
-    new Setting(container)
-      .setName("Показывать привычки в приветствии")
-      .setDesc("Отображать карточку привычек на сегодня в блоке приветствия")
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.helloShowHabits !== false);
-        toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ helloShowHabits: value });
-        });
       });
 
     new Setting(container)
@@ -1237,14 +1298,47 @@ priority: medium
           .setWarning()
           .onClick(async () => {
             const topic = this.plugin.options.ntfyTopic;
+            const body = "Тестовое уведомление из WorkLife Calendar";
+            if (!topic) {
+              await recordNotificationEvent(this.app, {
+                channel: "ntfy",
+                status: "failed",
+                title: "Тест ntfy.sh",
+                body,
+                source: "settings-test",
+                error: "ntfy.sh topic is empty",
+              });
+              alert("Topic для ntfy.sh пустой.");
+              return;
+            }
             try {
-              await requestUrl({
-                url: `https://ntfy.sh/${topic}`,
+              const response = await requestUrl({
+                url: `https://ntfy.sh/${encodeURIComponent(topic)}`,
                 method: "POST",
-                body: "Тестовое уведомление из WorkLife Calendar",
+                body,
+              });
+              if (response.status < 200 || response.status >= 300) {
+                throw new Error(`HTTP ${response.status}`);
+              }
+              await recordNotificationEvent(this.app, {
+                channel: "ntfy",
+                status: "sent",
+                title: "Тест ntfy.sh",
+                body,
+                source: "settings-test",
+                topic,
               });
               alert(`Тестовое уведомление отправлено в ${topic}`);
             } catch (e) {
+              await recordNotificationEvent(this.app, {
+                channel: "ntfy",
+                status: "failed",
+                title: "Тест ntfy.sh",
+                body,
+                source: "settings-test",
+                topic,
+                error: e instanceof Error ? e.message : String(e),
+              });
               alert(`Ошибка отправки: ${e}`);
             }
           }),
@@ -1264,9 +1358,9 @@ priority: medium
       <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
         <b>Требования:</b><br>
         1. Включите <b>Синхронизацию в корень хранилища</b> выше<br>
-        2. Настройте git push в репозиторий (Obsidian Git или вручную)<br>
-        3. Создайте токен: GitHub → Settings → Credentials → Personal access tokens (классический) с правами <code>repo</code> + <code>actions:write</code><br>
-        4. Вставьте токен в поле ниже
+        2. Скопируйте workflow из <code>examples/workflows/overdue-check.yml</code> в <code>.github/workflows/</code> вашего vault-репозитория<br>
+        3. Добавьте topic как секрет <code>NTFY_TOPIC</code> в GitHub Actions или оставьте topic в <code>calendar-data/notifications.json</code><br>
+        4. Настройте git push в репозиторий (Obsidian Git или вручную)
       </p>
     `;
     container.appendChild(ghDesc);
@@ -1284,34 +1378,180 @@ priority: medium
         });
       });
 
-    new Setting(container)
-      .setName("Vault репозиторий")
-      .setDesc("GitHub репозиторий с vault (формат: owner/repo)")
-      .addText((text) => {
-        text
-          .setPlaceholder("ссылка на репозиторий")
-          .setValue(this.plugin.options.vaultRepo || "")
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ vaultRepo: value });
-          });
-        text.inputEl.style.maxWidth = "300px";
+    this.addNotificationDiagnostics(container);
+  }
+
+  private addNotificationDiagnostics(container: HTMLElement): void {
+    container.createEl("h4", { text: "Диагностика и журнал" });
+
+    const panel = container.createDiv({ cls: "notification-diagnostics-panel" });
+    panel.style.cssText =
+      "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 12px; margin: 8px 0 18px; background: var(--background-secondary);";
+
+    const render = async () => {
+      panel.empty();
+      const diagnostics = await loadNotificationDiagnostics(this.app);
+      const permission = "Notification" in window
+        ? Notification.permission
+        : "unavailable";
+
+      const toolbar = panel.createDiv();
+      toolbar.style.cssText =
+        "display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;";
+      toolbar.createEl("div", {
+        text: "Состояние каналов",
+        cls: "setting-item-name",
+      });
+      const actions = toolbar.createDiv();
+      actions.style.cssText = "display: flex; gap: 6px; flex-wrap: wrap;";
+      const refreshBtn = actions.createEl("button", { text: "Обновить" });
+      refreshBtn.addClass("mod-cta");
+      refreshBtn.addEventListener("click", () => void render());
+      const clearBtn = actions.createEl("button", { text: "Очистить журнал" });
+      clearBtn.addEventListener("click", async () => {
+        await clearNotificationHistory(this.app);
+        await render();
       });
 
-    new Setting(container)
-      .setName("GitHub токен для Actions")
-      .setDesc(
-        "Personal access token с правами repo/public_repo + actions:write",
-      )
-      .addText((text) => {
-        text
-          .setPlaceholder("ghp_...")
-          .setValue(this.plugin.options.workflowToken || "")
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ workflowToken: value });
-          });
-        text.inputEl.type = "password";
-        text.inputEl.style.maxWidth = "300px";
-      });
+      const grid = panel.createDiv();
+      grid.style.cssText =
+        "display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-bottom: 14px;";
+
+      const addMetric = (label: string, value: string, tone: "ok" | "warn" | "bad" | "muted") => {
+        const item = grid.createDiv();
+        item.style.cssText =
+          "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px; background: var(--background-primary); min-height: 70px;";
+        item.createDiv({
+          text: label,
+          cls: "setting-item-description",
+        }).style.cssText = "font-size: 11px; margin-bottom: 6px;";
+        const valueEl = item.createDiv({ text: value });
+        const color =
+          tone === "ok"
+            ? "var(--text-success, #3dd68c)"
+            : tone === "bad"
+              ? "var(--text-error, #f06565)"
+              : tone === "warn"
+                ? "var(--text-warning, #f5a623)"
+                : "var(--text-muted)";
+        valueEl.style.cssText = `font-size: 13px; font-weight: 600; color: ${color}; word-break: break-word;`;
+      };
+
+      addMetric(
+        "Локальные уведомления",
+        `${this.plugin.options.notificationsEnabled ? "включены" : "выключены"} · ${this.formatNotificationPermission(permission)}`,
+        this.plugin.options.notificationsEnabled && permission === "granted" ? "ok" : "warn"
+      );
+      addMetric(
+        "ntfy.sh",
+        this.plugin.options.ntfyEnabled
+          ? this.plugin.options.ntfyTopic || diagnostics.ntfyTopic
+            ? `включён · ${this.plugin.options.ntfyTopic || diagnostics.ntfyTopic}`
+            : "включён, но topic пустой"
+          : "выключен",
+        this.plugin.options.ntfyEnabled
+          ? (this.plugin.options.ntfyTopic || diagnostics.ntfyTopic ? "ok" : "bad")
+          : "muted"
+      );
+      addMetric(
+        "GitHub Actions",
+        this.plugin.options.overdueCheckEnabled
+          ? diagnostics.lastGithubActionStatus || "ожидает запуска"
+          : "выключены",
+        this.plugin.options.overdueCheckEnabled
+          ? diagnostics.lastGithubActionStatus === "failed" ? "bad" : "ok"
+          : "muted"
+      );
+      addMetric(
+        "Последняя проверка",
+        this.formatTelemetryDate(diagnostics.lastGithubActionCheck || diagnostics.lastOverdueCheck),
+        diagnostics.lastGithubActionCheck || diagnostics.lastOverdueCheck ? "ok" : "muted"
+      );
+
+      const details = panel.createDiv();
+      details.style.cssText =
+        "display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-bottom: 14px;";
+      const addDetail = (label: string, value: string) => {
+        const row = details.createDiv();
+        row.style.cssText =
+          "display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--background-primary); border: 1px solid var(--background-modifier-border);";
+        row.createDiv({ text: label }).style.cssText =
+          "font-size: 11px; color: var(--text-muted);";
+        row.createDiv({ text: value }).style.cssText =
+          "font-size: 12px; color: var(--text-normal); word-break: break-word;";
+      };
+
+      addDetail("Последний ntfy", `${this.formatTelemetryDate(diagnostics.lastNtfyAt)} · ${diagnostics.lastNtfyStatus || "—"}`);
+      addDetail("Ошибка ntfy", diagnostics.lastNtfyError || "—");
+      addDetail("Сообщение GitHub Actions", diagnostics.lastGithubActionMessage || "—");
+      addDetail("Ошибка GitHub Actions", diagnostics.lastGithubActionError || "—");
+
+      panel.createEl("div", {
+        text: "История уведомлений",
+        cls: "setting-item-name",
+      }).style.cssText = "margin: 8px 0;";
+
+      const historyWrap = panel.createDiv();
+      historyWrap.style.cssText =
+        "display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto;";
+
+      if (diagnostics.history.length === 0) {
+        historyWrap.createDiv({
+          text: "Журнал пока пуст. Отправьте тест ntfy.sh или дождитесь первого уведомления.",
+          cls: "setting-item-description",
+        }).style.cssText = "padding: 8px 2px;";
+        return;
+      }
+
+      for (const entry of diagnostics.history.slice(0, 12)) {
+        const row = historyWrap.createDiv();
+        row.style.cssText =
+          "display: grid; grid-template-columns: minmax(90px, 120px) 1fr auto; gap: 8px; align-items: start; border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 8px 10px; background: var(--background-primary);";
+        row.createDiv({
+          text: this.formatTelemetryDate(entry.createdAt),
+        }).style.cssText = "font-size: 11px; color: var(--text-muted);";
+
+        const content = row.createDiv();
+        content.createDiv({ text: entry.title }).style.cssText =
+          "font-size: 12px; font-weight: 600; color: var(--text-normal); margin-bottom: 2px;";
+        content.createDiv({ text: entry.body }).style.cssText =
+          "font-size: 12px; color: var(--text-muted); white-space: pre-wrap; word-break: break-word;";
+        if (entry.error) {
+          content.createDiv({ text: entry.error }).style.cssText =
+            "font-size: 11px; color: var(--text-error, #f06565); margin-top: 3px;";
+        }
+
+        const badge = row.createDiv({ text: `${entry.channel} · ${entry.status}` });
+        const badgeColor = entry.status === "sent"
+          ? "var(--text-success, #3dd68c)"
+          : entry.status === "failed"
+            ? "var(--text-error, #f06565)"
+            : "var(--text-muted)";
+        badge.style.cssText =
+          `font-size: 11px; color: ${badgeColor}; white-space: nowrap;`;
+      }
+    };
+
+    void render();
+  }
+
+  private formatNotificationPermission(permission: string): string {
+    if (permission === "granted") return "разрешены браузером";
+    if (permission === "denied") return "запрещены браузером";
+    if (permission === "default") return "нужно разрешение браузера";
+    return "браузерные уведомления недоступны";
+  }
+
+  private formatTelemetryDate(value?: string): string {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   private async syncNotificationSettingsToVault(overrides?: { overdueCheckEnabled?: boolean; ntfyTopic?: string }): Promise<void> {
@@ -1571,6 +1811,29 @@ priority: medium
             singularitySyncDirection: value as "both" | "push" | "pull",
           });
         });
+      });
+
+    new Setting(container)
+      .setName("Тестовый режим (dry run)")
+      .setDesc("Логировать все действия синхронизации без реальных API вызовов")
+      .addToggle((toggle) => {
+        toggle.setValue(!!this.plugin.options.singularitySyncDryRun);
+        toggle.onChange(async (value) => {
+          await this.plugin.writeOptions({ singularitySyncDryRun: value });
+        });
+      });
+
+    new Setting(container)
+      .setName("Исключить теги")
+      .setDesc("Задачи с этими тегами не будут синхронизированы (через запятую, например: GC,nd,no-sync)")
+      .addText((text) => {
+        text
+          .setPlaceholder("GC,nd")
+          .setValue(this.plugin.options.singularitySyncExcludeTags || "")
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ singularitySyncExcludeTags: value });
+          });
+        text.inputEl.style.maxWidth = "300px";
       });
 
     // Last sync info

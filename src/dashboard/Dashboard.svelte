@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
+  import moment from "moment";
   import type { App } from "obsidian";
   import { FileSuggestModal } from "../modals/FileSuggestModal";
   import type { DashboardData, DashboardCard } from "./types";
@@ -12,8 +14,13 @@
     addLink,
     deleteLink,
   } from "./storage";
+  import { tasks } from "../task-tracker/stores";
+  import { habits, habitLogs } from "../habit-tracker/stores";
+  import { getCurrentMonthKey, financeData } from "../finance/storage";
+  import { settings } from "../ui/stores";
 
   export let appInstance: App;
+  export let filePath: string | undefined = undefined;
 
   let data: DashboardData = { cards: [] };
   let editingCard: DashboardCard | null = null;
@@ -30,8 +37,69 @@
   let newCardTitle = "";
   let newCardIcon = "📁";
 
+  // Widget settings
+  $: showTasksWidget = $settings.dashboardShowTasks !== false;
+  $: showHabitsWidget = $settings.dashboardShowHabits !== false;
+  $: showFinanceWidget = $settings.dashboardShowFinance !== false;
+
+  // Tasks widget data
+  $: todayStr = moment().format("YYYY-MM-DD");
+  $: todayDateUID = `day-${moment().startOf("day").format()}`;
+  $: todayTasks = $tasks.filter((t) => t.dateUID === todayDateUID);
+  $: todayDone = todayTasks.filter((t) => t.status === "done").length;
+  $: todayTotal = todayTasks.length;
+  $: todayProgress = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
+
+  // Habits widget data
+  $: activeHabits = $habits.filter((h) => {
+    if (h.archived) return false;
+    const m = moment(todayStr, "YYYY-MM-DD");
+    if (h.frequency === "weekly" && h.customDays && h.customDays.length > 0) {
+      return h.customDays.includes(m.day());
+    }
+    if (h.frequency === "monthly") {
+      return m.date() === (h.monthlyDay || 1);
+    }
+    return true;
+  });
+
+  $: habitDoneCount = activeHabits.filter((h) => {
+    const log = $habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
+    return log?.completed || false;
+  }).length;
+
+  $: habitTotalCount = activeHabits.length;
+
+  // Streak calculation (sum of all active habits' streaks)
+  $: totalStreak = (() => {
+    let streak = 0;
+    for (const habit of activeHabits) {
+      let d = moment(todayStr, "YYYY-MM-DD");
+      let s = 0;
+      while (true) {
+        const log = $habitLogs.find((l) => l.habitId === habit.id && l.date === d.format("YYYY-MM-DD"));
+        if (log?.completed) { s++; d = d.subtract(1, "day"); }
+        else break;
+      }
+      streak += s;
+    }
+    return streak;
+  })();
+
+  // Finance widget data — depend on $financeData store for reactivity
+  $: monthKey = getCurrentMonthKey();
+  $: monthData = (() => {
+    const allData = $financeData;
+    if (!allData[monthKey]) return null;
+    return allData[monthKey];
+  })();
+  $: financeIncome = monthData?.monthlyIncome || 0;
+  $: financeExpenses = monthData?.mainAccountCategories?.reduce((s, c) => s + c.amount, 0) || 0;
+  $: financeBalance = financeIncome - financeExpenses;
+  $: primaryGoal = monthData?.monthGoals?.[0];
+
   onMount(async () => {
-    data = await loadDashboard(appInstance);
+    data = await loadDashboard(appInstance, filePath);
   });
 
   function openEditCard(card: DashboardCard) {
@@ -46,15 +114,15 @@
     await updateCard(appInstance, editingCard.id, {
       title: editingCardTitle,
       icon: editingCardIcon,
-    });
-    data = await loadDashboard(appInstance);
+    }, filePath);
+    data = await loadDashboard(appInstance, filePath);
     showCardModal = false;
     editingCard = null;
   }
 
   async function removeCard(cardId: string) {
-    await deleteCard(appInstance, cardId);
-    data = await loadDashboard(appInstance);
+    await deleteCard(appInstance, cardId, filePath);
+    data = await loadDashboard(appInstance, filePath);
   }
 
   function openAddLink(cardId: string) {
@@ -66,21 +134,21 @@
 
   async function saveNewLink() {
     if (!addingLinkToCardId || !newLinkLabel) return;
-    await addLink(appInstance, addingLinkToCardId, newLinkLabel, newLinkPath);
-    data = await loadDashboard(appInstance);
+    await addLink(appInstance, addingLinkToCardId, newLinkLabel, newLinkPath, filePath);
+    data = await loadDashboard(appInstance, filePath);
     showLinkModal = false;
     addingLinkToCardId = null;
   }
 
   async function removeLink(cardId: string, linkId: string) {
-    await deleteLink(appInstance, cardId, linkId);
-    data = await loadDashboard(appInstance);
+    await deleteLink(appInstance, cardId, linkId, filePath);
+    data = await loadDashboard(appInstance, filePath);
   }
 
   async function createNewCard() {
     if (!newCardTitle) return;
-    await addCard(appInstance, newCardTitle, newCardIcon);
-    data = await loadDashboard(appInstance);
+    await addCard(appInstance, newCardTitle, newCardIcon, filePath);
+    data = await loadDashboard(appInstance, filePath);
     showAddCardModal = false;
     newCardTitle = "";
     newCardIcon = "📁";
@@ -113,6 +181,56 @@
 </script>
 
 <div class="dashboard">
+  <!-- Widgets row -->
+  {#if showTasksWidget || showHabitsWidget || showFinanceWidget}
+    <div class="dashboard__widgets">
+      {#if showTasksWidget}
+        <div class="dash-widget dash-widget--tasks">
+          <div class="dash-widget__icon">✅</div>
+          <div class="dash-widget__info">
+            <div class="dash-widget__label">Задачи на сегодня</div>
+            <div class="dash-widget__value">{todayDone} / {todayTotal}</div>
+            {#if todayTotal > 0}
+              <div class="dash-widget__bar">
+                <div class="dash-widget__bar-fill" style="width: {todayProgress}%"></div>
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      {#if showHabitsWidget}
+        <div class="dash-widget dash-widget--habits">
+          <div class="dash-widget__icon">🔥</div>
+          <div class="dash-widget__info">
+            <div class="dash-widget__label">Привычки</div>
+            <div class="dash-widget__value">{habitDoneCount} / {habitTotalCount}</div>
+            {#if totalStreak > 0}
+              <div class="dash-widget__streak">Серия: {totalStreak} 🔥</div>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      {#if showFinanceWidget}
+        <div class="dash-widget dash-widget--finance">
+          <div class="dash-widget__icon">💰</div>
+          <div class="dash-widget__info">
+            <div class="dash-widget__label">Баланс месяца</div>
+            <div class="dash-widget__value" class:positive={financeBalance >= 0} class:negative={financeBalance < 0}>
+              {financeBalance.toLocaleString("ru-RU")} ₽
+            </div>
+            {#if primaryGoal}
+              <div class="dash-widget__goal">
+                {primaryGoal.icon} {primaryGoal.name}: {primaryGoal.currentAmount.toLocaleString("ru-RU")} / {primaryGoal.targetAmount.toLocaleString("ru-RU")} ₽
+              </div>
+            {/if}
+          </div>
+        </div>
+      {/if}
+    </div>
+  {/if}
+
   <div class="dashboard__grid">
     {#each data.cards as card, i (card.id)}
       <div class="dashboard-card" style="--card-index: {i}">
@@ -235,6 +353,92 @@
 {/if}
 
 <style>
+  /* Widgets */
+  .dashboard__widgets {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+
+  .dash-widget {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .dash-widget__icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .dash-widget__info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .dash-widget__label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .dash-widget__value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-normal);
+  }
+
+  .dash-widget__value.positive { color: var(--text-success, #3dd68c); }
+  .dash-widget__value.negative { color: var(--text-error, #f06565); }
+
+  .dash-widget__bar {
+    height: 4px;
+    background: var(--background-modifier-border);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+
+  .dash-widget__bar-fill {
+    height: 100%;
+    background: var(--interactive-accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .dash-widget__streak {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .dash-widget__goal {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  @media (max-width: 600px) {
+    .dashboard__widgets {
+      flex-direction: column;
+    }
+    .dash-widget {
+      min-width: 0;
+    }
+  }
+
   /* Card actions */
   .dashboard-card__header {
     display: flex;

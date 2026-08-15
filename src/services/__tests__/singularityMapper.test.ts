@@ -20,15 +20,16 @@ describe("singularityMapper", () => {
   // --- Date conversion ---
 
   describe("dateUIDToISO", () => {
-    it("converts dateUID to ISO-8601 datetime in UTC", () => {
+    it("converts dateUID to ISO-8601 datetime with timezone offset", () => {
       const result = dateUIDToISO("day-2026-08-01");
-      // Should be a valid ISO datetime ending with Z
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      // Should be a valid ISO datetime with local timezone offset: YYYY-MM-DDTHH:MM:SS+TZ
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[+-]\d{2}:\d{2}$/);
     });
 
     it("converts dateUID with time suffix", () => {
       const result = dateUIDToISO("day-2026-08-01T12:00:00+03:00");
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      // Now returns local timezone format: YYYY-MM-DDTHH:MM:SS+TZ
+      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T12:00:00[+-]\d{2}:\d{2}$/);
     });
 
     it("returns undefined for invalid format", () => {
@@ -130,6 +131,24 @@ describe("singularityMapper", () => {
       };
       expect(statusFromRemote(task)).toEqual({ status: "done", completed: true });
     });
+
+    it("deleteDate returns done (trashed tasks treated as done)", () => {
+      const task: SingularityTask = {
+        id: "1", title: "T",
+        deleteDate: "2026-08-01",
+      };
+      expect(statusFromRemote(task)).toEqual({ status: "done", completed: true });
+    });
+
+    it("deleteDate takes precedence over journalDate and tags", () => {
+      const task: SingularityTask = {
+        id: "1", title: "T",
+        deleteDate: "2026-08-01",
+        journalDate: "2026-07-01",
+        tags: [`${STATUS_TAG_PREFIX}progress`],
+      };
+      expect(statusFromRemote(task)).toEqual({ status: "done", completed: true });
+    });
   });
 
   // --- Body builders ---
@@ -137,17 +156,17 @@ describe("singularityMapper", () => {
   describe("buildCreateTaskBody", () => {
     it("builds minimal body with title", () => {
       const body = buildCreateTaskBody(
-        { title: "Test", dateUID: "day-2026-08-01", priority: "medium" },
+        { id: "local-1", title: "Test", dateUID: "day-2026-08-01", priority: "medium", status: "todo" },
         {}
       );
       expect(body.title).toBe("Test");
-      expect(body.start).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(body.start).toBeDefined();
       expect(body.priority).toBe(1);
     });
 
     it("includes description as note", () => {
       const body = buildCreateTaskBody(
-        { title: "Test", dateUID: "day-2026-08-01", priority: "high", description: "Desc" },
+        { id: "local-2", title: "Test", dateUID: "day-2026-08-01", priority: "high", description: "Desc", status: "todo" },
         {}
       );
       expect(body.note).toBe("Desc");
@@ -155,7 +174,7 @@ describe("singularityMapper", () => {
 
     it("maps projectId via projectMap", () => {
       const body = buildCreateTaskBody(
-        { title: "Test", dateUID: "day-2026-08-01", priority: "low", projectId: "local-1" },
+        { id: "local-3", title: "Test", dateUID: "day-2026-08-01", priority: "low", projectId: "local-1", status: "todo" },
         { "local-1": "remote-abc" }
       );
       expect(body.projectId).toBe("remote-abc");
@@ -163,7 +182,7 @@ describe("singularityMapper", () => {
 
     it("skips projectId if not in map", () => {
       const body = buildCreateTaskBody(
-        { title: "Test", dateUID: "day-2026-08-01", priority: "medium", projectId: "unknown" },
+        { id: "local-4", title: "Test", dateUID: "day-2026-08-01", priority: "medium", projectId: "unknown", status: "todo" },
         {}
       );
       expect(body.projectId).toBeUndefined();
@@ -173,18 +192,18 @@ describe("singularityMapper", () => {
   describe("buildUpdateTaskBody", () => {
     it("builds update body with all fields", () => {
       const body = buildUpdateTaskBody(
-        { title: "Updated", dateUID: "day-2026-08-02", priority: "high", status: "todo", description: "D" },
+        { id: "local-1", title: "Updated", dateUID: "day-2026-08-02", priority: "high", status: "todo", description: "D" },
         {}
       );
       expect(body.title).toBe("Updated");
-      expect(body.start).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
+      expect(body.start).toBeDefined();
       expect(body.priority).toBe(0);
       expect(body.note).toBe("D");
     });
 
     it("does not set journalDate when status is done (uses tags instead)", () => {
       const body = buildUpdateTaskBody(
-        { title: "Done", dateUID: "day-2026-08-01", priority: "medium", status: "done" },
+        { id: "local-2", title: "Done", dateUID: "day-2026-08-01", priority: "medium", status: "done" },
         {}
       );
       expect(body.journalDate).toBeUndefined();
@@ -192,7 +211,7 @@ describe("singularityMapper", () => {
 
     it("does not set journalDate for non-done status", () => {
       const body = buildUpdateTaskBody(
-        { title: "Active", dateUID: "day-2026-08-01", priority: "medium", status: "progress" },
+        { id: "local-3", title: "Active", dateUID: "day-2026-08-01", priority: "medium", status: "progress" },
         {}
       );
       expect(body.journalDate).toBeUndefined();

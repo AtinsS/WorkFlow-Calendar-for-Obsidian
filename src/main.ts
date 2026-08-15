@@ -268,11 +268,13 @@ export default class CalendarPlugin extends Plugin {
     document.querySelectorAll("[data-mcp-ribbon]").forEach(el => el.remove());
 
     if (!this.ribbonIconsRegistered) {
-      const tasksIcon = this.addRibbonIcon("checkbox-glyph", "Задачи", () => {
-        this.activateTaskView();
-      });
-      tasksIcon.dataset.mcpRibbon = "true";
-      this.ribbonIcons.push(tasksIcon);
+      if (this.options.showTaskTracker !== false) {
+        const tasksIcon = this.addRibbonIcon("checkbox-glyph", "Задачи", () => {
+          this.activateTaskView();
+        });
+        tasksIcon.dataset.mcpRibbon = "true";
+        this.ribbonIcons.push(tasksIcon);
+      }
 
       const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", "Календарь", () => {
         this.activateCalendarView();
@@ -360,7 +362,8 @@ export default class CalendarPlugin extends Plugin {
 
     // Register dashboard code block processor
     safeRegisterMarkdownCodeBlockProcessor("dashboard", (_source, el) => {
-      new Dashboard({ target: el, props: { appInstance: this.app } });
+      const activeFile = this.app.workspace.getActiveFile();
+      new Dashboard({ target: el, props: { appInstance: this.app, filePath: activeFile?.path } });
     });
 
     // Register hello code block processor
@@ -622,12 +625,7 @@ export default class CalendarPlugin extends Plugin {
       });
     }
 
-    // Open tasks in main content area
-    const existingTaskLeaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_TASKS);
-    if (existingTaskLeaves.length === 0) {
-      const leaf = this.app.workspace.getLeaf("tab");
-      leaf.setViewState({ type: VIEW_TYPE_TASKS });
-    }
+    // Task tracker is NOT auto-opened on startup — user opens it via ribbon icon or command
   }
 
   private async activateView(viewType: string): Promise<void> {

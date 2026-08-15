@@ -46,6 +46,7 @@ jest.mock("obsidian", () => ({
   },
   TFile: class TFile {},
   normalizePath: () => "",
+  requestUrl: jest.fn().mockResolvedValue({ status: 200, text: "{}", json: {} }),
 }));
 
 // Add minimal SuggestModal, App and TFolder mocks used by tests

@@ -6,6 +6,7 @@ import { tasks } from "src/task-tracker/stores";
 import type { ITask } from "src/task-tracker/types";
 import type { ISettings } from "src/settings";
 import { getActiveTimer } from "src/task-tracker/TimerManager";
+import { recordNotificationEvent } from "./notificationTelemetry";
 
 const DEFAULT_CHECK_INTERVAL_MS = 60_000; // 1 minute
 const DEFAULT_REMINDER_MINUTES = 5;
@@ -113,7 +114,8 @@ export class NotificationService {
             this.firedReminders.add(reminderKey);
             this.notify(
               `📅 WorkLIfe Calendar`,
-              `⏱️ Напоминание: ${task.title}\nЗадача через ${this.getSettings().reminderMinutesBefore} мин (${task.scheduledTime})`
+              `⏱️ Напоминание: ${task.title}\nЗадача через ${this.getSettings().reminderMinutesBefore} мин (${task.scheduledTime})`,
+              "reminder"
             );
           }
 
@@ -122,7 +124,8 @@ export class NotificationService {
             this.firedOverdue.add(overdueKey);
             this.notify(
               `📅 WorkLIfe Calendar`,
-              `‼️ Просрочено: ${task.title}\nЗапланировано на ${task.scheduledTime}`
+              `‼️ Просрочено: ${task.title}\nЗапланировано на ${task.scheduledTime}`,
+              "overdue"
             );
           }
         }
@@ -145,7 +148,8 @@ export class NotificationService {
             const actStr = actH > 0 ? `${actH}ч ${actM > 0 ? actM + 'м' : ''}` : `${actM}м`;
             this.notify(
               `📅 WorkLIfe Calendar`,
-              `⏰ Превышен лимит: ${task.title}\nОжидается: ${estStr} · Факт: ${actStr}`
+              `⏰ Превышен лимит: ${task.title}\nОжидается: ${estStr} · Факт: ${actStr}`,
+              "estimate-exceeded"
             );
           }
         }
@@ -169,7 +173,8 @@ export class NotificationService {
             const timeStr = task.deadlineTime ? ` в ${task.deadlineTime}` : "";
             this.notify(
               `📅 WorkLIfe Calendar`,
-              `🎯 Дедлайн сегодня: ${task.title}${timeStr}`
+              `🎯 Дедлайн сегодня: ${task.title}${timeStr}`,
+              "deadline-today"
             );
           }
 
@@ -182,7 +187,8 @@ export class NotificationService {
                 this.firedDeadline.add(deadlineEndKey);
                 this.notify(
                   `📅 WorkLIfe Calendar`,
-                  `🔴 Дедлайн истёк: ${task.title}\nВремя: ${task.deadlineTime}`
+                  `🔴 Дедлайн истёк: ${task.title}\nВремя: ${task.deadlineTime}`,
+                  "deadline-expired"
                 );
               }
             }
@@ -195,7 +201,8 @@ export class NotificationService {
             const timeStr = task.deadlineTime ? ` в ${task.deadlineTime}` : "";
             this.notify(
               `📅 WorkLIfe Calendar`,
-              `⏰ Дедлайн завтра: ${task.title}${timeStr}`
+              `⏰ Дедлайн завтра: ${task.title}${timeStr}`,
+              "deadline-tomorrow"
             );
           }
         }
@@ -213,7 +220,7 @@ export class NotificationService {
     return moment(`${dateStr} ${task.scheduledTime}`, "YYYY-MM-DD HH:mm", true);
   }
 
-  private notify(title: string, body: string): void {
+  private notify(title: string, body: string, source: string): void {
     if (!("Notification" in window) || (Notification as any).permission !== "granted") return;
 
     const notification = new (Notification as any)(title, {
@@ -228,19 +235,60 @@ export class NotificationService {
     // Auto-close after 10 seconds
     setTimeout(() => notification.close(), 10_000);
 
+    void recordNotificationEvent(this.plugin.app, {
+      channel: "browser",
+      status: "sent",
+      title,
+      body,
+      source,
+    }).catch((e) => console.warn("[notification] history write failed:", e));
+
     // Also send via ntfy.sh if enabled
-    this.sendNtfy(body);
+    this.sendNtfy(title, body, source);
   }
 
-  private sendNtfy(body: string): void {
+  private sendNtfy(title: string, body: string, source: string): void {
     const opts = this.plugin.options as ISettings;
-    if (!opts.ntfyEnabled || !opts.ntfyTopic) return;
+    if (!opts.ntfyEnabled) return;
+    if (!opts.ntfyTopic) {
+      void recordNotificationEvent(this.plugin.app, {
+        channel: "ntfy",
+        status: "failed",
+        title,
+        body,
+        source,
+        error: "ntfy.sh topic is empty",
+      }).catch((e) => console.warn("[ntfy] history write failed:", e));
+      return;
+    }
 
     requestUrl({
-      url: `https://ntfy.sh/${opts.ntfyTopic}`,
+      url: `https://ntfy.sh/${encodeURIComponent(opts.ntfyTopic)}`,
       method: "POST",
       body,
-    }).catch((e) => console.warn("[ntfy] send failed:", e));
+    }).then((response) => {
+      const status = response.status >= 200 && response.status < 300 ? "sent" : "failed";
+      return recordNotificationEvent(this.plugin.app, {
+        channel: "ntfy",
+        status,
+        title,
+        body,
+        source,
+        topic: opts.ntfyTopic,
+        error: status === "failed" ? `HTTP ${response.status}` : undefined,
+      });
+    }).catch((e) => {
+      console.warn("[ntfy] send failed:", e);
+      return recordNotificationEvent(this.plugin.app, {
+        channel: "ntfy",
+        status: "failed",
+        title,
+        body,
+        source,
+        topic: opts.ntfyTopic,
+        error: e instanceof Error ? e.message : String(e),
+      }).catch((historyError) => console.warn("[ntfy] history write failed:", historyError));
+    });
   }
 
   private ntfyPollTimer: ReturnType<typeof setInterval> | null = null;

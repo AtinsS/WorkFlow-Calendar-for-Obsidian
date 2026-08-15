@@ -75,7 +75,8 @@
     if ($taskFilter.projectId && t.projectId !== $taskFilter.projectId) return false;
     if (searchQuery && !t.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     if (t.deadline && t.status !== "done") return true;
-    if ($activeTab === "all") return t.status !== "done";
+    // When viewing all tasks (no date selected), show all statuses including done
+    if ($activeTab === "all") return showAllDates ? true : t.status !== "done";
     return t.status === $activeTab;
   });
 
@@ -396,7 +397,6 @@
           on:click|stopPropagation={() => { currentDate ? selectedDate.set(null) : goToday(); }}
           title={currentDate ? "Все задачи" : "Сегодня"}>📋</button>
         <button class="task-tracker-btn schedule-btn" on:click|stopPropagation={() => onOpenSchedule?.()} title="Расписание">📅</button>
-        <KanbanTabs />
         <button class="task-tracker-btn sort-btn" class:active={sortMode === "priority"}
           on:click|stopPropagation={toggleSortMode}
           title={sortMode === "time" ? "По времени" : "По приоритету"}>
@@ -417,6 +417,7 @@
         </div>
       </div>
     </div>
+    <KanbanTabs />
   {/if}
 
   {#if showSearch}
