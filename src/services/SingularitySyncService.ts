@@ -102,6 +102,7 @@ let syncing = false;
 let syncMap: SingularitySyncMap = createEmptySyncMap();
 let loaded = false;
 let skipNextPush = false; // flag to prevent re-push after updateTask(singularityId)
+let syncCycleActive = false; // suppresses all store-triggered pushes during doSync
 let skipNextProjectPush = false; // flag to prevent re-push after addProject from pull
 const skipPushTaskIds = new Set<string>(); // per-task skip flags to prevent missed pushes
 
@@ -560,7 +561,7 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
 // --- Sync Orchestration ---
 
 function schedulePush(): void {
-  if (!isEnabled() || !loaded) return;
+  if (!isEnabled() || !loaded || syncCycleActive) return;
 
   if (pushTimeout) clearTimeout(pushTimeout);
   pushTimeout = setTimeout(async () => {
@@ -576,6 +577,7 @@ async function doSync(direction: "push" | "pull" | "both"): Promise<void> {
 
   console.log(`[SingularitySync] doSync(${direction}) starting...`);
   syncing = true;
+  syncCycleActive = true;
   singularitySyncStatus.update((s) => ({ ...s, syncing: true, error: "" }));
 
   let pushed = 0;
@@ -636,11 +638,16 @@ async function doSync(direction: "push" | "pull" | "both"): Promise<void> {
     }));
   } finally {
     syncing = false;
+    syncCycleActive = false;
   }
 
   if (pushed || pulled) {
     console.log(`[SingularitySync] Sync complete: pushed=${pushed}, pulled=${pulled}, errors=${errors}`);
   }
+}
+
+export async function triggerManualSync(): Promise<void> {
+  await doSync("both");
 }
 
 // --- Polling ---
@@ -748,14 +755,26 @@ export async function initSingularitySync(plugin: CalendarPlugin): Promise<void>
     })
   );
 
-  // Subscribe to settings changes
+  // Subscribe to settings changes (only react to sync-relevant fields)
+  let prevAutoSync = get(settings).singularityAutoSync;
+  let prevToken = get(settings).singularityToken;
+  let prevInterval = get(settings).singularitySyncInterval;
   unsubscribers.push(
     settings.subscribe((s) => {
+      const autoSyncChanged = s.singularityAutoSync !== prevAutoSync;
+      const tokenChanged = s.singularityToken !== prevToken;
+      const intervalChanged = s.singularitySyncInterval !== prevInterval;
+      prevAutoSync = s.singularityAutoSync;
+      prevToken = s.singularityToken;
+      prevInterval = s.singularitySyncInterval;
+
+      // Ignore changes made by doSync itself (singularityLastSync etc.)
+      if (!autoSyncChanged && !tokenChanged && !intervalChanged) return;
+
       const wasConnected = get(singularitySyncStatus).connected;
       const hasToken = !!s.singularityToken;
 
-      if (hasToken && !wasConnected) {
-        // Token just added — verify
+      if (tokenChanged && hasToken && !wasConnected) {
         verifyToken(s.singularityToken!).then((result) => {
           singularitySyncStatus.update((st) => ({
             ...st,
@@ -765,10 +784,13 @@ export async function initSingularitySync(plugin: CalendarPlugin): Promise<void>
         });
       }
 
-      if (s.singularityAutoSync && hasToken) {
-        startPolling();
-      } else {
-        stopPolling();
+      // Only restart polling when sync-related settings actually change
+      if (autoSyncChanged || tokenChanged || intervalChanged) {
+        if (s.singularityAutoSync && hasToken) {
+          startPolling();
+        } else {
+          stopPolling();
+        }
       }
     })
   );
@@ -1468,9 +1490,16 @@ export async function syncChecklists(): Promise<void> {
     reverseChecklistMap.set(remoteId, localId);
   }
 
-  // Process each synced task
+  // Process each synced task (with delay to avoid 429 rate limit)
+  let taskIndex = 0;
   for (const task of localTasks) {
     if (!task.singularityId) continue;
+
+    // Throttle between tasks
+    if (taskIndex > 0) {
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    taskIndex++;
 
     try {
       // Fetch remote checklist items for this task
@@ -1607,6 +1636,11 @@ export async function syncChecklists(): Promise<void> {
 
     } catch (e) {
       console.warn(`[SingularitySync] Checklist sync failed for task ${task.id}:`, e);
+      // Stop entirely on rate limit — quota exhausted, continuing is pointless
+      if (e instanceof Error && e.message.includes("429")) {
+        console.warn("[SingularitySync] Rate limit hit, aborting checklist sync for this cycle");
+        break;
+      }
     }
   }
 

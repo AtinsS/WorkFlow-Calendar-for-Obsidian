@@ -6,7 +6,8 @@
   import { settings } from "../ui/stores";
   import { financeData } from "../finance/storage";
   import { getMonthGoals } from "../finance/storage";
-  import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
+  import { fetchWeekWeather, type DayWeather, getWeatherAttribution } from "../services/weatherService";
+  import { singularitySyncStatus, triggerManualSync } from "../services/SingularitySyncService";
   import { getDateUID } from "obsidian-daily-notes-interface";
   import moment from "moment";
 
@@ -216,7 +217,7 @@
       const lat = s.weatherLatitude ?? 55.75;
       const lon = s.weatherLongitude ?? 37.62;
       const today = new Date().toISOString().slice(0, 10);
-      const days = await fetchWeekWeather(lat, lon, today, today);
+      const days = await fetchWeekWeather(lat, lon, today, today, s.weatherProvider as any, s.weatherApiKey);
       weather = days.length > 0 ? days[0] : null;
     } catch {
       weather = null;
@@ -257,7 +258,7 @@
   </span>
   {#if weather}
     <span class="dtw-sep"></span>
-    <span class="dtw-item">
+    <span class="dtw-item" title={getWeatherAttribution($settings.weatherProvider)}>
       <span class="dtw-icon">{weather.icon}</span>
       <span>{weather.tempMin}..{weather.tempMax}° {weather.label}</span>
     </span>
@@ -324,6 +325,20 @@
       {:else}
         <span>Цели: {monthGoals.filter(g => g.done).length}/{monthGoals.length}</span>
       {/if}
+    </span>
+  {/if}
+  {#if $settings.singularityAutoSync && $settings.singularityToken}
+    <span class="dtw-sep"></span>
+    <span
+      class="dtw-item dtw-hoverable dtw-sync"
+      class:syncing={$singularitySyncStatus.syncing}
+      on:click={() => triggerManualSync()}
+      title={$singularitySyncStatus.syncing ? "Синхронизация..." : $singularitySyncStatus.lastSync ? `Синхронизировано: ${$singularitySyncStatus.lastSync}` : "Синхронизировать"}
+    >
+      <svg class="dtw-sync-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <path d="M1.5 8a6.5 6.5 0 0 1 11.1-4.6M14.5 8a6.5 6.5 0 0 1-11.1 4.6" />
+        <path d="M12.5 1v2.5H10M3.5 15v-2.5H6" />
+      </svg>
     </span>
   {/if}
 </div>
@@ -400,5 +415,28 @@
   .dtw-habit-tooltip .dtw-habit-item-icon {
     font-size: 12px;
     flex-shrink: 0;
+  }
+
+  .dtw-sync {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 4px;
+    color: var(--text-muted);
+    transition: color 0.2s;
+  }
+  .dtw-sync:hover {
+    color: var(--text-normal);
+  }
+  .dtw-sync-icon {
+    display: inline-block;
+    transition: transform 0.3s ease;
+  }
+  .dtw-sync.syncing .dtw-sync-icon {
+    animation: dtw-spin 0.8s linear infinite;
+    color: var(--text-accent, var(--mcp-accent));
+  }
+  @keyframes dtw-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 </style>

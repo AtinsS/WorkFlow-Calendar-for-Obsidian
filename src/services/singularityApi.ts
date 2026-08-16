@@ -113,7 +113,8 @@ async function apiRequest<T>(
   method: string,
   path: string,
   body?: unknown,
-  retries = 3
+  retries = 3,
+  noRetry429 = false
 ): Promise<T> {
   const url = `${BASE_URL}${path}`;
   let lastError: Error | null = null;
@@ -138,7 +139,12 @@ async function apiRequest<T>(
 
       // Retry on rate limit (429) and transient server errors (5xx)
       if (status === 429 || (status >= 500 && status < 600)) {
-        const delayMs = Math.pow(2, attempt) * 1000;
+        const label = status === 429 ? "Превышен лимит запросов" : `Серверная ошибка ${status}`;
+        lastError = new Error(`SingularityApp: ${label} (${status})`);
+        if (status === 429 && noRetry429) {
+          throw lastError; // fail fast, caller handles backoff
+        }
+        const delayMs = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
         console.warn(`[SingularityApp] ${method} ${path} → ${status}, retrying in ${delayMs}ms (attempt ${attempt + 1}/${retries})`);
         await new Promise((r) => setTimeout(r, delayMs));
         continue;
@@ -609,7 +615,7 @@ export async function getChecklistItems(
 ): Promise<SingularityChecklistItem[]> {
   // SingularityApp uses "parent" to filter checklist items by task
   const result = await apiRequest<SingularityChecklistItem[] | ApiResponse<SingularityChecklistItem[]>>(
-    token, "GET", `/checklist-item?parent=${encodeURIComponent(taskId)}`
+    token, "GET", `/checklist-item?parent=${encodeURIComponent(taskId)}`, undefined, 3, true
   );
 
   console.log("[SingularityApp] getChecklistItems raw:", JSON.stringify(result).substring(0, 500));

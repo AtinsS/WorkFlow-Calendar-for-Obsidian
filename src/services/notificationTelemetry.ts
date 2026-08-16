@@ -123,7 +123,9 @@ export async function loadNotificationDiagnostics(
 export async function recordNotificationEvent(
   app: App,
   event: PartialHistoryEntry
-): Promise<NotificationHistoryEntry> {
+): Promise<NotificationHistoryEntry | null> {
+  const data = await loadModuleData(app, "notifications");
+  if (!data.ntfyEnabled) return null;
   const entry: NotificationHistoryEntry = {
     id: event.id || eventId(),
     createdAt: event.createdAt || nowIso(),

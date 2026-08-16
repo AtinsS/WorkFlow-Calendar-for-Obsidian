@@ -120,7 +120,7 @@
     const end = weekDays[6].format("YYYY-MM-DD");
     const lat = $settings.weatherLatitude ?? 55.75;
     const lon = $settings.weatherLongitude ?? 37.62;
-    fetchWeekWeather(lat, lon, start, end).then((days) => {
+    fetchWeekWeather(lat, lon, start, end, $settings.weatherProvider as any, $settings.weatherApiKey).then((days) => {
       const map = new Map<string, DayWeather>();
       for (const d of days) map.set(d.date, d);
       weatherByDate = map;

@@ -13,6 +13,7 @@ import {
 } from "./services/notificationTelemetry";
 
 import type CalendarPlugin from "./main";
+import { fetchWeekWeather, getWeatherAttribution, type WeatherProvider } from "./services/weatherService";
 
 export interface ISettings {
   wordsPerDot: number;
@@ -122,6 +123,8 @@ export interface ISettings {
   weatherEnabled: boolean;
   weatherLatitude: number;
   weatherLongitude: number;
+  weatherProvider?: string; // WeatherProvider: 'open-meteo' | 'openweathermap' | 'weatherapi' | 'visual-crossing'
+  weatherApiKey?: string;
 
   // Status bar
   showStatusBar: boolean;
@@ -381,12 +384,12 @@ export class CalendarSettingsTab extends PluginSettingTab {
     const tabBar = this.containerEl.createDiv({ cls: "settings-tab-bar" });
     const tabs: { key: string; label: string }[] = [
       { key: "general", label: "Общее" },
-      { key: "colors", label: "Цвета" },
+      { key: "dashboard", label: "Дашборд" },
       { key: "schedule", label: "Расписание" },
+      { key: "weather", label: "Погода" },
+      { key: "appearance", label: "Внешний вид" },
       { key: "sync", label: "Синхронизация" },
       { key: "notifications", label: "Уведомления" },
-      { key: "work", label: "Рабочие" },
-      { key: "nav", label: "Навигация" },
     ];
 
     const tabButtons: Record<string, HTMLButtonElement> = {};
@@ -415,13 +418,15 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // General tab
     const general = tabContainers["general"];
+    this.addUserNameSetting(general);
     this.addShowStatusBarSetting(general);
     this.addDtwShowOnAllPagesSetting(general);
-    this.addUserNameSetting(general);
+    this.addWorkTaskSettings(general);
 
-    general.createEl("h4", { text: "Виджеты дашборда" });
-
-    new Setting(general)
+    // Dashboard tab
+    const dashboard = tabContainers["dashboard"];
+    dashboard.createEl("h3", { text: "Виджеты дашборда" });
+    new Setting(dashboard)
       .setName("Виджет задач на сегодня")
       .setDesc("Показывать количество задач и прогресс-бар в дашборде")
       .addToggle((toggle) => {
@@ -430,8 +435,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
           await this.plugin.writeOptions({ dashboardShowTasks: value });
         });
       });
-
-    new Setting(general)
+    new Setting(dashboard)
       .setName("Виджет привычек")
       .setDesc("Показывать streak и выполненные привычки в дашборде")
       .addToggle((toggle) => {
@@ -440,8 +444,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
           await this.plugin.writeOptions({ dashboardShowHabits: value });
         });
       });
-
-    new Setting(general)
+    new Setting(dashboard)
       .setName("Виджет целей")
       .setDesc("Показывать цели месяца в дашборде")
       .addToggle((toggle) => {
@@ -450,22 +453,28 @@ export class CalendarSettingsTab extends PluginSettingTab {
           await this.plugin.writeOptions({ dashboardShowGoals: value });
         });
       });
-
-
-
-    // Colors tab
-    const colors = tabContainers["colors"];
-    colors.createEl("h3", { text: "Внешний вид" });
-    this.addAccentColorSetting(colors);
-    this.addGlassBgColorSetting(colors);
-    this.addColorSettings(colors);
+    dashboard.createEl("h3", { text: "Кнопки приветствия" });
+    this.addHelloButtonSettings(dashboard);
 
     // Schedule tab
     const schedule = tabContainers["schedule"];
     schedule.createEl("h3", { text: "Отображаемые элементы" });
     this.addScheduleDisplaySettings(schedule);
-    schedule.createEl("h3", { text: "Погода" });
-    this.addWeatherSettings(schedule);
+
+    // Weather tab
+    const weather = tabContainers["weather"];
+    this.addWeatherSettings(weather);
+
+    // Appearance tab
+    const appearance = tabContainers["appearance"];
+    appearance.createEl("h3", { text: "Цвета" });
+    this.addAccentColorSetting(appearance);
+    this.addGlassBgColorSetting(appearance);
+    this.addColorSettings(appearance);
+    appearance.createEl("h3", { text: "Навигация в заметках" });
+    this.addNavPanelInstructions(appearance);
+    appearance.createEl("h3", { text: "Стиль кнопок навигации" });
+    this.addNavBtnStyleSettings(appearance);
 
     // Sync tab
     const sync = tabContainers["sync"];
@@ -477,17 +486,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
     // Notifications tab
     const notif = tabContainers["notifications"];
     this.addNotificationSettings(notif);
-
-    // Work tab
-    const work = tabContainers["work"];
-    this.addWorkTaskSettings(work);
-
-    // Nav tab
-    const nav = tabContainers["nav"];
-    nav.createEl("h3", { text: "Панель навигации в заметках" });
-    this.addNavPanelInstructions(nav);
-    nav.createEl("h3", { text: "Стиль кнопок" });
-    this.addNavBtnStyleSettings(nav);
 
     // Store references for switchTab
     this._tabButtons = tabButtons;
@@ -520,7 +518,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
           });
         text.inputEl.style.maxWidth = "250px";
       });
+  }
 
+  addHelloButtonSettings(container: HTMLElement): void {
     new Setting(container)
       .setName("Кнопки навигации в приветствии")
       .setDesc("Выберите, какие кнопки отображать в приветствии");
@@ -694,7 +694,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(container)
       .setName("Показывать погоду")
       .setDesc(
-        "Отображать прогноз погоды в заголовках дней недели (Open-Meteo)",
+        "Отображать прогноз погоды в заголовках дней недели",
       )
       .addToggle((toggle) => {
         toggle.setValue(opts.weatherEnabled);
@@ -702,6 +702,60 @@ export class CalendarSettingsTab extends PluginSettingTab {
           await this.plugin.writeOptions({ weatherEnabled: value });
         });
       });
+
+    new Setting(container)
+      .setName("Провайдер погоды")
+      .setDesc("Выберите сервис для получения прогноза погоды")
+      .addDropdown((dropdown) => {
+        dropdown.addOption("open-meteo", "Open-Meteo (без ключа)");
+        dropdown.addOption("openweathermap", "OpenWeatherMap");
+        dropdown.addOption("weatherapi", "WeatherAPI");
+        dropdown.addOption("visual-crossing", "Visual Crossing");
+        dropdown.setValue(opts.weatherProvider || "open-meteo");
+        dropdown.onChange(async (value) => {
+          await this.plugin.writeOptions({ weatherProvider: value });
+          this.display(); // refresh to show/hide API key field
+        });
+      });
+
+    const provider = (opts.weatherProvider || "open-meteo") as WeatherProvider;
+    const needsKey = provider !== "open-meteo";
+
+    // Attribution notice
+    const attribution = getWeatherAttribution(provider);
+    if (attribution) {
+      const attrEl = container.createDiv();
+      attrEl.style.cssText = "font-size:11px;color:var(--text-faint);margin:-8px 0 8px 0;padding:0 16px;";
+      attrEl.textContent = attribution;
+    }
+
+    // WeatherAPI disclaimer (required by their TOS)
+    if (provider === "weatherapi") {
+      const disclaimerEl = container.createDiv();
+      disclaimerEl.style.cssText = "font-size:10px;color:var(--text-faint);margin:-4px 0 8px 0;padding:4px 16px;opacity:0.7;line-height:1.4;";
+      disclaimerEl.textContent = "Прогнозы носят информационный характер и могут быть неточными. Для важных решений обращайтесь к официальным метеослужбам.";
+    }
+
+    if (needsKey) {
+      const providerNames: Record<string, string> = {
+        "openweathermap": "OpenWeatherMap (openweathermap.org)",
+        "weatherapi": "WeatherAPI (weatherapi.com)",
+        "visual-crossing": "Visual Crossing (visualcrossing.com)",
+      };
+      new Setting(container)
+        .setName("API-ключ")
+        .setDesc(`Ключ для ${providerNames[provider] || provider}. Получите на сайте провайдера бесплатно.`)
+        .addText((text) => {
+          text
+            .setPlaceholder("Введите API-ключ...")
+            .setValue(opts.weatherApiKey || "")
+            .onChange(async (value) => {
+              await this.plugin.writeOptions({ weatherApiKey: value });
+            });
+          text.inputEl.type = "password";
+          text.inputEl.style.maxWidth = "280px";
+        });
+    }
 
     new Setting(container)
       .setName("Широта")
@@ -743,6 +797,50 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.style.maxWidth = "120px";
       });
 
+    // Test & confirm buttons
+    const btnRow = container.createDiv();
+    btnRow.style.cssText = "display:flex;gap:8px;margin:8px 0;";
+
+    const testBtn = btnRow.createEl("button", { text: "Проверить соединение" });
+    testBtn.style.cssText = "padding:4px 12px;border-radius:6px;cursor:pointer;font-size:13px;";
+    testBtn.addEventListener("click", async () => {
+      testBtn.disabled = true;
+      testBtn.textContent = "Проверка...";
+      testBtn.style.color = "";
+      const current = this.plugin.options;
+      const lat = current.weatherLatitude ?? 55.75;
+      const lon = current.weatherLongitude ?? 37.62;
+      const prov = (current.weatherProvider || "open-meteo") as WeatherProvider;
+      const key = current.weatherApiKey;
+      const today = new Date().toISOString().slice(0, 10);
+      try {
+        const days = await fetchWeekWeather(lat, lon, today, today, prov, key, { skipCache: true, throwOnError: true });
+        if (days.length > 0) {
+          testBtn.textContent = `✓ ${days[0].icon} ${days[0].tempMin}..${days[0].tempMax}° ${days[0].label}`;
+          testBtn.style.color = "var(--color-green)";
+        } else {
+          testBtn.textContent = "✗ Нет данных — проверьте API-ключ";
+          testBtn.style.color = "var(--color-red)";
+        }
+      } catch (e: any) {
+        testBtn.textContent = `✗ ${e?.message || "Ошибка подключения"}`;
+        testBtn.style.color = "var(--color-red)";
+      }
+      setTimeout(() => {
+        testBtn.disabled = false;
+        testBtn.style.color = "";
+        testBtn.textContent = "Проверить соединение";
+      }, 5000);
+    });
+
+    const confirmBtn = btnRow.createEl("button", { text: "Применить провайдер" });
+    confirmBtn.style.cssText = "padding:4px 12px;border-radius:6px;cursor:pointer;font-size:13px;background:var(--interactive-accent);color:var(--text-on-accent);border:none;";
+    confirmBtn.addEventListener("click", async () => {
+      await this.plugin.writeOptions({ weatherProvider: provider });
+      confirmBtn.textContent = "✓ Применено";
+      setTimeout(() => { confirmBtn.textContent = "Применить провайдер"; }, 2000);
+    });
+
     // Weather animation previews
     this.addWeatherPreviews(container);
   }
@@ -777,6 +875,11 @@ export class CalendarSettingsTab extends PluginSettingTab {
       /* Gloom */
       .wp-gloom { background:linear-gradient(180deg,rgba(40,40,55,0.15) 0%,rgba(50,50,60,0.08) 100%); }
 
+      /* Fog */
+      .wp-fog { background:linear-gradient(180deg,rgba(160,170,180,0.08) 0%,transparent 100%); }
+      .wp-fog-layer { position:absolute;left:-80px;width:80px;height:30px;background:radial-gradient(ellipse at center,rgba(180,190,200,0.3) 0%,rgba(180,190,200,0.08) 50%,transparent 80%);border-radius:50%;animation:wp-fog-d linear infinite;filter:blur(4px); }
+      @keyframes wp-fog-d { 0%{transform:translateX(-80px)}100%{transform:translateX(200px)} }
+
       /* Rain */
       .wp-rain { background:linear-gradient(180deg,rgba(60,80,120,0.08) 0%,transparent 100%); }
       .wp-drop { position:absolute;top:-10px;width:1.5px;height:10px;background:linear-gradient(180deg,transparent,rgba(120,180,255,0.35));border-radius:0 0 2px 2px;animation:wp-rf linear infinite; }
@@ -793,6 +896,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
       { cls: "wp-sun", emoji: "☀️", label: "Солнечно", code: "0,1", anim: "sun" },
       { cls: "wp-clouds", emoji: "⛅", label: "Облачно", code: "2", anim: "clouds" },
       { cls: "wp-gloom", emoji: "☁️", label: "Пасмурно", code: "3", anim: "gloom" },
+      { cls: "wp-fog", emoji: "🌫️", label: "Туман", code: "45,48", anim: "fog" },
       { cls: "wp-rain", emoji: "🌧️", label: "Дождь", code: "51–67", anim: "rain" },
       { cls: "wp-storm", emoji: "⛈️", label: "Гроза", code: "95–99", anim: "storm" },
     ];
@@ -818,6 +922,15 @@ export class CalendarSettingsTab extends PluginSettingTab {
       }
       if (c.anim === "gloom") {
         card.createDiv().style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(50,50,60,0.12) 0%,rgba(60,60,70,0.06) 100%);";
+      }
+      if (c.anim === "fog") {
+        for (let i = 0; i < 4; i++) {
+          const fl = card.createDiv({ cls: "wp-fog-layer" });
+          fl.style.top = `${10 + i * 20}%`;
+          fl.style.animationDelay = `${i * 2}s`;
+          fl.style.animationDuration = `${10 + i * 3}s`;
+          fl.style.opacity = String(0.15 + i * 0.08);
+        }
       }
       if (c.anim === "rain") {
         for (let i = 0; i < 20; i++) {

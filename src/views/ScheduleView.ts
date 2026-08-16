@@ -51,6 +51,8 @@ export default class ScheduleView extends ItemView {
         weatherEnabled: get(settings).weatherEnabled,
         weatherLatitude: get(settings).weatherLatitude,
         weatherLongitude: get(settings).weatherLongitude,
+        weatherProvider: get(settings).weatherProvider || "open-meteo",
+        weatherApiKey: get(settings).weatherApiKey,
       },
     });
 
@@ -62,6 +64,8 @@ export default class ScheduleView extends ItemView {
           weatherEnabled: val.weatherEnabled,
           weatherLatitude: val.weatherLatitude,
           weatherLongitude: val.weatherLongitude,
+          weatherProvider: val.weatherProvider || "open-meteo",
+          weatherApiKey: val.weatherApiKey,
         });
       }
     });

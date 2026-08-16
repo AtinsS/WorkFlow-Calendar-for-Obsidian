@@ -32,7 +32,7 @@
       try {
         const start = moment().format("YYYY-MM-DD");
         const end = moment().add(1, "day").format("YYYY-MM-DD");
-        const data = await fetchWeekWeather(lat, lon, start, end);
+        const data = await fetchWeekWeather(lat, lon, start, end, $settings.weatherProvider as any, $settings.weatherApiKey);
         const today = data.find(d => d.date === start);
         if (today) weather = today;
       } catch {}
@@ -65,8 +65,10 @@
     if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "weather-rain";
     // Cloudy: 2
     if (code === 2) return "weather-clouds";
-    // Overcast: 3, fog: 45-48
-    if (code === 3 || code === 45 || code === 48) return "weather-gloom";
+    // Fog: 45, 48
+    if (code === 45 || code === 48) return "weather-fog";
+    // Overcast: 3
+    if (code === 3) return "weather-gloom";
     // Thunderstorm: 95-99
     if (code >= 95) return "weather-storm";
     return "";
@@ -85,6 +87,10 @@
       {:else if weatherAnim === "weather-clouds"}
         {#each Array(5) as _, i}
           <div class="cloud" style="top: {10 + i * 15}%; animation-delay: {i * 3}s; opacity: {0.15 + Math.random() * 0.2}"></div>
+        {/each}
+      {:else if weatherAnim === "weather-fog"}
+        {#each Array(6) as _, i}
+          <div class="fog-layer" style="top: {15 + i * 12}%; animation-delay: {i * 2.5}s; animation-duration: {18 + i * 4}s; opacity: {0.08 + i * 0.03}"></div>
         {/each}
       {:else if weatherAnim === "weather-gloom"}
         <div class="gloom-overlay"></div>
@@ -223,6 +229,27 @@
   @keyframes cloud-drift {
     0% { transform: translateX(-200px); }
     100% { transform: translateX(calc(100vw + 200px)); }
+  }
+
+  /* Fog */
+  .fog-layer {
+    position: absolute;
+    left: -300px;
+    width: 300px;
+    height: 80px;
+    background: radial-gradient(ellipse at center, rgba(180, 190, 200, 0.3) 0%, rgba(180, 190, 200, 0.08) 50%, transparent 80%);
+    border-radius: 50%;
+    animation: fog-drift linear infinite;
+    filter: blur(8px);
+  }
+
+  @keyframes fog-drift {
+    0% { transform: translateX(-300px); }
+    100% { transform: translateX(calc(100vw + 300px)); }
+  }
+
+  .weather-fog {
+    background: linear-gradient(180deg, rgba(160, 170, 180, 0.06) 0%, rgba(140, 150, 160, 0.03) 100%);
   }
 
   /* Gloom */

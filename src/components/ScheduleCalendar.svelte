@@ -49,6 +49,8 @@
   export let weatherEnabled: boolean = false;
   export let weatherLatitude: number = 55.75;
   export let weatherLongitude: number = 37.62;
+  export let weatherProvider: string = "open-meteo";
+  export let weatherApiKey: string | undefined = undefined;
 
   let calendarEl: HTMLDivElement;
   let calendar: Calendar;
@@ -136,6 +138,8 @@
         weatherLongitude,
         startDate,
         endDate,
+        weatherProvider as any,
+        weatherApiKey,
       );
       if (destroyed) return;
       const map = new Map<string, DayWeather>();

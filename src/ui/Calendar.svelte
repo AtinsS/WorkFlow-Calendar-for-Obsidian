@@ -14,21 +14,27 @@
   import { habitLogs } from "../habit-tracker/stores";
   import { selectedDate } from "../task-tracker/stores";
   import { getDateUID } from "obsidian-daily-notes-interface";
-  import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
+  import { fetchWeekWeather, type DayWeather, getWeatherAttribution } from "../services/weatherService";
 
   let today: Moment = window.moment();
   let weekWeather: DayWeather[] = [];
+  let weatherWeekOffset = 0;
 
   $: {
     const lat = $settings.weatherLatitude;
     const lon = $settings.weatherLongitude;
     if (lat && lon && $settings.weatherEnabled !== false) {
-      const start = today.clone().startOf("isoWeek").format("YYYY-MM-DD");
-      const end = today.clone().endOf("isoWeek").format("YYYY-MM-DD");
-      fetchWeekWeather(lat, lon, start, end).then(data => {
+      const base = today.clone().add(weatherWeekOffset, "weeks");
+      const start = base.clone().startOf("isoWeek").format("YYYY-MM-DD");
+      const end = base.clone().endOf("isoWeek").format("YYYY-MM-DD");
+      fetchWeekWeather(lat, lon, start, end, $settings.weatherProvider as any, $settings.weatherApiKey).then(data => {
         weekWeather = data;
       }).catch(() => { weekWeather = []; });
     }
+  }
+
+  function shiftWeatherWeek(delta: number) {
+    weatherWeekOffset += delta;
   }
 
   // Initialize Russian locale with Monday as first day
@@ -255,20 +261,33 @@
     selectedId={$activeFile}
     showWeekNums={$settings.showWeeklyNote}
   />
-  {#if weekWeather.length > 0}
+  {#if $settings.weatherEnabled !== false}
+    {@const weekStart = today.clone().add(weatherWeekOffset, "weeks").startOf("isoWeek")}
+    {@const weekEnd = today.clone().add(weatherWeekOffset, "weeks").endOf("isoWeek")}
     <div class="cal-weather">
-      <div class="cal-weather-title">Погода на неделю</div>
-      {#each weekWeather as day (day.date)}
-        {@const isToday = day.date === today.format("YYYY-MM-DD")}
-        {@const m = window.moment(day.date, "YYYY-MM-DD")}
-        <div class="cal-weather-row" class:today={isToday}>
-          <span class="cal-weather-day">{m.format("dd")}</span>
-          <span class="cal-weather-num">{m.format("D.MM")}</span>
-          <span class="cal-weather-icon">{day.icon}</span>
-          <span class="cal-weather-desc">{day.label}</span>
-          <span class="cal-weather-temp">{day.tempMin}…{day.tempMax}°</span>
-        </div>
-      {/each}
+      <div class="cal-weather-title">
+        <button class="cal-weather-nav" on:click={() => shiftWeatherWeek(-1)} aria-label="Предыдущая неделя">‹</button>
+        <span class="cal-weather-title-text">{weekStart.format("D.MM")} – {weekEnd.format("D.MM")}</span>
+        <button class="cal-weather-nav" on:click={() => shiftWeatherWeek(1)} aria-label="Следующая неделя">›</button>
+      </div>
+      {#if weekWeather.length > 0}
+        {#each weekWeather as day (day.date)}
+          {@const isToday = day.date === today.format("YYYY-MM-DD")}
+          {@const m = window.moment(day.date, "YYYY-MM-DD")}
+          <div class="cal-weather-row" class:today={isToday}>
+            <span class="cal-weather-day">{m.format("dd")}</span>
+            <span class="cal-weather-num">{m.format("D.MM")}</span>
+            <span class="cal-weather-icon">{day.icon}</span>
+            <span class="cal-weather-desc">{day.label}</span>
+            <span class="cal-weather-temp">{day.tempMin}…{day.tempMax}°</span>
+          </div>
+        {/each}
+      {:else}
+        <div class="cal-weather-empty">Нет данных за эту неделю</div>
+      {/if}
+      {#if getWeatherAttribution($settings.weatherProvider)}
+        <div class="cal-weather-attr" title={getWeatherAttribution($settings.weatherProvider)}>{getWeatherAttribution($settings.weatherProvider)}</div>
+      {/if}
     </div>
   {/if}
 </div>
@@ -281,6 +300,9 @@
   }
 
   .cal-weather-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-size: 12px;
     font-weight: 700;
     color: var(--text-muted);
@@ -288,6 +310,28 @@
     letter-spacing: 0.5px;
     margin-bottom: 6px;
     padding: 0 4px;
+  }
+
+  .cal-weather-title-text {
+    flex: 1;
+    text-align: center;
+  }
+
+  .cal-weather-nav {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 16px;
+    cursor: pointer;
+    padding: 0 4px;
+    line-height: 1;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+  }
+
+  .cal-weather-nav:hover {
+    color: var(--text-normal);
+    background: var(--background-modifier-hover);
   }
 
   .cal-weather-row {
@@ -306,8 +350,8 @@
   }
 
   .cal-weather-row.today {
-    background: var(--interactive-accent);
-    color: var(--text-on-accent, #fff);
+    border: 1.5px solid var(--interactive-accent);
+    color: var(--text-normal);
   }
 
   .cal-weather-day {
@@ -345,5 +389,21 @@
     font-size: 13px;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+
+  .cal-weather-attr {
+    font-size: 9px;
+    color: var(--text-faint);
+    text-align: right;
+    padding-top: 2px;
+    opacity: 0.6;
+  }
+
+  .cal-weather-empty {
+    font-size: 11px;
+    color: var(--text-faint);
+    text-align: center;
+    padding: 6px 0;
+    opacity: 0.7;
   }
 </style>
