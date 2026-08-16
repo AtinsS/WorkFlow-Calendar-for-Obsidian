@@ -2277,7 +2277,7 @@ svg.dot.filled {
 /* ============================================
    CUSTOM MODAL BASE
    ============================================ */
-.wf-modal-overlay {
+.wf-dialog-overlay {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
@@ -2290,7 +2290,7 @@ svg.dot.filled {
 
 /* Note: do NOT set z-index on bare .modal — it conflicts with Obsidian's own modal styles */
 
-.wf-modal-container {
+.wf-dialog-container {
   position: relative;
   background: var(--background-primary, #1a1a2e);
   border-radius: 16px;
@@ -2302,12 +2302,12 @@ svg.dot.filled {
   flex-direction: column;
 }
 
-.wf-modal-content {
+.wf-dialog-content {
   overflow-y: auto;
   padding: 24px;
 }
 
-.wf-modal-close {
+.wf-dialog-close {
   position: absolute;
   top: 12px;
   right: 12px;
@@ -2323,12 +2323,12 @@ svg.dot.filled {
   transition: all 0.15s;
 }
 
-.wf-modal-close:hover {
+.wf-dialog-close:hover {
   color: var(--text-normal, #e8ecf0);
   background: rgba(255, 255, 255, 0.1);
 }
 
-.wf-modal-buttons {
+.wf-dialog-buttons {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
@@ -2372,7 +2372,7 @@ svg.dot.filled {
   width: 480px;
 }
 
-.wf-task-modal .wf-modal-content {
+.wf-task-modal .wf-dialog-content {
   padding: 0;
   overflow-y: auto;
 }
@@ -2993,11 +2993,11 @@ svg.dot.filled {
   width: 540px;
 }
 
-.wf-project-modal .wf-modal-content {
+.wf-project-modal .wf-dialog-content {
   padding: 0;
 }
 
-.wf-edit-modal .wf-modal-content {
+.wf-edit-modal .wf-dialog-content {
   padding: 24px;
 }
 
@@ -3009,7 +3009,7 @@ svg.dot.filled {
   padding: 0 24px;
 }
 
-.wf-modal-subtitle {
+.wf-dialog-subtitle {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.5);
   margin: 0 0 20px;
@@ -4519,7 +4519,8 @@ svg.dot.filled {
 
 /* ===== MOBILE TASK MODAL (tm) — full width, touch-friendly, scrollable ===== */
 /* Obsidian modal hierarchy: .modal-container > .modal > .modal-content.tm */
-.modal-container .modal {
+/* Scoped to only affect modals containing .tm (mobile task modal) */
+.modal-container:has(.tm) .modal {
   max-height: 100vh;
   max-height: 100dvh;
   width: 100vw !important;

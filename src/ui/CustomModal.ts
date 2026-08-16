@@ -21,23 +21,23 @@ export abstract class CustomModal {
     this.isOpen = true;
 
     // Overlay
-    this.overlayEl = document.body.createDiv({ cls: "wf-modal-overlay" });
+    this.overlayEl = document.body.createDiv({ cls: "wf-dialog-overlay" });
     this.overlayEl.addEventListener("click", (e) => {
       if (e.target === this.overlayEl) this.close();
     });
 
     // Container
-    this.containerEl = this.overlayEl.createDiv({ cls: "wf-modal-container" });
+    this.containerEl = this.overlayEl.createDiv({ cls: "wf-dialog-container" });
 
     // Close button
     const closeBtn = this.containerEl.createEl("button", {
-      cls: "wf-modal-close",
+      cls: "wf-dialog-close",
       text: "\u00D7",
     });
     closeBtn.addEventListener("click", () => this.close());
 
     // Content
-    this.contentEl = this.containerEl.createDiv({ cls: "wf-modal-content" });
+    this.contentEl = this.containerEl.createDiv({ cls: "wf-dialog-content" });
 
     // Escape key
     this.keyHandler = (e: KeyboardEvent) => {

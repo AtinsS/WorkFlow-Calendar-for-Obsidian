@@ -1,6 +1,12 @@
 export class TFile {}
 export class PluginSettingTab {}
-export class Modal {}
+/** Mock of Obsidian's Modal — only used in tests */
+export class Modal {
+  app: any;
+  constructor(app?: any) { this.app = app; }
+  open() { /* noop */ }
+  close() { /* noop */ }
+}
 export class Notice {}
 export function normalizePath(): string {
   return "";

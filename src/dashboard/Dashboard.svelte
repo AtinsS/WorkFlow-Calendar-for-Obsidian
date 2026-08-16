@@ -13,9 +13,10 @@
     deleteCard,
     addLink,
     deleteLink,
+    reorderCards,
   } from "./storage";
-  import { tasks } from "../task-tracker/stores";
-  import { habits, habitLogs } from "../habit-tracker/stores";
+  import { tasks, projects, updateTaskStatus } from "../task-tracker/stores";
+  import { habits, habitLogs, toggleHabitCompletion, getHabitProgressOnDate } from "../habit-tracker/stores";
   import { getCurrentMonthKey, financeData } from "../finance/storage";
   import { settings } from "../ui/stores";
 
@@ -40,63 +41,108 @@
   // Widget settings
   $: showTasksWidget = $settings.dashboardShowTasks !== false;
   $: showHabitsWidget = $settings.dashboardShowHabits !== false;
-  $: showFinanceWidget = $settings.dashboardShowFinance !== false;
+  $: showGoalsWidget = $settings.dashboardShowGoals !== false;
+
+  // Widget expand state
+  let tasksExpanded = false;
+  let habitsExpanded = false;
+  let goalsExpanded = false;
+
+  // Drag & drop state
+  let draggedCardId: string | null = null;
+  let dragOverCardId: string | null = null;
+
+  function onDragStart(e: DragEvent, cardId: string) {
+    draggedCardId = cardId;
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", cardId);
+    (e.target as HTMLElement).classList.add("dragging");
+  }
+
+  function onDragEnd(e: DragEvent) {
+    (e.target as HTMLElement).classList.remove("dragging");
+    draggedCardId = null;
+    dragOverCardId = null;
+  }
+
+  function onDragOver(e: DragEvent, cardId: string) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    if (cardId !== draggedCardId) {
+      dragOverCardId = cardId;
+    }
+  }
+
+  function onDragLeave() {
+    dragOverCardId = null;
+  }
+
+  async function onDrop(e: DragEvent, targetCardId: string) {
+    e.preventDefault();
+    if (!draggedCardId || draggedCardId === targetCardId) return;
+
+    const ids = data.cards.map(c => c.id);
+    const fromIdx = ids.indexOf(draggedCardId);
+    const toIdx = ids.indexOf(targetCardId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    ids.splice(fromIdx, 1);
+    ids.splice(toIdx, 0, draggedCardId);
+
+    await reorderCards(appInstance, ids, filePath);
+    data = await loadDashboard(appInstance, filePath);
+    draggedCardId = null;
+    dragOverCardId = null;
+  }
 
   // Tasks widget data
   $: todayStr = moment().format("YYYY-MM-DD");
   $: todayDateUID = `day-${moment().startOf("day").format()}`;
-  $: todayTasks = $tasks.filter((t) => t.dateUID === todayDateUID);
-  $: todayDone = todayTasks.filter((t) => t.status === "done").length;
-  $: todayTotal = todayTasks.length;
+  $: todayAllTasks = $tasks
+    .filter((t) => t.dateUID === todayDateUID)
+    .sort((a, b) => {
+      if (a.status === "done" && b.status !== "done") return 1;
+      if (a.status !== "done" && b.status === "done") return -1;
+      if (a.scheduledTime && b.scheduledTime) return a.scheduledTime.localeCompare(b.scheduledTime);
+      if (a.scheduledTime) return -1;
+      if (b.scheduledTime) return 1;
+      return 0;
+    });
+  $: todayDone = todayAllTasks.filter((t) => t.status === "done").length;
+  $: todayTotal = todayAllTasks.length;
   $: todayProgress = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
 
   // Habits widget data
-  $: activeHabits = $habits.filter((h) => {
-    if (h.archived) return false;
-    const m = moment(todayStr, "YYYY-MM-DD");
-    if (h.frequency === "weekly" && h.customDays && h.customDays.length > 0) {
-      return h.customDays.includes(m.day());
-    }
-    if (h.frequency === "monthly") {
-      return m.date() === (h.monthlyDay || 1);
-    }
-    return true;
-  });
+  $: todayHabits = $habits
+    .filter((h) => !h.archived)
+    .map((h) => ({ ...h, progress: getHabitProgressOnDate(h.id, todayStr) }))
+    .sort((a, b) => {
+      if (a.progress === 2 && b.progress !== 2) return 1;
+      if (a.progress !== 2 && b.progress === 2) return -1;
+      return a.sortOrder - b.sortOrder;
+    });
+  $: habitDoneCount = todayHabits.filter((h) => h.progress === 2).length;
+  $: habitTotalCount = todayHabits.length;
 
-  $: habitDoneCount = activeHabits.filter((h) => {
-    const log = $habitLogs.find((l) => l.habitId === h.id && l.date === todayStr);
-    return log?.completed || false;
-  }).length;
-
-  $: habitTotalCount = activeHabits.length;
-
-  // Streak calculation (sum of all active habits' streaks)
-  $: totalStreak = (() => {
-    let streak = 0;
-    for (const habit of activeHabits) {
-      let d = moment(todayStr, "YYYY-MM-DD");
-      let s = 0;
-      while (true) {
-        const log = $habitLogs.find((l) => l.habitId === habit.id && l.date === d.format("YYYY-MM-DD"));
-        if (log?.completed) { s++; d = d.subtract(1, "day"); }
-        else break;
-      }
-      streak += s;
-    }
-    return streak;
-  })();
-
-  // Finance widget data — depend on $financeData store for reactivity
+  // Goals widget data
   $: monthKey = getCurrentMonthKey();
   $: monthData = (() => {
     const allData = $financeData;
     if (!allData[monthKey]) return null;
     return allData[monthKey];
   })();
-  $: financeIncome = monthData?.monthlyIncome || 0;
-  $: financeExpenses = monthData?.mainAccountCategories?.reduce((s, c) => s + c.amount, 0) || 0;
-  $: financeBalance = financeIncome - financeExpenses;
-  $: primaryGoal = monthData?.monthGoals?.[0];
+  $: monthGoals = monthData?.monthGoals || [];
+
+  function cycleTaskStatus(task: { id: string; status: string }) {
+    const order = ["todo", "progress", "done"];
+    const idx = order.indexOf(task.status);
+    const next = order[(idx + 1) % order.length];
+    updateTaskStatus(task.id, next as any);
+  }
+
+  function statusIcon(s: string): string {
+    return s === "progress" ? "◐" : s === "done" ? "✓" : "";
+  }
 
   onMount(async () => {
     data = await loadDashboard(appInstance, filePath);
@@ -174,7 +220,7 @@
   }
 
   function closeModal(e: MouseEvent, closeFn: () => void) {
-    if ((e.target as HTMLElement).classList.contains("dash-modal-overlay")) {
+    if ((e.target as HTMLElement).classList.contains("dash-popup-overlay")) {
       closeFn();
     }
   }
@@ -182,60 +228,107 @@
 
 <div class="dashboard">
   <!-- Widgets row -->
-  {#if showTasksWidget || showHabitsWidget || showFinanceWidget}
-    <div class="dashboard__widgets">
-      {#if showTasksWidget}
-        <div class="dash-widget dash-widget--tasks">
-          <div class="dash-widget__icon">✅</div>
-          <div class="dash-widget__info">
-            <div class="dash-widget__label">Задачи на сегодня</div>
-            <div class="dash-widget__value">{todayDone} / {todayTotal}</div>
-            {#if todayTotal > 0}
-              <div class="dash-widget__bar">
-                <div class="dash-widget__bar-fill" style="width: {todayProgress}%"></div>
-              </div>
-            {/if}
+  <div class="dashboard__widgets">
+    <!-- Tasks widget -->
+    {#if showTasksWidget && todayTotal > 0}
+      <div class="dash-widget-wrap">
+        <button class="dash-widget dash-widget--tasks" class:expanded={tasksExpanded} on:click={() => tasksExpanded = !tasksExpanded}>
+          <span class="dash-widget__icon">✅</span>
+          <span class="dash-widget__label">Задачи</span>
+          <div class="dash-widget__bar"><div class="dash-widget__bar-fill" style="width:{todayProgress}%"></div></div>
+          <span class="dash-widget__count">{todayDone}/{todayTotal}</span>
+          <span class="dash-widget__chevron" class:open={tasksExpanded}>›</span>
+        </button>
+        {#if tasksExpanded}
+          <div class="dash-widget__dropdown">
+            {#each todayAllTasks as task (task.id)}
+              {@const project = $projects.find(p => p.id === task.projectId)}
+              <button class="dash-task" class:done={task.status === "done"} on:click|stopPropagation={() => cycleTaskStatus(task)}>
+                <span class="dash-task-check" class:checked={task.status === "done"} class:in-progress={task.status === "progress"}>{statusIcon(task.status)}</span>
+                <span class="dash-task-title" class:strike={task.status === "done"}>{task.title}</span>
+                {#if task.scheduledTime}<span class="dash-task-time">{task.scheduledTime}</span>{/if}
+                {#if project}<span class="dash-task-project" style="color:{project.color}">{project.icon || "📁"}</span>{/if}
+              </button>
+            {/each}
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
+    {/if}
 
-      {#if showHabitsWidget}
-        <div class="dash-widget dash-widget--habits">
-          <div class="dash-widget__icon">🔥</div>
-          <div class="dash-widget__info">
-            <div class="dash-widget__label">Привычки</div>
-            <div class="dash-widget__value">{habitDoneCount} / {habitTotalCount}</div>
-            {#if totalStreak > 0}
-              <div class="dash-widget__streak">Серия: {totalStreak} 🔥</div>
-            {/if}
+    <!-- Habits widget -->
+    {#if showHabitsWidget && habitTotalCount > 0}
+      <div class="dash-widget-wrap">
+        <button class="dash-widget dash-widget--habits" class:expanded={habitsExpanded} on:click={() => habitsExpanded = !habitsExpanded}>
+          <span class="dash-widget__icon">🔥</span>
+          <span class="dash-widget__label">Привычки</span>
+          <div class="dash-widget__bar"><div class="dash-widget__bar-fill" style="width:{habitTotalCount > 0 ? Math.round(habitDoneCount / habitTotalCount * 100) : 0}%"></div></div>
+          <span class="dash-widget__count">{habitDoneCount}/{habitTotalCount}</span>
+          <span class="dash-widget__chevron" class:open={habitsExpanded}>›</span>
+        </button>
+        {#if habitsExpanded}
+          <div class="dash-widget__dropdown">
+            {#each todayHabits as habit (habit.id)}
+              <button class="dash-habit" class:done={habit.progress === 2} style="--hc:{habit.color}" on:click|stopPropagation={() => toggleHabitCompletion(habit.id, todayStr, habit.targetCount || 1)}>
+                <span class="dash-habit-check" class:checked={habit.progress === 2} class:half={habit.progress === 1}>
+                  {#if habit.progress === 2}<svg class="dash-check-svg" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+                  {:else if habit.progress === 1}<span style="font-size:10px">½</span>{/if}
+                </span>
+                <span class="dash-habit-icon">{habit.icon}</span>
+                <span class="dash-habit-name" class:strike={habit.progress === 2}>{habit.title}</span>
+              </button>
+            {/each}
           </div>
-        </div>
-      {/if}
+        {/if}
+      </div>
+    {/if}
 
-      {#if showFinanceWidget}
-        <div class="dash-widget dash-widget--finance">
-          <div class="dash-widget__icon">💰</div>
-          <div class="dash-widget__info">
-            <div class="dash-widget__label">Баланс месяца</div>
-            <div class="dash-widget__value" class:positive={financeBalance >= 0} class:negative={financeBalance < 0}>
-              {financeBalance.toLocaleString("ru-RU")} ₽
-            </div>
-            {#if primaryGoal}
-              <div class="dash-widget__goal">
-                {primaryGoal.icon} {primaryGoal.name}: {primaryGoal.currentAmount.toLocaleString("ru-RU")} / {primaryGoal.targetAmount.toLocaleString("ru-RU")} ₽
+    <!-- Goals widget -->
+    {#if showGoalsWidget && monthGoals.length > 0}
+      <div class="dash-widget-wrap">
+        <button class="dash-widget dash-widget--goals" class:expanded={goalsExpanded} on:click={() => goalsExpanded = !goalsExpanded}>
+          <span class="dash-widget__icon">🎯</span>
+          <span class="dash-widget__label">Цель месяца</span>
+          {#if monthGoals.length === 1}
+            {@const g = monthGoals[0]}
+            <div class="dash-widget__bar"><div class="dash-widget__bar-fill goal-fill" style="width:{g.targetAmount > 0 ? Math.min(100, Math.round(g.currentAmount / g.targetAmount * 100)) : 0}%"></div></div>
+            <span class="dash-widget__count">{g.currentAmount.toLocaleString("ru-RU")}/{g.targetAmount.toLocaleString("ru-RU")} ₽</span>
+          {:else}
+            <span class="dash-widget__count">{monthGoals.length} целей</span>
+            <span class="dash-widget__chevron" class:open={goalsExpanded}>›</span>
+          {/if}
+        </button>
+        {#if goalsExpanded && monthGoals.length > 1}
+          <div class="dash-widget__dropdown">
+            {#each monthGoals as goal (goal.id)}
+              <div class="dash-goal">
+                <span class="dash-goal-icon">{goal.icon}</span>
+                <span class="dash-goal-name">{goal.name}</span>
+                <div class="dash-goal-bar"><div class="dash-goal-bar-fill" style="width:{goal.targetAmount > 0 ? Math.min(100, Math.round(goal.currentAmount / goal.targetAmount * 100)) : 0}%"></div></div>
+                <span class="dash-goal-amt">{goal.currentAmount.toLocaleString("ru-RU")}/{goal.targetAmount.toLocaleString("ru-RU")} ₽</span>
               </div>
-            {/if}
+            {/each}
           </div>
-        </div>
-      {/if}
-    </div>
-  {/if}
+        {/if}
+      </div>
+    {/if}
+  </div>
 
   <div class="dashboard__grid">
     {#each data.cards as card, i (card.id)}
-      <div class="dashboard-card" style="--card-index: {i}">
+      <div
+        class="dashboard-card"
+        class:drag-over={dragOverCardId === card.id}
+        style="--card-index: {i}"
+        draggable="true"
+        on:dragstart={(e) => onDragStart(e, card.id)}
+        on:dragend={onDragEnd}
+        on:dragover={(e) => onDragOver(e, card.id)}
+        on:dragleave={onDragLeave}
+        on:drop={(e) => onDrop(e, card.id)}
+      >
         <div class="dashboard-card__header">
           <h3 class="dashboard-card__title">
+            <span class="dashboard-card__drag-handle">⠿</span>
             <span>{card.icon} {card.title}</span>
           </h3>
           <div class="dashboard-card__actions">
@@ -288,18 +381,18 @@
 
 <!-- Edit card modal -->
 {#if showCardModal}
-  <div class="dash-modal-overlay" on:click={(e) => closeModal(e, () => { showCardModal = false; editingCard = null; })}>
-    <div class="dash-modal">
-      <h3 class="dash-modal__title">Редактировать карточку</h3>
-      <label class="dash-modal__label">
+  <div class="dash-popup-overlay" on:click={(e) => closeModal(e, () => { showCardModal = false; editingCard = null; })}>
+    <div class="dash-popup">
+      <h3 class="dash-popup__title">Редактировать карточку</h3>
+      <label class="dash-popup__label">
         Иконка
-        <input class="dash-modal__input" type="text" bind:value={editingCardIcon} maxlength="4" />
+        <input class="dash-popup__input" type="text" bind:value={editingCardIcon} maxlength="4" />
       </label>
-      <label class="dash-modal__label">
+      <label class="dash-popup__label">
         Название
-        <input class="dash-modal__input" type="text" bind:value={editingCardTitle} placeholder="Название карточки" />
+        <input class="dash-popup__input" type="text" bind:value={editingCardTitle} placeholder="Название карточки" />
       </label>
-      <div class="dash-modal__actions">
+      <div class="dash-popup__actions">
         <button class="dash-btn dash-btn--cancel" on:click={() => { showCardModal = false; editingCard = null; }}>Отмена</button>
         <button class="dash-btn dash-btn--save" on:click={saveCardEdit}>Сохранить</button>
       </div>
@@ -309,21 +402,21 @@
 
 <!-- Add link modal -->
 {#if showLinkModal}
-  <div class="dash-modal-overlay" on:click={(e) => closeModal(e, () => { showLinkModal = false; addingLinkToCardId = null; })}>
-    <div class="dash-modal">
-      <h3 class="dash-modal__title">Добавить ссылку</h3>
-      <label class="dash-modal__label">
+  <div class="dash-popup-overlay" on:click={(e) => closeModal(e, () => { showLinkModal = false; addingLinkToCardId = null; })}>
+    <div class="dash-popup">
+      <h3 class="dash-popup__title">Добавить ссылку</h3>
+      <label class="dash-popup__label">
         Название
-        <input class="dash-modal__input" type="text" bind:value={newLinkLabel} placeholder="Название ссылки" />
+        <input class="dash-popup__input" type="text" bind:value={newLinkLabel} placeholder="Название ссылки" />
       </label>
-      <label class="dash-modal__label">
+      <label class="dash-popup__label">
         Путь к заметке
-        <div class="dash-modal__input-row">
-          <input class="dash-modal__input" type="text" bind:value={newLinkPath} placeholder="Папка/Заметка" />
+        <div class="dash-popup__input-row">
+          <input class="dash-popup__input" type="text" bind:value={newLinkPath} placeholder="Папка/Заметка" />
           <button class="dash-btn dash-btn--browse" title="Выбрать заметку" on:click={openFilePicker}>...</button>
         </div>
       </label>
-      <div class="dash-modal__actions">
+      <div class="dash-popup__actions">
         <button class="dash-btn dash-btn--cancel" on:click={() => { showLinkModal = false; addingLinkToCardId = null; }}>Отмена</button>
         <button class="dash-btn dash-btn--save" on:click={saveNewLink}>Добавить</button>
       </div>
@@ -333,18 +426,18 @@
 
 <!-- Add card modal -->
 {#if showAddCardModal}
-  <div class="dash-modal-overlay" on:click={(e) => closeModal(e, () => { showAddCardModal = false; })}>
-    <div class="dash-modal">
-      <h3 class="dash-modal__title">Новая карточка</h3>
-      <label class="dash-modal__label">
+  <div class="dash-popup-overlay" on:click={(e) => closeModal(e, () => { showAddCardModal = false; })}>
+    <div class="dash-popup">
+      <h3 class="dash-popup__title">Новая карточка</h3>
+      <label class="dash-popup__label">
         Иконка
-        <input class="dash-modal__input" type="text" bind:value={newCardIcon} maxlength="4" />
+        <input class="dash-popup__input" type="text" bind:value={newCardIcon} maxlength="4" />
       </label>
-      <label class="dash-modal__label">
+      <label class="dash-popup__label">
         Название
-        <input class="dash-modal__input" type="text" bind:value={newCardTitle} placeholder="Название карточки" />
+        <input class="dash-popup__input" type="text" bind:value={newCardTitle} placeholder="Название карточки" />
       </label>
-      <div class="dash-modal__actions">
+      <div class="dash-popup__actions">
         <button class="dash-btn dash-btn--cancel" on:click={() => { showAddCardModal = false; }}>Отмена</button>
         <button class="dash-btn dash-btn--save" on:click={createNewCard}>Создать</button>
       </div>
@@ -354,89 +447,136 @@
 
 <style>
   /* Widgets */
-  .dashboard__widgets {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 16px;
-    flex-wrap: wrap;
-  }
+  .dashboard__widgets { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+  .dash-widget-wrap { display: flex; flex-direction: column; flex: 1; min-width: 200px; }
 
   .dash-widget {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 14px 18px;
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px;
     background: var(--background-secondary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 12px;
-    flex: 1;
-    min-width: 180px;
+    cursor: pointer; font-family: inherit; color: inherit;
+    transition: all 0.15s ease; text-align: left; width: 100%;
+  }
+  .dash-widget:hover { border-color: var(--background-modifier-border-hover, rgba(255,255,255,0.12)); }
+  .dash-widget.expanded { border-radius: 12px 12px 0 0; border-color: var(--background-modifier-border-hover, rgba(255,255,255,0.12)); }
+
+  .dash-widget__icon { font-size: 20px; flex-shrink: 0; }
+  .dash-widget__label { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--text-normal); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .dash-widget__bar { width: 60px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .dash-widget__bar-fill { height: 100%; background: var(--interactive-accent); border-radius: 2px; transition: width 0.4s ease; }
+  .dash-widget__bar-fill.goal-fill { background: linear-gradient(90deg, var(--interactive-accent), #3dd68c); }
+
+  .dash-widget__count { font-size: 12px; font-weight: 700; color: var(--text-muted); flex-shrink: 0; white-space: nowrap; }
+  .dash-widget__chevron { font-size: 18px; color: var(--text-muted); transition: transform 0.2s ease; flex-shrink: 0; }
+  .dash-widget__chevron.open { transform: rotate(90deg); }
+
+  .dash-widget__dropdown {
+    background: var(--background-secondary);
+    border: 1px solid var(--background-modifier-border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    padding: 6px 10px 10px;
+    display: flex; flex-direction: column; gap: 2px;
+    animation: dd-open 0.15s ease;
+  }
+  @keyframes dd-open { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Task rows */
+  .dash-task {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 8px; background: transparent; border: 1px solid transparent;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+    width: 100%; text-align: left; color: var(--text-normal); font-family: inherit; font-size: 13px;
+  }
+  .dash-task:hover { background: rgba(255,255,255,0.03); }
+  .dash-task.done { opacity: 0.5; }
+
+  .dash-task-check {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 2px solid rgba(255,255,255,0.12); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s ease; color: transparent; font-size: 11px;
+  }
+  .dash-task-check.checked { background: var(--interactive-accent); border-color: var(--interactive-accent); color: #fff; }
+  .dash-task-check.in-progress { border-color: var(--interactive-accent); color: var(--interactive-accent); }
+
+  .dash-task-title { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dash-task-title.strike { text-decoration: line-through; color: var(--text-muted); }
+  .dash-task-time { font-size: 11px; font-weight: 600; color: var(--text-muted); background: rgba(255,255,255,0.04); padding: 2px 6px; border-radius: 5px; flex-shrink: 0; }
+  .dash-task-project { font-size: 13px; flex-shrink: 0; }
+
+  /* Habit rows */
+  .dash-habit {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; background: transparent; border: 1px solid transparent;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s ease;
+    width: 100%; text-align: left; color: var(--text-normal); font-family: inherit; font-size: 13px;
+  }
+  .dash-habit:hover { background: rgba(255,255,255,0.03); }
+  .dash-habit.done { opacity: 0.5; }
+
+  .dash-habit-check {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 2px solid rgba(255,255,255,0.1); background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all 0.2s ease; color: transparent;
+  }
+  .dash-habit-check.checked { background: var(--hc, #3DD68C); border-color: var(--hc, #3DD68C); color: #fff; }
+  .dash-habit-check.half { border-color: var(--hc, #F5A623); color: var(--hc, #F5A623); }
+  .dash-check-svg { width: 10px; height: 10px; }
+  .dash-habit-icon { font-size: 14px; flex-shrink: 0; line-height: 1; }
+  .dash-habit-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dash-habit-name.strike { text-decoration: line-through; color: var(--text-muted); }
+
+  /* Goal rows */
+  .dash-goal { display: flex; align-items: center; gap: 8px; padding: 7px 8px; font-size: 13px; }
+  .dash-goal-icon { font-size: 14px; flex-shrink: 0; }
+  .dash-goal-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .dash-goal-bar { width: 60px; height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; flex-shrink: 0; }
+  .dash-goal-bar-fill { height: 100%; background: linear-gradient(90deg, var(--interactive-accent), #3dd68c); border-radius: 2px; transition: width 0.4s ease; }
+  .dash-goal-amt { font-size: 11px; color: var(--text-muted); flex-shrink: 0; white-space: nowrap; }
+
+  /* Card drag & drop */
+  .dashboard-card[draggable="true"] {
+    cursor: grab;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
   }
 
-  .dash-widget__icon {
-    font-size: 24px;
-    flex-shrink: 0;
+  .dashboard-card[draggable="true"]:active {
+    cursor: grabbing;
   }
 
-  .dash-widget__info {
-    flex: 1;
-    min-width: 0;
+  .dashboard-card.dragging {
+    opacity: 0.4;
+    transform: scale(0.98);
   }
 
-  .dash-widget__label {
-    font-size: 11px;
+  .dashboard-card.drag-over {
+    border-color: var(--interactive-accent);
+    box-shadow: 0 0 0 2px rgba(var(--interactive-accent-rgb, 124, 92, 252), 0.3);
+    transform: translateY(-2px);
+  }
+
+  .dashboard-card__drag-handle {
+    cursor: grab;
     color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
+    opacity: 0.4;
+    font-size: 14px;
+    margin-right: 4px;
+    user-select: none;
+    transition: opacity 0.15s ease;
   }
 
-  .dash-widget__value {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--text-normal);
+  .dashboard-card:hover .dashboard-card__drag-handle {
+    opacity: 0.8;
   }
 
-  .dash-widget__value.positive { color: var(--text-success, #3dd68c); }
-  .dash-widget__value.negative { color: var(--text-error, #f06565); }
-
-  .dash-widget__bar {
-    height: 4px;
-    background: var(--background-modifier-border);
-    border-radius: 2px;
-    margin-top: 6px;
-    overflow: hidden;
-  }
-
-  .dash-widget__bar-fill {
-    height: 100%;
-    background: var(--interactive-accent);
-    border-radius: 2px;
-    transition: width 0.3s ease;
-  }
-
-  .dash-widget__streak {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 2px;
-  }
-
-  .dash-widget__goal {
-    font-size: 11px;
-    color: var(--text-muted);
-    margin-top: 2px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  @media (max-width: 600px) {
-    .dashboard__widgets {
-      flex-direction: column;
-    }
-    .dash-widget {
-      min-width: 0;
-    }
+  .dashboard-card__drag-handle:active {
+    cursor: grabbing;
   }
 
   /* Card actions */
@@ -563,7 +703,7 @@
   }
 
   /* Modal */
-  .dash-modal-overlay {
+  .dash-popup-overlay {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
@@ -573,7 +713,7 @@
     z-index: 1000;
   }
 
-  .dash-modal {
+  .dash-popup {
     background: var(--background-primary);
     border: 1px solid var(--background-modifier-border);
     border-radius: 12px;
@@ -583,13 +723,13 @@
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
   }
 
-  .dash-modal__title {
+  .dash-popup__title {
     margin: 0 0 16px;
     font-size: 16px;
     font-weight: 600;
   }
 
-  .dash-modal__label {
+  .dash-popup__label {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -599,7 +739,7 @@
     color: var(--text-muted);
   }
 
-  .dash-modal__input {
+  .dash-popup__input {
     padding: 8px 12px;
     border: 1px solid var(--background-modifier-border);
     border-radius: 8px;
@@ -610,17 +750,17 @@
     transition: border-color 0.15s;
   }
 
-  .dash-modal__input:focus {
+  .dash-popup__input:focus {
     border-color: var(--interactive-accent);
   }
 
-  .dash-modal__input-row {
+  .dash-popup__input-row {
     display: flex;
     gap: 6px;
     align-items: stretch;
   }
 
-  .dash-modal__input-row .dash-modal__input {
+  .dash-popup__input-row .dash-popup__input {
     flex: 1;
     min-width: 0;
   }
@@ -643,7 +783,7 @@
     color: var(--text-normal);
   }
 
-  .dash-modal__actions {
+  .dash-popup__actions {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
@@ -667,18 +807,18 @@
   }
 
   @media (max-width: 480px) {
-    .dash-modal {
+    .dash-popup {
       min-width: 0;
       width: calc(100vw - 32px);
       padding: 18px;
     }
 
-    .dash-modal__input {
+    .dash-popup__input {
       padding: 10px 12px;
       font-size: 16px;
     }
 
-    .dash-modal__input-row {
+    .dash-popup__input-row {
       flex-direction: column;
     }
 

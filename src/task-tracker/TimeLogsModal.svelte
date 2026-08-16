@@ -43,7 +43,7 @@
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 <div class="time-logs-overlay" on:click={handleBackdrop}>
-  <div class="time-logs-modal">
+  <div class="time-logs-popup">
     <div class="time-logs-header">
       <h2>&#9201; Логи времени</h2>
       <button class="time-logs-close" on:click={onClose}>&#10005;</button>
@@ -83,7 +83,7 @@
     touch-action: none;
   }
 
-  .time-logs-modal {
+  .time-logs-popup {
     touch-action: manipulation;
   }
 

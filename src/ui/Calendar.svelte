@@ -14,8 +14,22 @@
   import { habitLogs } from "../habit-tracker/stores";
   import { selectedDate } from "../task-tracker/stores";
   import { getDateUID } from "obsidian-daily-notes-interface";
+  import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
 
   let today: Moment = window.moment();
+  let weekWeather: DayWeather[] = [];
+
+  $: {
+    const lat = $settings.weatherLatitude;
+    const lon = $settings.weatherLongitude;
+    if (lat && lon && $settings.weatherEnabled !== false) {
+      const start = today.clone().startOf("isoWeek").format("YYYY-MM-DD");
+      const end = today.clone().endOf("isoWeek").format("YYYY-MM-DD");
+      fetchWeekWeather(lat, lon, start, end).then(data => {
+        weekWeather = data;
+      }).catch(() => { weekWeather = []; });
+    }
+  }
 
   // Initialize Russian locale with Monday as first day
   $: {
@@ -241,4 +255,95 @@
     selectedId={$activeFile}
     showWeekNums={$settings.showWeeklyNote}
   />
+  {#if weekWeather.length > 0}
+    <div class="cal-weather">
+      <div class="cal-weather-title">Погода на неделю</div>
+      {#each weekWeather as day (day.date)}
+        {@const isToday = day.date === today.format("YYYY-MM-DD")}
+        {@const m = window.moment(day.date, "YYYY-MM-DD")}
+        <div class="cal-weather-row" class:today={isToday}>
+          <span class="cal-weather-day">{m.format("dd")}</span>
+          <span class="cal-weather-num">{m.format("D.MM")}</span>
+          <span class="cal-weather-icon">{day.icon}</span>
+          <span class="cal-weather-desc">{day.label}</span>
+          <span class="cal-weather-temp">{day.tempMin}…{day.tempMax}°</span>
+        </div>
+      {/each}
+    </div>
+  {/if}
 </div>
+
+<style>
+  .cal-weather {
+    padding: 6px 8px 4px;
+    border-top: 1px solid var(--background-modifier-border);
+    margin-top: 4px;
+  }
+
+  .cal-weather-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+    padding: 0 4px;
+  }
+
+  .cal-weather-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+    transition: background 0.1s ease;
+  }
+
+  .cal-weather-row:hover {
+    background: var(--background-modifier-hover);
+  }
+
+  .cal-weather-row.today {
+    background: var(--interactive-accent);
+    color: var(--text-on-accent, #fff);
+  }
+
+  .cal-weather-day {
+    width: 22px;
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .cal-weather-num {
+    width: 42px;
+    font-size: 12px;
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  .cal-weather-icon {
+    font-size: 18px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .cal-weather-desc {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+
+  .cal-weather-temp {
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+</style>

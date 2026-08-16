@@ -4,8 +4,8 @@
  */
 
 import moment from "moment";
-import type { TaskStatus } from "src/task-tracker/types";
-import type { SingularityTask } from "./singularityApi";
+import type { TaskStatus, RecurrenceConfig } from "src/task-tracker/types";
+import type { SingularityTask, SingularityRecurrence } from "./singularityApi";
 import { quillDeltaToMarkdown } from "./quillDeltaParser";
 
 // --- Constants ---
@@ -144,6 +144,74 @@ export function statusFromRemote(task: SingularityTask): { status: TaskStatus; c
   return { status: "todo", completed: false };
 }
 
+// --- Recurrence mapping ---
+
+/** Converts SingularityApp recurrence config to local RecurrenceConfig */
+export function singularityRecurrenceToLocal(rec: SingularityRecurrence | undefined): RecurrenceConfig | undefined {
+  if (!rec?.repeat) return undefined;
+
+  const r = rec.repeat;
+
+  if (r.everyday) {
+    return {
+      type: "daily",
+      interval: r.everyday.interval || 1,
+      until: rec.ending?.date ? isoToDateUID(rec.ending.date) : undefined,
+    };
+  }
+
+  if (r.everyweek) {
+    return {
+      type: "weekly",
+      interval: r.everyweek.interval || 1,
+      daysOfWeek: r.everyweek.days,
+      until: rec.ending?.date ? isoToDateUID(rec.ending.date) : undefined,
+    };
+  }
+
+  if (r.everymonth) {
+    return {
+      type: "monthly",
+      interval: r.everymonth.interval || 1,
+      until: rec.ending?.date ? isoToDateUID(rec.ending.date) : undefined,
+    };
+  }
+
+  return undefined;
+}
+
+/** Converts local RecurrenceConfig to SingularityApp recurrence body for PATCH */
+export function recurrenceToSingularity(rec: RecurrenceConfig): Record<string, unknown> {
+  const repeat: Record<string, unknown> = {};
+
+  if (rec.type === "daily") {
+    repeat.everyday = { type: 0, interval: rec.interval || 1 };
+  } else if (rec.type === "weekly") {
+    repeat.everyweek = {
+      type: 1,
+      interval: rec.interval || 1,
+      days: rec.daysOfWeek || [],
+    };
+  } else if (rec.type === "monthly") {
+    repeat.everymonth = {
+      type: 2,
+      interval: rec.interval || 1,
+      days: [], // SingularityApp requires specific day objects — we skip for now
+    };
+  }
+
+  const result: Record<string, unknown> = { repeat };
+
+  if (rec.until) {
+    const untilDate = dateUIDToISO(rec.until);
+    if (untilDate) {
+      result.ending = { date: untilDate, type: 2 };
+    }
+  }
+
+  return result;
+}
+
 // --- Body builders ---
 
 /** Builds the API body for creating a task remotely */
@@ -159,6 +227,7 @@ export function buildCreateTaskBody(task: {
   deadline?: string;
   deadlineTime?: string;
   status: TaskStatus;
+  recurrence?: RecurrenceConfig;
 }, projectMap: Record<string, string>): Record<string, unknown> {
   const body: Record<string, unknown> = { title: task.title };
 
@@ -202,6 +271,11 @@ export function buildCreateTaskBody(task: {
     body.journalDate = new Date().toISOString();
   }
 
+  // Recurrence (best-effort — API may not support creation of recurring tasks)
+  if (task.recurrence) {
+    body.recurrence = recurrenceToSingularity(task.recurrence);
+  }
+
   return body;
 }
 
@@ -218,6 +292,7 @@ export function buildUpdateTaskBody(task: {
   endTime?: string;
   deadline?: string;
   deadlineTime?: string;
+  recurrence?: RecurrenceConfig;
 }, projectMap: Record<string, string>): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   body.title = task.title;
@@ -253,6 +328,11 @@ export function buildUpdateTaskBody(task: {
   // Include status tag in the update body (replaces separate pushStatusTag call)
   body.tags = [`${STATUS_TAG_PREFIX}${task.status}`];
 
+  // Recurrence (best-effort — API may not support setting recurrence via PATCH)
+  if (task.recurrence) {
+    body.recurrence = recurrenceToSingularity(task.recurrence);
+  }
+
   return body;
 }
 
@@ -284,6 +364,9 @@ export function buildLocalTaskFromRemote(remote: SingularityTask, reverseProject
   priority: "high" | "medium" | "low";
   projectId: string | null;
   singularityId: string;
+  recurrence?: RecurrenceConfig;
+  isRecurringInstance?: boolean;
+  parentTaskId?: string;
 } {
   const { status, completed } = statusFromRemote(remote);
   // start is always full ISO-8601 datetime: "2026-08-01T14:30:00.000Z"
@@ -310,6 +393,11 @@ export function buildLocalTaskFromRemote(remote: SingularityTask, reverseProject
     deadline = isoToDateUID(remote.deadline);
     deadlineTime = isoToScheduledTime(remote.deadline);
   }
+  // Recurrence: generator tasks have `recurrence` object, instances have `recurrenceGeneratorId`
+  const recurrence = singularityRecurrenceToLocal(remote.recurrence);
+  const isRecurringInstance = !!(remote.recurrenceGeneratorId && remote.recurrenceGeneratorId.length > 0);
+  // For instances, parentTaskId is the generator's singularityId
+  const parentTaskId = isRecurringInstance ? remote.recurrenceGeneratorId : undefined;
   return {
     title: remote.title || "Без названия",
     description: remote.note ? quillDeltaToMarkdown(remote.note) : undefined,
@@ -324,6 +412,9 @@ export function buildLocalTaskFromRemote(remote: SingularityTask, reverseProject
     priority: singularityPriorityToLocal(remote.priority),
     projectId: remote.projectId ? reverseProjectMap.get(remote.projectId) || null : null,
     singularityId: remote.id,
+    ...(recurrence ? { recurrence } : {}),
+    ...(isRecurringInstance ? { isRecurringInstance: true } : {}),
+    ...(parentTaskId ? { parentTaskId } : {}),
   };
 }
 

@@ -64,15 +64,13 @@ export default class TaskView extends ItemView {
     this.panelsContainer = panelsCard.createDiv({ cls: "panels-container" });
 
     // Task panel
-    if (currentSettings.showTaskTracker !== false) {
-      this.taskPanel = new TaskPanel({
-        target: this.panelsContainer,
-        props: {
-          appInstance: this.app,
-          onOpenSchedule: () => this.openSchedule(),
-        },
-      });
-    }
+    this.taskPanel = new TaskPanel({
+      target: this.panelsContainer,
+      props: {
+        appInstance: this.app,
+        onOpenSchedule: () => this.openSchedule(),
+      },
+    });
 
     // Habit panel
     if (currentSettings.showHabitTracker !== false) {

@@ -268,13 +268,11 @@ export default class CalendarPlugin extends Plugin {
     document.querySelectorAll("[data-mcp-ribbon]").forEach(el => el.remove());
 
     if (!this.ribbonIconsRegistered) {
-      if (this.options.showTaskTracker !== false) {
-        const tasksIcon = this.addRibbonIcon("checkbox-glyph", "Задачи", () => {
-          this.activateTaskView();
-        });
-        tasksIcon.dataset.mcpRibbon = "true";
-        this.ribbonIcons.push(tasksIcon);
-      }
+      const tasksIcon = this.addRibbonIcon("checkbox-glyph", "Задачи", () => {
+        this.activateTaskView();
+      });
+      tasksIcon.dataset.mcpRibbon = "true";
+      this.ribbonIcons.push(tasksIcon);
 
       const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", "Календарь", () => {
         this.activateCalendarView();

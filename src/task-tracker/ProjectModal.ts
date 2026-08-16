@@ -103,7 +103,7 @@ export class ProjectModal extends CustomModal {
     this.contentEl.createEl("h2", { text: "Управление проектами" });
     this.contentEl.createEl("p", {
       text: "Создайте и настройте проекты для организации задач",
-      cls: "wf-modal-subtitle",
+      cls: "wf-dialog-subtitle",
     });
 
     this.renderNewProjectForm(this.contentEl);

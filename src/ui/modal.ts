@@ -22,7 +22,7 @@ export class ConfirmationModal extends CustomModal {
     this.contentEl.createEl("h2", { text: title });
     this.contentEl.createEl("p", { text });
 
-    const buttonsEl = this.contentEl.createDiv("wf-modal-buttons");
+    const buttonsEl = this.contentEl.createDiv("wf-dialog-buttons");
 
     buttonsEl
       .createEl("button", { text: "Never mind", cls: "wf-btn-cancel" })

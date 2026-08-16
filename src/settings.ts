@@ -34,7 +34,7 @@ export interface ISettings {
   // Dashboard widget settings
   dashboardShowTasks?: boolean;
   dashboardShowHabits?: boolean;
-  dashboardShowFinance?: boolean;
+  dashboardShowGoals?: boolean;
 
   // Hello view settings
   userName?: string;
@@ -161,7 +161,7 @@ export const defaultSettings = Object.freeze({
 
   dashboardShowTasks: true,
   dashboardShowHabits: true,
-  dashboardShowFinance: true,
+  dashboardShowGoals: true,
   helloShowTasksBtn: true,
   helloShowAnalyticsBtn: true,
   helloShowFinanceBtn: true,
@@ -442,34 +442,16 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
 
     new Setting(general)
-      .setName("Виджет финансов")
-      .setDesc("Показывать баланс месяца и прогресс цели в дашборде")
+      .setName("Виджет целей")
+      .setDesc("Показывать цели месяца в дашборде")
       .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.dashboardShowFinance !== false);
+        toggle.setValue(this.plugin.options.dashboardShowGoals !== false);
         toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ dashboardShowFinance: value });
+          await this.plugin.writeOptions({ dashboardShowGoals: value });
         });
       });
 
-    new Setting(general)
-      .setName("Показывать трекер задач")
-      .setDesc("Отображать панель задач в боковой панели и ribbon-иконку")
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.showTaskTracker !== false);
-        toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ showTaskTracker: value });
-        });
-      });
 
-    new Setting(general)
-      .setName("Показывать расписание")
-      .setDesc("Отображать вид расписания и ribbon-иконку")
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.showSchedule !== false);
-        toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ showSchedule: value });
-        });
-      });
 
     // Colors tab
     const colors = tabContainers["colors"];
@@ -760,6 +742,105 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.step = "0.01";
         text.inputEl.style.maxWidth = "120px";
       });
+
+    // Weather animation previews
+    this.addWeatherPreviews(container);
+  }
+
+  private addWeatherPreviews(container: HTMLElement): void {
+    const wrapper = container.createDiv({ cls: "weather-previews" });
+    wrapper.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;";
+
+    const styles = document.createElement("style");
+    styles.textContent = `
+      .wp-card {
+        position:relative;overflow:hidden;border-radius:10px;
+        width:110px;height:100px;display:flex;flex-direction:column;
+        align-items:center;justify-content:center;gap:4px;
+        border:1px solid var(--background-modifier-border);
+      }
+      .wp-label { font-size:10px;color:var(--text-muted);font-weight:600;z-index:1; }
+      .wp-emoji { font-size:28px;z-index:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
+
+      /* Sun */
+      .wp-sun { background:linear-gradient(180deg,rgba(255,183,77,0.08) 0%,transparent 100%); }
+      .wp-sun-obj { position:absolute;top:6px;right:6px;width:50px;height:50px;animation:wp-sun-p 3s ease-in-out infinite; }
+      .wp-sun-core { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,rgba(255,214,0,0.3) 0%,rgba(255,183,77,0.1) 60%,transparent 100%);box-shadow:0 0 20px rgba(255,214,0,0.15); }
+      .wp-sun-ray { position:absolute;top:50%;left:50%;width:1px;height:18px;background:linear-gradient(180deg,rgba(255,214,0,0.2),transparent);transform-origin:center top;border-radius:1px; }
+      @keyframes wp-sun-p { 0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.08);opacity:1} }
+
+      /* Clouds */
+      .wp-clouds { background:linear-gradient(180deg,rgba(100,130,180,0.06) 0%,transparent 100%); }
+      .wp-cloud { position:absolute;left:-80px;width:80px;height:28px;background:radial-gradient(ellipse at center,rgba(200,210,220,0.25) 0%,transparent 70%);border-radius:50%;animation:wp-cd 12s linear infinite; }
+      @keyframes wp-cd { 0%{transform:translateX(-80px)}100%{transform:translateX(200px)} }
+
+      /* Gloom */
+      .wp-gloom { background:linear-gradient(180deg,rgba(40,40,55,0.15) 0%,rgba(50,50,60,0.08) 100%); }
+
+      /* Rain */
+      .wp-rain { background:linear-gradient(180deg,rgba(60,80,120,0.08) 0%,transparent 100%); }
+      .wp-drop { position:absolute;top:-10px;width:1.5px;height:10px;background:linear-gradient(180deg,transparent,rgba(120,180,255,0.35));border-radius:0 0 2px 2px;animation:wp-rf linear infinite; }
+      @keyframes wp-rf { 0%{transform:translateY(-10px);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(120px);opacity:0} }
+
+      /* Storm */
+      .wp-storm { background:linear-gradient(180deg,rgba(30,30,50,0.12) 0%,transparent 100%);animation:wp-sf 3s ease-in-out infinite; }
+      .wp-drop.h { width:2px;height:14px;background:linear-gradient(180deg,transparent,rgba(120,180,255,0.5)); }
+      @keyframes wp-sf { 0%,93%,100%{opacity:1}94%{opacity:.8} }
+    `;
+    wrapper.appendChild(styles);
+
+    const cards = [
+      { cls: "wp-sun", emoji: "☀️", label: "Солнечно", code: "0,1", anim: "sun" },
+      { cls: "wp-clouds", emoji: "⛅", label: "Облачно", code: "2", anim: "clouds" },
+      { cls: "wp-gloom", emoji: "☁️", label: "Пасмурно", code: "3", anim: "gloom" },
+      { cls: "wp-rain", emoji: "🌧️", label: "Дождь", code: "51–67", anim: "rain" },
+      { cls: "wp-storm", emoji: "⛈️", label: "Гроза", code: "95–99", anim: "storm" },
+    ];
+
+    for (const c of cards) {
+      const card = wrapper.createDiv({ cls: `wp-card ${c.cls}` });
+
+      if (c.anim === "sun") {
+        const sun = card.createDiv({ cls: "wp-sun-obj" });
+        sun.createDiv({ cls: "wp-sun-core" });
+        for (let i = 0; i < 8; i++) {
+          const ray = sun.createDiv({ cls: "wp-sun-ray" });
+          ray.style.transform = `rotate(${i * 45}deg)`;
+        }
+      }
+      if (c.anim === "clouds") {
+        for (let i = 0; i < 3; i++) {
+          const cl = card.createDiv({ cls: "wp-cloud" });
+          cl.style.top = `${15 + i * 25}%`;
+          cl.style.animationDelay = `${i * 3}s`;
+          cl.style.opacity = String(0.15 + Math.random() * 0.15);
+        }
+      }
+      if (c.anim === "gloom") {
+        card.createDiv().style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(50,50,60,0.12) 0%,rgba(60,60,70,0.06) 100%);";
+      }
+      if (c.anim === "rain") {
+        for (let i = 0; i < 20; i++) {
+          const d = card.createDiv({ cls: "wp-drop" });
+          d.style.left = `${Math.random() * 100}%`;
+          d.style.animationDelay = `${Math.random() * 2}s`;
+          d.style.animationDuration = `${0.4 + Math.random() * 0.4}s`;
+        }
+      }
+      if (c.anim === "storm") {
+        for (let i = 0; i < 30; i++) {
+          const d = card.createDiv({ cls: "wp-drop h" });
+          d.style.left = `${Math.random() * 100}%`;
+          d.style.animationDelay = `${Math.random() * 1.5}s`;
+          d.style.animationDuration = `${0.3 + Math.random() * 0.3}s`;
+        }
+      }
+
+      const emoji = card.createDiv({ cls: "wp-emoji" });
+      emoji.textContent = c.emoji;
+      const label = card.createDiv({ cls: "wp-label" });
+      label.textContent = `${c.label} (${c.code})`;
+    }
   }
 
   addAccentColorSetting(container: HTMLElement): void {

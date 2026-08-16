@@ -390,7 +390,7 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
 
   try {
     // Fetch ALL tasks (no date filter — tasks without start date would be missed otherwise)
-    const remoteTasks = await getAllTasks(token, { includeArchived: true });
+    const remoteTasks = await getAllTasks(token, { includeArchived: true, includeAllRecurrenceInstances: true });
     console.log(`[SingularitySync] Pull: fetched ${remoteTasks.length} remote tasks total`);
     if (remoteTasks.length > 0) {
       console.log(`[SingularitySync] Remote task IDs: ${remoteTasks.map(t => `${t.id}(${t.title})`).join(", ")}`);
@@ -443,8 +443,9 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
           const dateChanged = remoteData.dateUID !== localTask.dateUID;
           const timeChanged = remoteData.scheduledTime !== localTask.scheduledTime;
           const deadlineChanged = remoteData.deadline !== localTask.deadline;
+          const recurrenceChanged = JSON.stringify(remoteData.recurrence) !== JSON.stringify(localTask.recurrence);
 
-          if (statusChanged || descriptionChanged || titleChanged || dateChanged || timeChanged || deadlineChanged || (remoteUpdated > localTask.updatedAt && remoteUpdated > (syncEntry?.lastPulledAt || 0))) {
+          if (statusChanged || descriptionChanged || titleChanged || dateChanged || timeChanged || deadlineChanged || recurrenceChanged || (remoteUpdated > localTask.updatedAt && remoteUpdated > (syncEntry?.lastPulledAt || 0))) {
             if (isDryRun()) {
               dryLog("UPDATE local task", `${remote.title} (${remote.id}) → local ${localId} statusChanged=${statusChanged}`);
             } else {
@@ -494,6 +495,9 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
             ...(remoteData.estimatedTime ? { estimatedTime: remoteData.estimatedTime } : {}),
             ...(remoteData.deadline ? { deadline: remoteData.deadline } : {}),
             ...(remoteData.deadlineTime ? { deadlineTime: remoteData.deadlineTime } : {}),
+            ...(remoteData.recurrence ? { recurrence: remoteData.recurrence } : {}),
+            ...(remoteData.isRecurringInstance ? { isRecurringInstance: true } : {}),
+            ...(remoteData.parentTaskId ? { parentTaskId: remoteData.parentTaskId } : {}),
           });
 
           skipPushTaskIds.add(newTask.id);

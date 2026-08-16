@@ -9,6 +9,30 @@ const BASE_URL = "https://api.singularity-app.com/v2";
 
 // --- Types ---
 
+export interface SingularityRecurrence {
+  time?: string; // e.g. "07:00"
+  paused?: boolean;
+  ending?: {
+    date?: string; // ISO datetime
+    type?: number; // 0=no end, 1=end by date, 2=end by iterations
+    limit?: number;
+    iterations?: number;
+  };
+  repeat?: {
+    everyday?: { type?: number; interval?: number };
+    everyweek?: { type?: number; interval?: number; days?: number[] }; // 0=Sun..6=Sat
+    everymonth?: { type?: number; interval?: number; days?: { dayType?: number; dayNumber?: number }[] };
+  };
+  startTime?: string; // ISO datetime — when recurrence started
+  nextTime?: string; // ISO datetime — next instance
+  lastTime?: string; // ISO datetime — last generated instance
+  onlyOnComplete?: boolean;
+  startAfterComplete?: boolean;
+  lastGeneratedTaskId?: string;
+  notifies?: number[];
+  timeLength?: number; // duration in minutes
+}
+
 export interface SingularityTask {
   id: string;
   title: string;
@@ -29,6 +53,8 @@ export interface SingularityTask {
   isNote?: boolean;
   parent?: string; // parent task ID for subtasks
   modificatedDate?: string; // last modification timestamp
+  recurrence?: SingularityRecurrence; // recurrence config (only on generator/template tasks)
+  recurrenceGeneratorId?: string; // links instance to generator (non-empty = this is a recurring instance)
 }
 
 export interface SingularityProject {
@@ -205,6 +231,7 @@ export async function getTasks(
     projectId?: string;
     includeArchived?: boolean;
     includeRemoved?: boolean;
+    includeAllRecurrenceInstances?: boolean;
   }
 ): Promise<SingularityTask[]> {
   const searchParams = new URLSearchParams();
@@ -215,6 +242,7 @@ export async function getTasks(
   if (params?.projectId) searchParams.set("projectId", params.projectId);
   if (params?.includeArchived) searchParams.set("includeArchived", "true");
   if (params?.includeRemoved) searchParams.set("includeRemoved", "true");
+  if (params?.includeAllRecurrenceInstances) searchParams.set("includeAllRecurrenceInstances", "true");
 
   const query = searchParams.toString();
   const path = `/task${query ? `?${query}` : ""}`;
@@ -255,6 +283,7 @@ export async function getAllTasks(
     startDateTo?: string;
     includeArchived?: boolean;
     includeRemoved?: boolean;
+    includeAllRecurrenceInstances?: boolean;
   }
 ): Promise<SingularityTask[]> {
   const allTasks: SingularityTask[] = [];
