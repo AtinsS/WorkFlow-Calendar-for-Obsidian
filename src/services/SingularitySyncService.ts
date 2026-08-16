@@ -103,6 +103,7 @@ let syncMap: SingularitySyncMap = createEmptySyncMap();
 let loaded = false;
 let skipNextPush = false; // flag to prevent re-push after updateTask(singularityId)
 let syncCycleActive = false; // suppresses all store-triggered pushes during doSync
+let lastSyncEndAt = 0; // timestamp of last doSync completion — used to suppress store-triggered re-push
 let skipNextProjectPush = false; // flag to prevent re-push after addProject from pull
 const skipPushTaskIds = new Set<string>(); // per-task skip flags to prevent missed pushes
 
@@ -563,9 +564,20 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
 function schedulePush(): void {
   if (!isEnabled() || !loaded || syncCycleActive) return;
 
+  // Suppress store-triggered pushes that happen right after a sync completes.
+  // Without this, store updates from doSync → pullRemoteChanges trigger
+  // subscriptions → schedulePush → 3s debounce → doSync → infinite loop.
+  const sinceLastSync = Date.now() - lastSyncEndAt;
+  if (sinceLastSync < PUSH_DEBOUNCE_MS * 2) {
+    console.log(`[SingularitySync] schedulePush suppressed (${sinceLastSync}ms since last sync)`);
+    return;
+  }
+
   if (pushTimeout) clearTimeout(pushTimeout);
   pushTimeout = setTimeout(async () => {
     if (syncing || !isEnabled()) return;
+    // Re-check: a sync may have completed while we were waiting
+    if (Date.now() - lastSyncEndAt < PUSH_DEBOUNCE_MS * 2) return;
     await doSync("both");
   }, PUSH_DEBOUNCE_MS);
 }
@@ -639,6 +651,12 @@ async function doSync(direction: "push" | "pull" | "both"): Promise<void> {
   } finally {
     syncing = false;
     syncCycleActive = false;
+    lastSyncEndAt = Date.now();
+    // Cancel any push that was scheduled by store updates during this sync
+    if (pushTimeout) {
+      clearTimeout(pushTimeout);
+      pushTimeout = null;
+    }
   }
 
   if (pushed || pulled) {
@@ -1490,10 +1508,26 @@ export async function syncChecklists(): Promise<void> {
     reverseChecklistMap.set(remoteId, localId);
   }
 
+  // Pre-index: local checklist item IDs → task ID, and task IDs with mapped checklists
+  const localItemIdToTaskId = new Map<string, string>();
+  const tasksWithMappedChecklists = new Set<string>();
+  for (const item of localChecklists) {
+    localItemIdToTaskId.set(item.id, item.taskId);
+  }
+  for (const localId of Object.keys(checklistMap)) {
+    const taskId = localItemIdToTaskId.get(localId);
+    if (taskId) tasksWithMappedChecklists.add(taskId);
+  }
+
   // Process each synced task (with delay to avoid 429 rate limit)
   let taskIndex = 0;
   for (const task of localTasks) {
     if (!task.singularityId) continue;
+
+    const localItems = localChecklists.filter((c) => c.taskId === task.id);
+
+    // Skip API call if task has no local checklists and no mapped remote checklists
+    if (localItems.length === 0 && !tasksWithMappedChecklists.has(task.id)) continue;
 
     // Throttle between tasks
     if (taskIndex > 0) {
@@ -1504,7 +1538,6 @@ export async function syncChecklists(): Promise<void> {
     try {
       // Fetch remote checklist items for this task
       const remoteItems = await apiGetChecklistItems(token, task.singularityId);
-      const localItems = localChecklists.filter((c) => c.taskId === task.id);
 
       // Map remote items to local by ID mapping or title match
       const matchedRemoteIds = new Set<string>();

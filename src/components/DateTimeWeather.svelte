@@ -327,7 +327,7 @@
       {/if}
     </span>
   {/if}
-  {#if $settings.singularityAutoSync && $settings.singularityToken}
+  {#if $settings.singularityToken && $singularitySyncStatus.connected}
     <span class="dtw-sep"></span>
     <span
       class="dtw-item dtw-hoverable dtw-sync"
