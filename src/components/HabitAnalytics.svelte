@@ -31,6 +31,10 @@
     getManualIncomeForMonth,
   } from "../finance/financialAnalyticsStorage";
   import { VIEW_TYPE_FINANCIAL_ANALYTICS } from "../constants";
+  import { t, tArray, locale } from "../i18n";
+  import { derived as derivedStore } from "svelte/store";
+
+  const numberLocale = derivedStore(locale, ($locale) => $locale === "ru" ? "ru-RU" : "en-US");
 
   let weeklyStats = getWeeklyStats(12);
 
@@ -127,7 +131,7 @@
         projectMap.set(pKey, {
           ms: 0,
           color: proj?.color || "#647177",
-          name: proj?.name || "Без проекта",
+          name: proj?.name || $t("projectAnalytics.noProject"),
         });
       }
       projectMap.get(pKey).ms += log.duration;
@@ -179,20 +183,7 @@
   let monthlyDelta = 0;
   let yearlyDelta = 0;
 
-  const monthNames = [
-    "Янв",
-    "Фев",
-    "Мар",
-    "Апр",
-    "Май",
-    "Июн",
-    "Июл",
-    "Авг",
-    "Сен",
-    "Окт",
-    "Ноя",
-    "Дек",
-  ];
+  $: monthNames = $tArray("common.months.short");
 
   async function openFinancialAnalytics(): Promise<void> {
     const appInstance = get(app);
@@ -219,41 +210,41 @@
 
 <div class="habit-analytics">
   <div class="habit-analytics-header">
-    <h1>Аналитика</h1>
+    <h1>{$t("habitAnalytics.title")}</h1>
   </div>
 
   <!-- Summary Cards -->
   {#if activeHabits.length > 0}
-    <h2>Привычки</h2>
+    <h2>{$t("habitAnalytics.habits")}</h2>
     <div class="habit-analytics-summary">
       <div class="summary-card">
         <span class="summary-value">{aggregateStats.totalHabits}</span>
-        <span class="summary-label">Активных</span>
+        <span class="summary-label">{$t("habitAnalytics.active")}</span>
         {#if weeklyDelta.completions > 0}
           <span class="summary-trend trend-up"
-            >↑ +{weeklyDelta.completions} за неделю</span
+            >↑ +{weeklyDelta.completions} {$t("dailyOverview.perWeek")}</span
           >
         {/if}
       </div>
       <div class="summary-card">
         <span class="summary-value">{aggregateStats.totalCompletions}</span>
-        <span class="summary-label">Выполнено</span>
+        <span class="summary-label">{$t("habitAnalytics.completed")}</span>
         {#if weeklyDelta.completions > 0}
           <span class="summary-trend trend-up"
-            >↑ +{weeklyDelta.completions} за неделю</span
+            >↑ +{weeklyDelta.completions} {$t("dailyOverview.perWeek")}</span
           >
         {/if}
       </div>
       <div class="summary-card">
         <span class="summary-value">{aggregateStats.bestStreak}</span>
-        <span class="summary-label">Лучшая серия</span>
-        <span class="summary-trend trend-neutral">дней подряд</span>
+        <span class="summary-label">{$t("habitAnalytics.bestStreak")}</span>
+        <span class="summary-trend trend-neutral">{$t("habitAnalytics.daysStreak")}</span>
       </div>
     </div>
 
     <!-- Per-habit cards -->
     <div class="habit-analytics-section">
-      <h3>Детали по привычкам</h3>
+      <h3>{$t("habitAnalytics.habitDetails")}</h3>
       <div class="habit-cards-grid">
         {#each activeHabits as habit (habit.id)}
           <HabitCard {habit} />
@@ -263,7 +254,7 @@
 
     <!-- Day of week productivity -->
     <div class="habit-analytics-section">
-      <h3>Продуктивность по дням недели</h3>
+      <h3>{$t("habitAnalytics.weekdayProductivity")}</h3>
       <div class="day-chart">
         {#each dayOfWeekStats as day}
           <div class="day-bar-wrapper">
@@ -276,7 +267,7 @@
               class:neutral={day.productivityRate >= 20 && day.productivityRate < 50}
               class:lazy={day.productivityRate < 20}
               style="height: {day.productivityRate > 0 ? Math.max((day.productivityRate / maxProductivity) * 100, 6) : 0}%"
-              title="{day.dayName}: {day.completions} выполнений из {day.totalDays} дней, {day.productivityRate}% выполнения"
+              title="{day.dayName}: {day.completions} {$t("components.completions")} {day.totalDays} {$t("components.streakDays")}, {day.productivityRate}%"
             ></div>
             <span class="day-bar-label">{day.dayName}</span>
             <span class="day-bar-count">{day.completions}</span>
@@ -284,9 +275,9 @@
         {/each}
       </div>
       <div class="day-legend">
-        <span class="legend-item"><span class="legend-dot productive"></span> Продуктивный (50%+)</span>
-        <span class="legend-item"><span class="legend-dot neutral"></span> Средний (20-50%)</span>
-        <span class="legend-item"><span class="legend-dot lazy"></span> Прокрастинация (&lt;20%)</span>
+        <span class="legend-item"><span class="legend-dot productive"></span> {$t("habitAnalytics.legendProductive")}</span>
+        <span class="legend-item"><span class="legend-dot neutral"></span> {$t("habitAnalytics.legendMedium")}</span>
+        <span class="legend-item"><span class="legend-dot lazy"></span> {$t("habitAnalytics.legendProcrastination")}</span>
       </div>
     </div>
   {/if}
@@ -294,7 +285,7 @@
   <!-- Time & Projects — unified section -->
   <div class="habit-analytics-section">
     <div class="section-header-row">
-      <h3>Время и проекты</h3>
+      <h3>{$t("habitAnalytics.timeAndProjects")}</h3>
       <div class="period-selector">
         <input type="date" bind:value={periodStart} class="period-input" />
         <span class="period-separator">—</span>
@@ -302,21 +293,21 @@
       </div>
     </div>
     {#if filteredTimeLogs.length === 0}
-      <div class="time-logs-empty">Нет логов времени за период</div>
+      <div class="time-logs-empty">{$t("habitAnalytics.noTimeLogs")}</div>
     {:else}
       <!-- Stats cards -->
       <div class="time-logs-stats">
         <div class="time-stat">
           <span class="time-stat-value">{formatDuration(totalTimeMs)}</span>
-          <span class="time-stat-label">Общее время</span>
+          <span class="time-stat-label">{$t("habitAnalytics.totalTime")}</span>
         </div>
         <div class="time-stat">
           <span class="time-stat-value">{uniqueDays}</span>
-          <span class="time-stat-label">Дней с работой</span>
+          <span class="time-stat-label">{$t("habitAnalytics.workDays")}</span>
         </div>
         <div class="time-stat">
           <span class="time-stat-value">{formatDuration(avgPerDay)}</span>
-          <span class="time-stat-label">Среднее в день</span>
+          <span class="time-stat-label">{$t("habitAnalytics.avgPerDay")}</span>
         </div>
       </div>
 
@@ -328,7 +319,7 @@
       <!-- Two columns: Donut + Project table -->
       <div class="time-project-bottom">
         <div class="time-project-donut">
-          <h4>Распределение времени</h4>
+          <h4>{$t("habitAnalytics.timeDistribution")}</h4>
           <DonutChart
             segments={donutSegments}
             centerValue={formatDuration(totalTimeMs)}
@@ -336,7 +327,7 @@
           />
         </div>
         <div class="time-project-table">
-          <h4>Проекты</h4>
+          <h4>{$t("habitAnalytics.projects")}</h4>
           <ProjectAnalytics tasks={get(tasks).filter((t) => t.status === "done" && (() => {
             const match = t.dateUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
             return match && match[1] >= periodStart && match[1] <= periodEnd;
@@ -349,29 +340,28 @@
   <!-- Earnings Section -->
   <div class="habit-analytics-section">
     <div class="earnings-header">
-      <h3>Заработок</h3>
+      <h3>{$t("habitAnalytics.earnings")}</h3>
       <button class="earnings-detail-btn" on:click={openFinancialAnalytics}>
-        Подробнее →
+        {$t("financeAnalytics.details")}
       </button>
     </div>
     <div class="earnings-summary">
       <div class="earnings-card earnings-card-main">
         <span class="earnings-value"
-          >{monthlyEarnings.toLocaleString("ru-RU")} ₽</span
+          >{monthlyEarnings.toLocaleString($numberLocale)} ₽</span
         >
-        <span class="earnings-label">Факт за месяц</span>
+        <span class="earnings-label">{$t("habitAnalytics.monthFact")}</span>
         {#if monthlyDelta !== 0}
           <span class="earnings-delta {monthlyDelta > 0 ? 'delta-up' : 'delta-down'}"
-            >{monthlyDelta > 0 ? '+' : ''}{monthlyDelta.toLocaleString("ru-RU")} ₽ к прошлому
-            месяцу</span
+            >{monthlyDelta > 0 ? '+' : ''}{$t("finance.deltaFromLastMonth", { amount: monthlyDelta.toLocaleString($numberLocale), currency: "₽" })}</span
           >
         {/if}
       </div>
       <div class="earnings-card earnings-card-expected">
         <span class="earnings-value earnings-value-expected"
-          >{expectedMonthlyEarnings.toLocaleString("ru-RU")} ₽</span
+          >{expectedMonthlyEarnings.toLocaleString($numberLocale)} ₽</span
         >
-        <span class="earnings-label">План за месяц</span>
+        <span class="earnings-label">{$t("habitAnalytics.monthPlan")}</span>
         {#if expectedMonthlyEarnings > 0}
           {@const progress = Math.round((monthlyEarnings / expectedMonthlyEarnings) * 100)}
           <div class="earnings-progress-bar">
@@ -382,19 +372,18 @@
             ></div>
           </div>
           <span class="earnings-progress-text" class:done={progress >= 100}>
-            {progress}% выполнено
+            {progress}% {$t("habitAnalytics.completedLabel")}
           </span>
         {/if}
       </div>
       <div class="earnings-card">
         <span class="earnings-value"
-          >{yearlyEarnings.toLocaleString("ru-RU")} ₽</span
+          >{yearlyEarnings.toLocaleString($numberLocale)} ₽</span
         >
-        <span class="earnings-label">За год</span>
+        <span class="earnings-label">{$t("habitAnalytics.yearTotal")}</span>
         {#if yearlyDelta !== 0}
           <span class="earnings-delta {yearlyDelta > 0 ? 'delta-up' : 'delta-down'}"
-            >{yearlyDelta > 0 ? '+' : ''}{yearlyDelta.toLocaleString("ru-RU")} ₽ к прошлому
-            году</span
+            >{yearlyDelta > 0 ? '+' : ''}{yearlyDelta.toLocaleString($numberLocale)} ₽ {$t("habitAnalytics.vsLastYear")}</span
           >
         {/if}
       </div>
@@ -406,7 +395,7 @@
             <div class="earnings-bar-info">
               {#if monthData.amount > 0}
                 <span class="earnings-bar-amount">
-                  {monthData.amount.toLocaleString("ru-RU")} ₽
+                  {monthData.amount.toLocaleString($numberLocale)} ₽
                 </span>
               {/if}
             </div>
@@ -417,7 +406,7 @@
                 : 0}%;"
               title="{monthNames[
                 monthData.month - 1
-              ]}: {monthData.amount.toLocaleString('ru-RU')} ₽"
+              ]}: {monthData.amount.toLocaleString($numberLocale)} ₽"
             ></div>
             <span class="earnings-bar-label">
               {monthNames[monthData.month - 1]}
@@ -426,7 +415,7 @@
         {/each}
       </div>
     {:else}
-      <div class="earnings-empty">Нет данных о заработке</div>
+      <div class="earnings-empty">{$t("habitAnalytics.noEarnings")}</div>
     {/if}
   </div>
 </div>

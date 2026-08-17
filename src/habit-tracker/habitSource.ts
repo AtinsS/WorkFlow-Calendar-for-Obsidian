@@ -91,7 +91,7 @@ export const habitSource: ICalendarSource = {
     return getMetadataForDate(dateStr);
   },
   getWeeklyMetadata: async (date: Moment): Promise<IDayMetadata> => {
-    const weekStart = date.clone().startOf("isoWeek");
+    const weekStart = date.clone().startOf("week");
     return getWeeklyMetadataForDate(weekStart);
   },
 };

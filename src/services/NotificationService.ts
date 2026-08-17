@@ -7,6 +7,7 @@ import type { ITask } from "src/task-tracker/types";
 import type { ISettings } from "src/settings";
 import { getActiveTimer } from "src/task-tracker/TimerManager";
 import { recordNotificationEvent } from "./notificationTelemetry";
+import { tRaw } from "../i18n";
 
 const DEFAULT_CHECK_INTERVAL_MS = 60_000; // 1 minute
 const DEFAULT_REMINDER_MINUTES = 5;
@@ -113,8 +114,8 @@ export class NotificationService {
           if (this.getSettings().notifyReminders && now >= fireAt - reminderMs && now < fireAt && !this.firedReminders.has(reminderKey)) {
             this.firedReminders.add(reminderKey);
             this.notify(
-              `📅 WorkLIfe Calendar`,
-              `⏱️ Напоминание: ${task.title}\nЗадача через ${this.getSettings().reminderMinutesBefore} мин (${task.scheduledTime})`,
+              tRaw("taskStore.notificationTitle"),
+              tRaw("notifications.reminder", { title: task.title, minutes: String(this.getSettings().reminderMinutesBefore), time: task.scheduledTime || "" }),
               "reminder"
             );
           }
@@ -123,8 +124,8 @@ export class NotificationService {
           if (this.getSettings().notifyOverdue && task.status === "todo" && now >= fireAt && !this.firedOverdue.has(overdueKey)) {
             this.firedOverdue.add(overdueKey);
             this.notify(
-              `📅 WorkLIfe Calendar`,
-              `‼️ Просрочено: ${task.title}\nЗапланировано на ${task.scheduledTime}`,
+              tRaw("taskStore.notificationTitle"),
+              tRaw("notifications.overdue", { title: task.title, time: task.scheduledTime || "" }),
               "overdue"
             );
           }
@@ -147,8 +148,8 @@ export class NotificationService {
             const actM = Math.floor((totalMs % 3_600_000) / 60_000);
             const actStr = actH > 0 ? `${actH}ч ${actM > 0 ? actM + 'м' : ''}` : `${actM}м`;
             this.notify(
-              `📅 WorkLIfe Calendar`,
-              `⏰ Превышен лимит: ${task.title}\nОжидается: ${estStr} · Факт: ${actStr}`,
+              tRaw("taskStore.notificationTitle"),
+              tRaw("notifications.estimateExceeded", { title: task.title, expected: estStr, actual: actStr }),
               "estimate-exceeded"
             );
           }
@@ -172,8 +173,8 @@ export class NotificationService {
             this.firedDeadline.add(deadlineStartKey);
             const timeStr = task.deadlineTime ? ` в ${task.deadlineTime}` : "";
             this.notify(
-              `📅 WorkLIfe Calendar`,
-              `🎯 Дедлайн сегодня: ${task.title}${timeStr}`,
+              tRaw("taskStore.notificationTitle"),
+              tRaw("notifications.deadlineToday", { title: task.title, time: timeStr }),
               "deadline-today"
             );
           }
@@ -186,8 +187,8 @@ export class NotificationService {
               if (now >= deadlineDateTime.getTime()) {
                 this.firedDeadline.add(deadlineEndKey);
                 this.notify(
-                  `📅 WorkLIfe Calendar`,
-                  `🔴 Дедлайн истёк: ${task.title}\nВремя: ${task.deadlineTime}`,
+                  tRaw("taskStore.notificationTitle"),
+                  tRaw("notifications.deadlineExpired", { title: task.title, time: task.deadlineTime || "" }),
                   "deadline-expired"
                 );
               }
@@ -200,8 +201,8 @@ export class NotificationService {
             this.firedDeadline.add(deadlineKey);
             const timeStr = task.deadlineTime ? ` в ${task.deadlineTime}` : "";
             this.notify(
-              `📅 WorkLIfe Calendar`,
-              `⏰ Дедлайн завтра: ${task.title}${timeStr}`,
+              tRaw("taskStore.notificationTitle"),
+              tRaw("notifications.deadlineTomorrow", { title: task.title, time: timeStr }),
               "deadline-tomorrow"
             );
           }

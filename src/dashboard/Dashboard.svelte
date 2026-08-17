@@ -19,6 +19,7 @@
   import { habits, habitLogs, toggleHabitCompletion, getHabitProgressOnDate } from "../habit-tracker/stores";
   import { getCurrentMonthKey, financeData } from "../finance/storage";
   import { settings } from "../ui/stores";
+  import { t } from "../i18n";
 
   export let appInstance: App;
   export let filePath: string | undefined = undefined;
@@ -239,7 +240,7 @@
       <div class="dash-widget-wrap">
         <button class="dash-widget dash-widget--tasks" class:expanded={tasksExpanded} on:click={() => tasksExpanded = !tasksExpanded}>
           <span class="dash-widget__icon">✅</span>
-          <span class="dash-widget__label">Задачи</span>
+          <span class="dash-widget__label">{$t("dashboard.tasks")}</span>
           <div class="dash-widget__bar"><div class="dash-widget__bar-fill" style="width:{todayProgress}%"></div></div>
           <span class="dash-widget__count">{todayDone}/{todayTotal}</span>
           <span class="dash-widget__chevron" class:open={tasksExpanded}>›</span>
@@ -265,7 +266,7 @@
       <div class="dash-widget-wrap">
         <button class="dash-widget dash-widget--habits" class:expanded={habitsExpanded} on:click={() => habitsExpanded = !habitsExpanded}>
           <span class="dash-widget__icon">🔥</span>
-          <span class="dash-widget__label">Привычки</span>
+          <span class="dash-widget__label">{$t("dashboard.habits")}</span>
           <div class="dash-widget__bar"><div class="dash-widget__bar-fill" style="width:{habitTotalCount > 0 ? Math.round(habitDoneCount / habitTotalCount * 100) : 0}%"></div></div>
           <span class="dash-widget__count">{habitDoneCount}/{habitTotalCount}</span>
           <span class="dash-widget__chevron" class:open={habitsExpanded}>›</span>
@@ -292,13 +293,13 @@
       <div class="dash-widget-wrap">
         <button class="dash-widget dash-widget--goals" class:expanded={goalsExpanded} on:click={() => goalsExpanded = !goalsExpanded}>
           <span class="dash-widget__icon">🎯</span>
-          <span class="dash-widget__label">Цель месяца</span>
+          <span class="dash-widget__label">{$t("dashboard.monthGoal")}</span>
           {#if monthGoals.length === 1}
             {@const g = monthGoals[0]}
             <div class="dash-widget__bar"><div class="dash-widget__bar-fill goal-fill" style="width:{g.targetAmount > 0 ? Math.min(100, Math.round(g.currentAmount / g.targetAmount * 100)) : 0}%"></div></div>
-            <span class="dash-widget__count">{g.currentAmount.toLocaleString("ru-RU")}/{g.targetAmount.toLocaleString("ru-RU")} ₽</span>
+            <span class="dash-widget__count">{g.currentAmount.toLocaleString($t("locale.numberLocale"))}/{g.targetAmount.toLocaleString($t("locale.numberLocale"))} {$t("locale.currencySymbol")}</span>
           {:else}
-            <span class="dash-widget__count">{monthGoals.length} целей</span>
+            <span class="dash-widget__count">{$t("dashboard.goalsCount", {count: monthGoals.length})}</span>
             <span class="dash-widget__chevron" class:open={goalsExpanded}>›</span>
           {/if}
         </button>
@@ -309,7 +310,7 @@
                 <span class="dash-goal-icon">{goal.icon}</span>
                 <span class="dash-goal-name">{goal.name}</span>
                 <div class="dash-goal-bar"><div class="dash-goal-bar-fill" style="width:{goal.targetAmount > 0 ? Math.min(100, Math.round(goal.currentAmount / goal.targetAmount * 100)) : 0}%"></div></div>
-                <span class="dash-goal-amt">{goal.currentAmount.toLocaleString("ru-RU")}/{goal.targetAmount.toLocaleString("ru-RU")} ₽</span>
+                <span class="dash-goal-amt">{goal.currentAmount.toLocaleString($t("locale.numberLocale"))}/{goal.targetAmount.toLocaleString($t("locale.numberLocale"))} {$t("locale.currencySymbol")}</span>
               </div>
             {/each}
           </div>
@@ -339,17 +340,17 @@
           <div class="dashboard-card__actions">
             <button
               class="dash-btn dash-btn--icon"
-              title="Добавить ссылку"
+              title={$t("dashboard.addLink")}
               on:click={() => openAddLink(card.id)}
             >+</button>
             <button
               class="dash-btn dash-btn--icon"
-              title="Редактировать карточку"
+              title={$t("dashboard.editCard")}
               on:click={() => openEditCard(card)}
             >✎</button>
             <button
               class="dash-btn dash-btn--icon dash-btn--danger"
-              title="Удалить карточку"
+              title={$t("dashboard.deleteCard")}
               on:click={() => removeCard(card.id)}
             >✕</button>
           </div>
@@ -364,13 +365,13 @@
               <span class="dash-link-label">{link.label}</span>
               <button
                 class="dash-btn dash-btn--sm dash-btn--danger"
-                title="Удалить ссылку"
+                title={$t("dashboard.deleteLink")}
                 on:click|stopPropagation|preventDefault={() => removeLink(card.id, link.id)}
               >✕</button>
             </a>
           {/each}
           {#if card.links.length === 0}
-            <div class="dashboard-card__empty">Нет ссылок</div>
+            <div class="dashboard-card__empty">{$t("dashboard.noLinks")}</div>
           {/if}
         </div>
       </div>
@@ -379,7 +380,7 @@
     <!-- Add card button -->
     <button class="dashboard-card dashboard-card--add" on:click={() => { showAddCardModal = true; newCardTitle = ""; newCardIcon = "📁"; }}>
       <span class="dashboard-card__add-icon">+</span>
-      <span class="dashboard-card__add-text">Добавить карточку</span>
+      <span class="dashboard-card__add-text">{$t("dashboard.addCard")}</span>
     </button>
   </div>
 </div>
@@ -388,18 +389,18 @@
 {#if showCardModal}
   <div class="dash-popup-overlay" on:click={(e) => closeModal(e, () => { showCardModal = false; editingCard = null; })}>
     <div class="dash-popup">
-      <h3 class="dash-popup__title">Редактировать карточку</h3>
+      <h3 class="dash-popup__title">{$t("dashboard.editCard")}</h3>
       <label class="dash-popup__label">
-        Иконка
+        {$t("dashboard.icon")}
         <input class="dash-popup__input" type="text" bind:value={editingCardIcon} maxlength="4" />
       </label>
       <label class="dash-popup__label">
-        Название
-        <input class="dash-popup__input" type="text" bind:value={editingCardTitle} placeholder="Название карточки" />
+        {$t("dashboard.name")}
+        <input class="dash-popup__input" type="text" bind:value={editingCardTitle} placeholder={$t("dashboard.cardNamePlaceholder")} />
       </label>
       <div class="dash-popup__actions">
-        <button class="dash-btn dash-btn--cancel" on:click={() => { showCardModal = false; editingCard = null; }}>Отмена</button>
-        <button class="dash-btn dash-btn--save" on:click={saveCardEdit}>Сохранить</button>
+        <button class="dash-btn dash-btn--cancel" on:click={() => { showCardModal = false; editingCard = null; }}>{$t("common.cancel")}</button>
+        <button class="dash-btn dash-btn--save" on:click={saveCardEdit}>{$t("common.save")}</button>
       </div>
     </div>
   </div>
@@ -409,21 +410,21 @@
 {#if showLinkModal}
   <div class="dash-popup-overlay" on:click={(e) => closeModal(e, () => { showLinkModal = false; addingLinkToCardId = null; })}>
     <div class="dash-popup">
-      <h3 class="dash-popup__title">Добавить ссылку</h3>
+      <h3 class="dash-popup__title">{$t("dashboard.addLink")}</h3>
       <label class="dash-popup__label">
-        Название
-        <input class="dash-popup__input" type="text" bind:value={newLinkLabel} placeholder="Название ссылки" />
+        {$t("dashboard.name")}
+        <input class="dash-popup__input" type="text" bind:value={newLinkLabel} placeholder={$t("dashboard.linkNamePlaceholder")} />
       </label>
       <label class="dash-popup__label">
-        Путь к заметке
+        {$t("dashboard.notePath")}
         <div class="dash-popup__input-row">
-          <input class="dash-popup__input" type="text" bind:value={newLinkPath} placeholder="Папка/Заметка" />
-          <button class="dash-btn dash-btn--browse" title="Выбрать заметку" on:click={openFilePicker}>...</button>
+          <input class="dash-popup__input" type="text" bind:value={newLinkPath} placeholder={$t("dashboard.pathPlaceholder")} />
+          <button class="dash-btn dash-btn--browse" title={$t("dashboard.notePath")} on:click={openFilePicker}>...</button>
         </div>
       </label>
       <div class="dash-popup__actions">
-        <button class="dash-btn dash-btn--cancel" on:click={() => { showLinkModal = false; addingLinkToCardId = null; }}>Отмена</button>
-        <button class="dash-btn dash-btn--save" on:click={saveNewLink}>Добавить</button>
+        <button class="dash-btn dash-btn--cancel" on:click={() => { showLinkModal = false; addingLinkToCardId = null; }}>{$t("common.cancel")}</button>
+        <button class="dash-btn dash-btn--save" on:click={saveNewLink}>{$t("common.add")}</button>
       </div>
     </div>
   </div>
@@ -433,18 +434,18 @@
 {#if showAddCardModal}
   <div class="dash-popup-overlay" on:click={(e) => closeModal(e, () => { showAddCardModal = false; })}>
     <div class="dash-popup">
-      <h3 class="dash-popup__title">Новая карточка</h3>
+      <h3 class="dash-popup__title">{$t("dashboard.newCard")}</h3>
       <label class="dash-popup__label">
-        Иконка
+        {$t("dashboard.icon")}
         <input class="dash-popup__input" type="text" bind:value={newCardIcon} maxlength="4" />
       </label>
       <label class="dash-popup__label">
-        Название
-        <input class="dash-popup__input" type="text" bind:value={newCardTitle} placeholder="Название карточки" />
+        {$t("dashboard.name")}
+        <input class="dash-popup__input" type="text" bind:value={newCardTitle} placeholder={$t("dashboard.cardNamePlaceholder")} />
       </label>
       <div class="dash-popup__actions">
-        <button class="dash-btn dash-btn--cancel" on:click={() => { showAddCardModal = false; }}>Отмена</button>
-        <button class="dash-btn dash-btn--save" on:click={createNewCard}>Создать</button>
+        <button class="dash-btn dash-btn--cancel" on:click={() => { showAddCardModal = false; }}>{$t("common.cancel")}</button>
+        <button class="dash-btn dash-btn--save" on:click={createNewCard}>{$t("common.create")}</button>
       </div>
     </div>
   </div>

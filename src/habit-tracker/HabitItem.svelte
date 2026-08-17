@@ -2,6 +2,7 @@
   import { createEventDispatcher } from "svelte";
   import type { IHabit } from "./types";
   import { habitLogs, isHabitCompletedOnDate, calculateStreak, getHabitCountOnDate, getHabitProgressOnDate } from "./stores";
+  import { t } from "../i18n";
 
   export let habit: IHabit;
 
@@ -76,7 +77,7 @@
     class:full={isMultiTarget && currentCount >= targetCount}
     style="--habit-color: {habit.color}; --progress: {progress}"
     on:click={toggle}
-    aria-label={isCompleted ? "Отменить выполнение" : progressState === 1 ? "Довести до 100%" : "Отметить выполнение"}
+    aria-label={isCompleted ? $t("habits.item.undo") : progressState === 1 ? $t("habits.item.toPercent") : $t("habits.item.markDone")}
   >
     {#if isMultiTarget}
       <span class="habit-check-count">{currentCount}</span>
@@ -111,7 +112,7 @@
     class="habit-edit-btn"
     disabled={isCompleted && !isMultiTarget}
     on:click={handleEdit}
-    aria-label={isCompleted ? "Нельзя редактировать выполненную привычку" : "Редактировать привычку"}
+    aria-label={isCompleted ? $t("habits.item.cannotEdit") : $t("habits.item.edit")}
   >
     &#9998;
   </button>
@@ -119,7 +120,7 @@
   <button
     class="habit-delete-btn"
     on:click={handleDelete}
-    aria-label="Удалить привычку"
+    aria-label={$t("habits.item.delete")}
   >
     &#10005;
   </button>

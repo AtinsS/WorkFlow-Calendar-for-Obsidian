@@ -13,6 +13,7 @@
   import { selectedDate } from "../task-tracker/stores";
   import HabitItem from "./HabitItem.svelte";
   import { HabitModal } from "./HabitModal";
+  import { t } from "../i18n";
 
   export let appInstance: App;
 
@@ -103,7 +104,7 @@
 <div class="habit-tracker-panel">
   <div class="habit-tracker-header">
     <div class="habit-tracker-header-left">
-      <span class="habit-tracker-title">Привычки</span>
+      <span class="habit-tracker-title">{$t("habits.panel.title")}</span>
       {#if totalStreak > 0}
         <span class="habit-tracker-streak">
           &#128293; {totalStreak}
@@ -114,7 +115,7 @@
       <button
         class="habit-tracker-btn add-btn"
         on:click|stopPropagation={openCreateHabit}
-        title="Добавить привычку"
+        title={$t("habits.panel.add")}
       >
         +
       </button>
@@ -124,7 +125,7 @@
   <div class="habit-tracker-list">
     {#if activeHabits.length === 0}
       <div class="habit-tracker-empty">
-        Нет привычек. Нажмите + чтобы создать.
+        {$t("habits.panel.empty")}
       </div>
     {:else}
       {#each activeHabits as habit (habit.id)}

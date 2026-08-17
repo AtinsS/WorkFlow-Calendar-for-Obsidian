@@ -7,6 +7,7 @@ import type { IHabit, IHabitLog, IHabitTrackerData } from "./types";
 import { HABIT_TRACKER_DATA_VERSION } from "./types";
 import { loadHabitData, saveHabitData, generateId } from "./storage";
 import { settings } from "../ui/stores";
+import { tArrayRaw, locale } from "../i18n";
 
 let pluginInstance: CalendarPlugin = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -467,10 +468,20 @@ export interface DayOfWeekStats {
 
 const DAY_NAMES_RU = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
 
+function getDayNames(): string[] {
+  const names = tArrayRaw("common.weekdays.short");
+  const labels = names.length === 7 ? names : DAY_NAMES_RU;
+  const sow = get(settings).startOfWeek || "system";
+  if (sow === "sunday" || (sow === "system" && get(locale) === "en")) {
+    return [...labels.slice(-1), ...labels.slice(0, -1)];
+  }
+  return labels;
+}
+
 /** Check if a habit is "active" on a given date */
 function isHabitActiveOnDate(habit: IHabit, date: moment.Moment): boolean {
   if (habit.archived) return false;
-  const dow = (date.day() + 6) % 7; // Mon=0
+  const dow = date.day(); // moment convention: 0=Sun, 1=Mon, ..., 6=Sat
   switch (habit.frequency) {
     case "daily":
       return true;
@@ -501,7 +512,7 @@ export function getDayOfWeekProductivity(): DayOfWeekStats[] {
   for (const dateStr of sortedDates) {
     const date = moment(dateStr, "YYYY-MM-DD");
     if (!date.isValid()) continue;
-    const dayOfWeek = (date.day() + 6) % 7;
+    const dayOfWeek = date.day(); // moment convention: 0=Sun, 1=Mon, ..., 6=Sat
 
     // How many habits are active on this date?
     let activeCount = 0;
@@ -527,15 +538,22 @@ export function getDayOfWeekProductivity(): DayOfWeekStats[] {
     entry.count++;
   }
 
+  // Map visual order to moment day index
+  const sow = get(settings).startOfWeek || "system";
+  const isSundayStart = sow === "sunday" || (sow === "system" && get(locale) === "en");
+  const visualToMoment = isSundayStart ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 0];
+
   const result: DayOfWeekStats[] = [];
+  const dayNames = getDayNames();
   for (let i = 0; i < 7; i++) {
-    const entry = statsByDay.get(i);
+    const momentDay = visualToMoment[i];
+    const entry = statsByDay.get(momentDay);
     const productivityRate = entry && entry.activeSum > 0
       ? Math.round((entry.completedSum / entry.activeSum) * 100)
       : 0;
     result.push({
       dayIndex: i,
-      dayName: DAY_NAMES_RU[i],
+      dayName: dayNames[i],
       completions: entry?.completedSum || 0,
       totalDays: entry?.count || 0,
       productivityRate,

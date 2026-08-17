@@ -9,6 +9,7 @@ import { TASK_TRACKER_DATA_VERSION } from "./types";
 import { loadTaskData, saveTaskData, generateId } from "./storage";
 import { startTimer, resumeTimer, stopTimer, addTimeLog } from "./TimerManager";
 import { settings } from "../ui/stores";
+import { tRaw } from "../i18n";
 
 let pluginInstance: CalendarPlugin = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -18,8 +19,8 @@ const DEFAULT_AUTO_CLEANUP_THRESHOLD = 180;
 
 function notifyStatusChange(taskTitle: string, statusLabel: string): void {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  const n = new Notification(`📅 WorkLIfe Calendar`, {
-    body: `🔄 ${taskTitle}\nСтатус: ${statusLabel}`,
+  const n = new Notification(tRaw("taskStore.notificationTitle"), {
+    body: tRaw("taskStore.statusChanged", { title: taskTitle, label: statusLabel }),
   });
   n.onclick = () => { window.focus(); n.close(); };
   setTimeout(() => n.close(), 5000);
@@ -361,15 +362,15 @@ export function updateTaskStatus(id: string, status: TaskStatus): void {
 
   if (oldStatus !== "progress" && status === "progress") {
     startTaskTimer(id);
-    notifyStatusChange(task?.title || "Задача", "В работу");
+    notifyStatusChange(task?.title || tRaw("taskStore.defaultTaskTitle"), tRaw("taskStore.statusToWork"));
   } else if (oldStatus === "progress" && status === "paused") {
     pauseTaskTimer(id);
-    notifyStatusChange(task?.title || "Задача", "На паузу");
+    notifyStatusChange(task?.title || tRaw("taskStore.defaultTaskTitle"), tRaw("taskStore.statusToPause"));
   } else if (oldStatus === "progress" && status !== "progress") {
     stopTaskTimerAndLog(id, status);
   } else if (oldStatus === "paused" && status === "progress") {
     startTaskTimer(id);
-    notifyStatusChange(task?.title || "Задача", "Продолжена");
+    notifyStatusChange(task?.title || tRaw("taskStore.defaultTaskTitle"), tRaw("taskStore.statusResumed"));
   } else {
     setTaskStatus(id, status);
   }

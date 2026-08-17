@@ -2,6 +2,7 @@ import type { App } from "obsidian";
 import { get } from "svelte/store";
 import { getDateUID } from "obsidian-daily-notes-interface";
 import { CustomModal } from "../ui/CustomModal";
+import { tRaw, locale } from "../i18n";
 
 import type { ITask, RecurrenceConfig } from "./types";
 import { projects, selectedDate } from "./stores";
@@ -46,7 +47,7 @@ export class TaskModal extends CustomModal {
   private updateDescCounter(): void {
     if (!this.descCounterEl) return;
     const len = (this.descriptionInput || "").length;
-    this.descCounterEl.textContent = len > 0 ? `Макс. 100 символов (${len}/100)` : "";
+    this.descCounterEl.textContent = len > 0 ? tRaw("tasks.modal.maxLength", { current: String(len) }) : "";
     this.descCounterEl.style.color = len > 100 ? "var(--text-error, #ef4436)" : "";
   }
 
@@ -115,23 +116,23 @@ export class TaskModal extends CustomModal {
 
     // ── Header ──
     const header = this.contentEl.createDiv({ cls: "tm-header" });
-    header.createEl("h2", { text: this.task ? "Редактировать задачу" : "Новая задача", cls: "tm-title" });
+    header.createEl("h2", { text: this.task ? tRaw("tasks.modal.editTask") : tRaw("tasks.modal.newTask"), cls: "tm-title" });
 
 
     // ═══ 1. Название ═══
     const titleWrap = this.contentEl.createDiv({ cls: "tm-field" });
-    titleWrap.createEl("label", { text: "Название *", cls: "tm-label" });
+    titleWrap.createEl("label", { text: tRaw("tasks.modal.title"), cls: "tm-label" });
     this.titleInputEl = titleWrap.createEl("input", {
-      type: "text", cls: "tm-input", placeholder: "Введите название задачи...",
+      type: "text", cls: "tm-input", placeholder: tRaw("tasks.modal.titlePlaceholder"),
       value: this.titleInput,
     });
     this.titleInputEl.addEventListener("input", () => { this.titleInput = this.titleInputEl?.value ?? ""; });
 
     // ═══ 2. Описание ═══
     const descWrap = this.contentEl.createDiv({ cls: "tm-field" });
-    descWrap.createEl("label", { text: "Описание", cls: "tm-label" });
+    descWrap.createEl("label", { text: tRaw("tasks.modal.description"), cls: "tm-label" });
     this.descriptionInputEl = descWrap.createEl("textarea", {
-      cls: "tm-textarea", placeholder: "Добавьте описание задачи (необязательно)",
+      cls: "tm-textarea", placeholder: tRaw("tasks.modal.descriptionPlaceholder"),
     }) as HTMLTextAreaElement;
     this.descriptionInputEl.value = this.descriptionInput;
     this.descriptionInputEl.rows = 3;
@@ -147,9 +148,9 @@ export class TaskModal extends CustomModal {
 
     // Проект
     const projWrap = projPriRow.createDiv({ cls: "tm-field tm-half" });
-    projWrap.createEl("label", { text: "Проект", cls: "tm-label" });
+    projWrap.createEl("label", { text: tRaw("tasks.modal.project"), cls: "tm-label" });
     const projSelect = projWrap.createEl("select", { cls: "tm-select" });
-    projSelect.createEl("option", { value: "", text: "Без проекта" });
+    projSelect.createEl("option", { value: "", text: tRaw("tasks.modal.noProject") });
     for (const p of get(projects)) {
       const opt = projSelect.createEl("option", { value: p.id, text: `${p.icon} ${p.name}` });
       if (p.id === this.projectId) opt.selected = true;
@@ -158,12 +159,12 @@ export class TaskModal extends CustomModal {
 
     // Приоритет
     const priWrap = projPriRow.createDiv({ cls: "tm-field tm-half" });
-    priWrap.createEl("label", { text: "Приоритет", cls: "tm-label" });
+    priWrap.createEl("label", { text: tRaw("tasks.modal.priority"), cls: "tm-label" });
     const priRow = priWrap.createDiv({ cls: "tm-pri-btns" });
     const priDefs: Array<{ v: string; l: string; c: string }> = [
-      { v: "low", l: "Низкий", c: "#4caf50" },
-      { v: "medium", l: "Средний", c: "#ff9800" },
-      { v: "high", l: "Высокий", c: "#f44336" },
+      { v: "low", l: tRaw("tasks.modal.priorityLow"), c: "#4caf50" },
+      { v: "medium", l: tRaw("tasks.modal.priorityMedium"), c: "#ff9800" },
+      { v: "high", l: tRaw("tasks.modal.priorityHigh"), c: "#f44336" },
     ];
     for (const p of priDefs) {
       const btn = priRow.createEl("button", { cls: "tm-pri-btn" + (this.priority === p.v ? " active" : "") });
@@ -179,13 +180,13 @@ export class TaskModal extends CustomModal {
     // ═══ 4. Планирование: Дата + Время ═══
     const planHeader = this.contentEl.createDiv({ cls: "tm-section-header" });
     planHeader.createEl("span", { text: "📅", cls: "tm-section-icon" });
-    planHeader.createEl("span", { text: "Планирование", cls: "tm-section-title" });
+    planHeader.createEl("span", { text: tRaw("tasks.modal.scheduling"), cls: "tm-section-title" });
 
     const dateRow = this.contentEl.createDiv({ cls: "tm-row-2" });
 
     // Дата
     const dateWrap = dateRow.createDiv({ cls: "tm-field tm-half" });
-    dateWrap.createEl("label", { text: "Дата", cls: "tm-label" });
+    dateWrap.createEl("label", { text: tRaw("tasks.modal.date"), cls: "tm-label" });
     const dateInput = dateWrap.createEl("input", {
       type: "date", cls: "tm-input", value: this.dateValue,
     });
@@ -199,7 +200,7 @@ export class TaskModal extends CustomModal {
 
     // Время
     const timeWrap = dateRow.createDiv({ cls: "tm-field tm-half" });
-    timeWrap.createEl("label", { text: "Время", cls: "tm-label" });
+    timeWrap.createEl("label", { text: tRaw("tasks.modal.time"), cls: "tm-label" });
     const timeInput = timeWrap.createEl("input", {
       type: "time", cls: "tm-input", value: this.scheduledTime,
     });
@@ -218,7 +219,7 @@ export class TaskModal extends CustomModal {
 
     // ═══ 5. Время окончания ═══
     const endTimeWrap = this.contentEl.createDiv({ cls: "tm-field" });
-    endTimeWrap.createEl("label", { text: "Время окончания", cls: "tm-label" });
+    endTimeWrap.createEl("label", { text: tRaw("tasks.modal.endTime"), cls: "tm-label" });
     const endTimeInput = endTimeWrap.createEl("input", {
       type: "time", cls: "tm-input", value: this.endTime,
     });
@@ -251,7 +252,7 @@ export class TaskModal extends CustomModal {
     const advWrap = this.contentEl.createDiv({ cls: "tm-advanced" });
     const advToggle = advWrap.createDiv({ cls: "tm-adv-toggle" });
     advToggle.createEl("span", { text: "▾", cls: "tm-adv-chevron" });
-    advToggle.createEl("span", { text: "Дополнительные параметры", cls: "tm-adv-label" });
+    advToggle.createEl("span", { text: tRaw("tasks.modal.extra"), cls: "tm-adv-label" });
     this.advancedBody = advWrap.createDiv({ cls: "tm-adv-body" });
     this.advancedBody.style.display = "none";
 
@@ -265,7 +266,7 @@ export class TaskModal extends CustomModal {
     const dlRow = this.advancedBody.createDiv({ cls: "tm-adv-row" });
     const dlLabel = dlRow.createDiv({ cls: "tm-adv-label-item" });
     dlLabel.createEl("span", { cls: "tm-adv-label-item-icon", text: "📅" });
-    dlLabel.createEl("span", { text: "Дедлайн" });
+    dlLabel.createEl("span", { text: tRaw("tasks.modal.deadline") });
     const dlInput = dlRow.createEl("input", {
       type: "date", cls: "tm-input tm-adv-input", value: this.deadlineDateValue,
     });
@@ -281,12 +282,12 @@ export class TaskModal extends CustomModal {
     const recRow = this.advancedBody.createDiv({ cls: "tm-adv-row" });
     const recLabel = recRow.createDiv({ cls: "tm-adv-label-item" });
     recLabel.createEl("span", { cls: "tm-adv-label-item-icon", text: "🔄" });
-    recLabel.createEl("span", { text: "Повторение" });
+    recLabel.createEl("span", { text: tRaw("tasks.modal.recurrence") });
     const recSelect = recRow.createEl("select", { cls: "tm-select tm-adv-input" });
-    recSelect.createEl("option", { value: "none", text: "Нет" });
-    recSelect.createEl("option", { value: "daily", text: "Ежедневно" });
-    recSelect.createEl("option", { value: "weekly", text: "Еженедельно" });
-    recSelect.createEl("option", { value: "monthly", text: "Ежемесячно" });
+    recSelect.createEl("option", { value: "none", text: tRaw("tasks.modal.recurrenceNone") });
+    recSelect.createEl("option", { value: "daily", text: tRaw("tasks.modal.recurrenceDaily") });
+    recSelect.createEl("option", { value: "weekly", text: tRaw("tasks.modal.recurrenceWeekly") });
+    recSelect.createEl("option", { value: "monthly", text: tRaw("tasks.modal.recurrenceMonthly") });
     recSelect.value = this.recurrenceType;
     recSelect.addEventListener("change", () => {
       this.recurrenceType = recSelect.value as any;
@@ -299,7 +300,7 @@ export class TaskModal extends CustomModal {
     // Интервал
     const intRow = this.recurrenceSubEl.createDiv({ cls: "tm-adv-row" });
     const intLabel = intRow.createDiv({ cls: "tm-adv-label-item" });
-    intLabel.createEl("span", { text: "Интервал" });
+    intLabel.createEl("span", { text: tRaw("tasks.modal.interval") });
     const intInput = intRow.createEl("input", {
       type: "number", cls: "tm-input tm-adv-input", value: String(this.recurrenceInterval), attr: { min: "1" },
     }) as HTMLInputElement;
@@ -309,10 +310,17 @@ export class TaskModal extends CustomModal {
     // Дни недели
     const daysRow = this.recurrenceSubEl.createDiv({ cls: "tm-adv-row tm-adv-row-days" });
     const daysLabel = daysRow.createDiv({ cls: "tm-adv-label-item" });
-    daysLabel.createEl("span", { text: "Дни" });
+    daysLabel.createEl("span", { text: tRaw("tasks.modal.days") });
     const daysContainer = daysRow.createDiv({ cls: "tm-days-btns" });
-    const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-    const dayIndices = [1, 2, 3, 4, 5, 6, 0];
+    const rawLabels = tRaw("common.weekdays.short").split(", ");
+    const sow = get(settings).startOfWeek || "system";
+    let dayIndices: number[];
+    if (sow === "monday") dayIndices = [1, 2, 3, 4, 5, 6, 0];
+    else if (sow === "sunday") dayIndices = [0, 1, 2, 3, 4, 5, 6];
+    else dayIndices = get(locale) === "en" ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 0];
+    const dayLabels = sow === "sunday" || (sow === "system" && get(locale) === "en")
+      ? [...rawLabels.slice(-1), ...rawLabels.slice(0, -1)]
+      : rawLabels;
     for (let i = 0; i < 7; i++) {
       const momentIdx = dayIndices[i];
       const dayBtn = daysContainer.createEl("button", { text: dayLabels[i], cls: "tm-day-btn" });
@@ -327,7 +335,7 @@ export class TaskModal extends CustomModal {
     // Повторять до
     const untilRow = this.recurrenceSubEl.createDiv({ cls: "tm-adv-row" });
     const untilLabel = untilRow.createDiv({ cls: "tm-adv-label-item" });
-    untilLabel.createEl("span", { text: "Повторять до" });
+    untilLabel.createEl("span", { text: tRaw("tasks.modal.repeatUntil") });
     const untilInput = untilRow.createEl("input", {
       type: "date", cls: "tm-input tm-adv-input", value: this.recurrenceUntilDateValue,
     });
@@ -345,9 +353,9 @@ export class TaskModal extends CustomModal {
     const noteRow = this.advancedBody.createDiv({ cls: "tm-adv-row" });
     const noteLabel = noteRow.createDiv({ cls: "tm-adv-label-item" });
     noteLabel.createEl("span", { cls: "tm-adv-label-item-icon", text: "🔗" });
-    noteLabel.createEl("span", { text: "Связать с заметкой" });
+    noteLabel.createEl("span", { text: tRaw("tasks.modal.linkNote") });
     const noteInput = noteRow.createEl("input", {
-      type: "text", cls: "tm-input tm-adv-input", placeholder: "Путь к заметке...",
+      type: "text", cls: "tm-input tm-adv-input", placeholder: tRaw("tasks.modal.notePlaceholder"),
       value: this.notePathInput,
     });
     noteInput.addEventListener("input", () => { this.notePathInput = noteInput.value; });
@@ -359,10 +367,10 @@ export class TaskModal extends CustomModal {
       }).open();
     });
     const createNoteBtn = noteRow.createEl("button", { text: "+", cls: "tm-adv-file-btn" });
-    createNoteBtn.setAttribute("title", "Создать новую заметку");
+    createNoteBtn.setAttribute("title", tRaw("tasks.modal.createNote"));
     createNoteBtn.addEventListener("click", () => {
       new FolderSuggestModal(this.app, async (folder) => {
-        const title = this.titleInput.trim() || "Заметка";
+        const title = this.titleInput.trim() || tRaw("tasks.modal.note");
         const filename = title.replace(/[\\/:*?"<>|]/g, "_") + ".md";
         const path = `${folder}/${filename}`;
         const parts = path.split("/");
@@ -386,7 +394,7 @@ export class TaskModal extends CustomModal {
     const workLabelWrap = workRow.createDiv({ cls: "tm-adv-label-item" });
     workLabelWrap.createEl("span", { cls: "tm-adv-label-item-icon", text: "💎" });
     const workLabel = workLabelWrap.createEl("span");
-    workLabel.createEl("span", { text: "Учитывать в рабочем времени" });
+    workLabel.createEl("span", { text: tRaw("tasks.modal.isWorkTask") });
     workLabel.createEl("br");
     workLabel.createEl("span", { text: "Задача будет учитываться в статистике и планировании", cls: "tm-adv-sublabel" });
     const workToggle = workRow.createEl("label", { cls: "tm-toggle" });
@@ -401,17 +409,17 @@ export class TaskModal extends CustomModal {
     // Тип оплаты
     const payRow = this.workTaskSubEl.createDiv({ cls: "tm-adv-row" });
     const payLabel = payRow.createDiv({ cls: "tm-adv-label-item" });
-    payLabel.createEl("span", { text: "Тип оплаты" });
+    payLabel.createEl("span", { text: tRaw("tasks.modal.paymentType") });
     const paySelect = payRow.createEl("select", { cls: "tm-select tm-adv-input" });
-    paySelect.createEl("option", { value: "hour", text: "В час" });
-    paySelect.createEl("option", { value: "day", text: "В день" });
+    paySelect.createEl("option", { value: "hour", text: tRaw("tasks.modal.paymentHour") });
+    paySelect.createEl("option", { value: "day", text: tRaw("tasks.modal.paymentDay") });
     paySelect.value = this.paymentType;
     paySelect.addEventListener("change", () => { this.paymentType = paySelect.value as any; this.updateWorkTaskSubFields(); });
 
     // Ставка
     const rateRow = this.workTaskSubEl.createDiv({ cls: "tm-adv-row" });
     const rateLabel = rateRow.createDiv({ cls: "tm-adv-label-item" });
-    rateLabel.createEl("span", { text: "Ставка (₽)" });
+    rateLabel.createEl("span", { text: tRaw("tasks.modal.rate", { currency: "₽" }) });
     const rateInput = rateRow.createEl("input", {
       type: "number", cls: "tm-input tm-adv-input", value: this.rate, placeholder: "0", attr: { min: "0" },
     }) as HTMLInputElement;
@@ -421,7 +429,7 @@ export class TaskModal extends CustomModal {
     // Переработки с
     const otStartRow = this.workTaskSubEl.createDiv({ cls: "tm-adv-row" });
     const otStartLabel = otStartRow.createDiv({ cls: "tm-adv-label-item" });
-    otStartLabel.createEl("span", { text: "Переработки с (час)" });
+    otStartLabel.createEl("span", { text: tRaw("tasks.modal.overtimeFrom") });
     const otStartInput = otStartRow.createEl("input", {
       type: "number", cls: "tm-input tm-adv-input", value: this.overtimeStart, placeholder: "8", attr: { min: "1", max: "24" },
     }) as HTMLInputElement;
@@ -431,7 +439,7 @@ export class TaskModal extends CustomModal {
     // Множитель
     const otMulRow = this.workTaskSubEl.createDiv({ cls: "tm-adv-row" });
     const otMulLabel = otMulRow.createDiv({ cls: "tm-adv-label-item" });
-    otMulLabel.createEl("span", { text: "Множитель" });
+    otMulLabel.createEl("span", { text: tRaw("tasks.modal.multiplier") });
     const otMulInput = otMulRow.createEl("input", {
       type: "number", cls: "tm-input tm-adv-input", value: this.overtimeMultiplier, placeholder: "1.5", attr: { min: "1", max: "10", step: "0.1" },
     }) as HTMLInputElement;
@@ -443,11 +451,11 @@ export class TaskModal extends CustomModal {
 
     // ═══ Footer ═══
     const footer = this.contentEl.createDiv({ cls: "tm-footer" });
-    const cancelBtn = footer.createEl("button", { text: "Отмена", cls: "tm-btn tm-cancel" });
+    const cancelBtn = footer.createEl("button", { text: tRaw("common.cancel"), cls: "tm-btn tm-cancel" });
     cancelBtn.addEventListener("click", () => this.close());
     const submitBtn = footer.createEl("button", { cls: "tm-btn tm-submit" });
     submitBtn.createEl("span", { text: "✓" });
-    submitBtn.createEl("span", { text: this.task ? "Сохранить" : "Создать задачу" });
+    submitBtn.createEl("span", { text: this.task ? tRaw("common.save") : tRaw("tasks.modal.create") });
     submitBtn.addEventListener("click", () => this.handleSubmit());
   }
 
@@ -492,14 +500,14 @@ export class TaskModal extends CustomModal {
       // Show error
       const errorEl = this.contentEl.querySelector(".tm-time-error") as HTMLElement;
       if (errorEl) {
-        errorEl.textContent = "⚠ Время окончания не может быть раньше начального времени";
+        errorEl.textContent = tRaw("tasks.modal.errorEndTime");
         setTimeout(() => {
           errorEl.textContent = "";
         }, 3000);
       } else {
         // Create error element if it doesn't exist
         const msgEl = this.contentEl.createDiv({ cls: "tm-time-error" });
-        msgEl.textContent = "⚠ Время окончания не может быть раньше начального времени";
+        msgEl.textContent = tRaw("tasks.modal.errorEndTime");
         msgEl.style.color = "var(--text-error, #ef4436)";
         msgEl.style.fontSize = "0.9em";
         msgEl.style.marginBottom = "10px";
@@ -514,7 +522,7 @@ export class TaskModal extends CustomModal {
     if (desc.length > 100) {
       if (this.descCounterEl) {
         this.descCounterEl.style.color = "var(--text-error, #ef4436)";
-        this.descCounterEl.textContent = `⚠ ${desc.length}/100 — максимум 100`;
+        this.descCounterEl.textContent = `⚠ ${tRaw("tasks.modal.maxLength", { current: String(desc.length) })}`;
         setTimeout(() => {
           this.descCounterEl!.style.color = "";
           this.updateDescCounter();

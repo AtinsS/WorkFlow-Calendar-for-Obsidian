@@ -3,6 +3,7 @@ import { VIEW_TYPE_TASKS, VIEW_TYPE_SCHEDULE, VIEW_TYPE_MOBILE_SCHEDULE } from "
 import TaskPanel from "../task-tracker/TaskPanel.svelte";
 import HabitPanel from "../habit-tracker/HabitPanel.svelte";
 import { get } from "svelte/store";
+import { tRaw } from "../i18n";
 import { selectedDate, projects, taskFilter } from "../task-tracker/stores";
 import { settings } from "../ui/stores";
 import moment from "moment";
@@ -25,7 +26,7 @@ export default class TaskView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Задачи";
+    return tRaw("tasks.panel.title");
   }
 
   getIcon(): string {
@@ -56,7 +57,7 @@ export default class TaskView extends ItemView {
 
     // Sidebar: project list
     const sidebar = mainContent.createDiv({ cls: "task-view-sidebar" });
-    sidebar.createDiv({ cls: "task-view-sidebar-title", text: "Проекты" });
+    sidebar.createDiv({ cls: "task-view-sidebar-title", text: tRaw("tasks.panel.menuProjects").replace("📂 ", "") });
     this.projectSidebar = sidebar.createDiv({ cls: "task-view-sidebar-list" });
 
     // Panels
@@ -265,7 +266,7 @@ export default class TaskView extends ItemView {
 
       const allBtn = this.projectSidebar.createDiv({ cls: "task-view-sidebar-btn" });
       allBtn.createDiv({ cls: "task-view-sidebar-icon", text: "📋" });
-      allBtn.createDiv({ cls: "task-view-sidebar-name", text: "Все" });
+      allBtn.createDiv({ cls: "task-view-sidebar-name", text: tRaw("tasks.tabs.all") });
       if (get(taskFilter).projectId === null) allBtn.addClass("active");
       allBtn.addEventListener("click", () => taskFilter.update((f) => ({ ...f, projectId: null })));
 

@@ -1,6 +1,7 @@
 import type { App } from "obsidian";
 import { get } from "svelte/store";
 import { CustomModal } from "../ui/CustomModal";
+import { tRaw } from "../i18n";
 
 import type { IProject } from "./types";
 import { DEFAULT_PROJECT_COLORS } from "./types";
@@ -40,7 +41,7 @@ function renderIconPicker(
 
   // Custom input
   const customRow = container.createDiv("pm-icon-custom-row");
-  customRow.createEl("label", { text: "Иконка проекта", cls: "pm-label" });
+  customRow.createEl("label", { text: tRaw("tasks.project.icon"), cls: "pm-label" });
   const inputWrap = customRow.createDiv("pm-icon-input-wrap");
   const input = inputWrap.createEl("input", {
     cls: "pm-icon-custom-input",
@@ -67,7 +68,7 @@ function renderIconPicker(
 
   // Recently used
   const recentSection = container.createDiv("pm-icon-recent");
-  recentSection.createEl("label", { text: "Недавние", cls: "pm-label" });
+  recentSection.createEl("label", { text: tRaw("tasks.project.recent"), cls: "pm-label" });
   const recentGrid = recentSection.createDiv("pm-icon-grid");
 
   function renderRecentSection() {
@@ -100,9 +101,9 @@ export class ProjectModal extends CustomModal {
   onOpen(): void {
     this.containerEl.addClass("wf-project-modal");
 
-    this.contentEl.createEl("h2", { text: "Управление проектами" });
+    this.contentEl.createEl("h2", { text: tRaw("tasks.project.title") });
     this.contentEl.createEl("p", {
-      text: "Создайте и настройте проекты для организации задач",
+      text: tRaw("tasks.project.subtitle"),
       cls: "wf-dialog-subtitle",
     });
 
@@ -115,7 +116,7 @@ export class ProjectModal extends CustomModal {
 
     const header = section.createDiv("pm-section-header pm-section-toggle");
     header.createEl("span", { text: "+", cls: "pm-section-icon" });
-    header.createEl("span", { text: "Новый проект", cls: "pm-section-title" });
+    header.createEl("span", { text: tRaw("tasks.project.newProject"), cls: "pm-section-title" });
     const chevron = header.createEl("span", { text: "▾", cls: "pm-chevron" });
 
     const body = section.createDiv("pm-section-body");
@@ -133,10 +134,10 @@ export class ProjectModal extends CustomModal {
 
     // Name input
     const nameField = body.createDiv("pm-field");
-    nameField.createEl("label", { text: "Название проекта", cls: "pm-label" });
+    nameField.createEl("label", { text: tRaw("tasks.project.name"), cls: "pm-label" });
     const nameInput = nameField.createEl("input", {
       cls: "pm-input",
-      attr: { type: "text", placeholder: "Введите название проекта...", maxlength: "60" },
+      attr: { type: "text", placeholder: tRaw("tasks.project.namePlaceholder"), maxlength: "60" },
     });
     const charCount = nameField.createEl("span", { text: "0/60", cls: "pm-char-count" });
     nameInput.addEventListener("input", () => {
@@ -149,7 +150,7 @@ export class ProjectModal extends CustomModal {
 
     // Color picker
     const colorSection = row.createDiv("pm-color-section");
-    colorSection.createEl("label", { text: "Цвет проекта", cls: "pm-label" });
+    colorSection.createEl("label", { text: tRaw("tasks.project.color"), cls: "pm-label" });
     const colorGrid = colorSection.createDiv("pm-color-grid");
 
     DEFAULT_PROJECT_COLORS.forEach((color) => {
@@ -173,7 +174,7 @@ export class ProjectModal extends CustomModal {
 
     // Preview
     const preview = body.createDiv("pm-preview");
-    preview.createEl("label", { text: "Предпросмотр", cls: "pm-label" });
+    preview.createEl("label", { text: tRaw("tasks.project.preview"), cls: "pm-label" });
     const previewCard = preview.createDiv("pm-preview-card");
 
     const previewDot = previewCard.createDiv("pm-preview-dot");
@@ -181,19 +182,19 @@ export class ProjectModal extends CustomModal {
     const previewIcon = previewCard.createSpan("pm-preview-icon");
     previewIcon.textContent = newIcon;
     const previewName = previewCard.createSpan("pm-preview-name");
-    previewName.textContent = "Название проекта";
+    previewName.textContent = tRaw("tasks.project.name");
 
     function updatePreview() {
       previewDot.style.backgroundColor = newColor;
       previewIcon.textContent = newIcon;
-      previewName.textContent = newName || "Название проекта";
+      previewName.textContent = newName || tRaw("tasks.project.name");
     }
 
     nameInput.addEventListener("input", updatePreview);
 
     // Create button
     const createBtn = body.createEl("button", {
-      text: "Создать проект",
+      text: tRaw("tasks.project.create"),
       cls: "pm-create-btn",
     });
     createBtn.addEventListener("click", () => {
@@ -220,14 +221,14 @@ export class ProjectModal extends CustomModal {
     const section = container.createDiv("pm-existing");
     const header = section.createDiv("pm-section-header");
     header.createEl("span", { text: "🗂", cls: "pm-section-icon" });
-    header.createEl("span", { text: "Существующие проекты", cls: "pm-section-title" });
+    header.createEl("span", { text: tRaw("tasks.project.existingProjects"), cls: "pm-section-title" });
 
     const allProjects = get(projects);
     const allTasks = get(tasks);
 
     if (allProjects.length === 0) {
       section.createEl("p", {
-        text: "Проектов пока нет. Создайте первый выше!",
+        text: tRaw("tasks.project.empty"),
         cls: "pm-empty",
       });
       return;
@@ -251,24 +252,24 @@ export class ProjectModal extends CustomModal {
 
       const stats = info.createDiv("pm-project-stats");
       if (taskCount > 0) {
-        stats.createEl("span", { text: `${taskCount} активн.`, cls: "pm-stat pm-stat-active" });
+        stats.createEl("span", { text: tRaw("tasks.project.activeCount", {count: taskCount}), cls: "pm-stat pm-stat-active" });
       }
       if (doneCount > 0) {
-        stats.createEl("span", { text: `${doneCount} готово`, cls: "pm-stat pm-stat-done" });
+        stats.createEl("span", { text: tRaw("tasks.project.doneCount", {count: doneCount}), cls: "pm-stat pm-stat-done" });
       }
 
       const actions = item.createDiv("pm-project-actions");
 
       const editBtn = actions.createEl("button", { cls: "pm-action-btn pm-edit-btn" });
       editBtn.innerHTML = "&#9998;";
-      editBtn.title = "Редактировать";
+      editBtn.title = tRaw("common.edit");
       editBtn.addEventListener("click", () => this.openEditProject(project));
 
       const deleteBtn = actions.createEl("button", { cls: "pm-action-btn pm-delete-btn" });
       deleteBtn.innerHTML = "&#10005;";
-      deleteBtn.title = "Удалить проект";
+      deleteBtn.title = tRaw("common.delete");
       deleteBtn.addEventListener("click", () => {
-        if (confirm(`Удалить проект «${project.name}»?\nЗадачи сохранят данные, но потеряют привязку к проекту.`)) {
+        if (confirm(tRaw("tasks.project.deleteConfirm", {name: project.name}))) {
           removeProject(project.id);
           this.rerender();
         }
@@ -278,7 +279,7 @@ export class ProjectModal extends CustomModal {
     // Footer tip
     const footer = container.createDiv("pm-footer-tip");
     footer.createEl("span", { cls: "pm-footer-tip-icon", text: "💡" });
-    footer.createEl("span", { text: "Вы можете редактировать название, цвет и иконку проекта в любой момент" });
+    footer.createEl("span", { text: tRaw("tasks.project.footerTip") });
   }
 
   private openEditProject(project: IProject): void {
@@ -309,7 +310,7 @@ class EditProjectModal extends CustomModal {
     this.containerEl.addClass("wf-project-modal");
     this.containerEl.addClass("wf-edit-modal");
 
-    this.contentEl.createEl("h2", { text: "Редактировать проект" });
+    this.contentEl.createEl("h2", { text: tRaw("tasks.project.editProject") });
 
     let name = this.project.name;
     let color = this.project.color;
@@ -317,16 +318,16 @@ class EditProjectModal extends CustomModal {
 
     // Name
     const nameField = this.contentEl.createDiv("pm-field");
-    nameField.createEl("label", { text: "Название проекта", cls: "pm-label" });
+    nameField.createEl("label", { text: tRaw("tasks.project.name"), cls: "pm-label" });
     const nameInput = nameField.createEl("input", {
       cls: "pm-input",
-      attr: { type: "text", placeholder: "Название проекта", value: name, maxlength: "50" },
+      attr: { type: "text", placeholder: tRaw("tasks.project.name"), value: name, maxlength: "50" },
     });
     nameInput.addEventListener("input", () => { name = nameInput.value; });
 
     // Color
     const colorSection = this.contentEl.createDiv("pm-color-section");
-    colorSection.createEl("label", { text: "Цвет проекта", cls: "pm-label" });
+    colorSection.createEl("label", { text: tRaw("tasks.project.color"), cls: "pm-label" });
     const colorGrid = colorSection.createDiv("pm-color-grid");
 
     DEFAULT_PROJECT_COLORS.forEach((c) => {
@@ -349,10 +350,10 @@ class EditProjectModal extends CustomModal {
     // Buttons
     const buttonsEl = this.contentEl.createDiv("pm-modal-buttons");
 
-    const cancelBtn = buttonsEl.createEl("button", { text: "Отмена", cls: "pm-cancel-btn" });
+    const cancelBtn = buttonsEl.createEl("button", { text: tRaw("common.cancel"), cls: "pm-cancel-btn" });
     cancelBtn.addEventListener("click", () => this.close());
 
-    const saveBtn = buttonsEl.createEl("button", { text: "Сохранить", cls: "pm-save-btn" });
+    const saveBtn = buttonsEl.createEl("button", { text: tRaw("common.save"), cls: "pm-save-btn" });
     saveBtn.addEventListener("click", () => {
       if (!name.trim()) {
         nameInput.focus();

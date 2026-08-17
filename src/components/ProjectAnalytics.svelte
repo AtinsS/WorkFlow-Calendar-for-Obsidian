@@ -2,6 +2,7 @@
   import type { ITask, IProject, TimeLog } from "../task-tracker/types";
   import { projects, timeLogs } from "../task-tracker/stores";
   import { formatDuration } from "../task-tracker/TimerManager";
+  import { t } from "../i18n";
 
   export let tasks: ITask[] = [];
 
@@ -46,7 +47,7 @@
         const proj = task.projectId ? allProjects.find((p) => p.id === task.projectId) : null;
         projectMap.set(pKey, {
           projectId: task.projectId,
-          projectName: proj?.name || "Без проекта",
+          projectName: proj?.name || $t("projectAnalytics.noProject"),
           projectColor: proj?.color || "#647177",
           totalMs: 0,
           taskCount: 0,
@@ -95,11 +96,10 @@
 
 <div class="project-table">
   <div class="project-table-header">
-    <span class="pt-col-name">Проект</span>
-    <span class="pt-col-bar"></span>
-    <span class="pt-col-time">Время</span>
-    <span class="pt-col-earnings">Заработок</span>
-    <span class="pt-col-share">Доля</span>
+    <span class="pt-col-name">{$t("projectAnalytics.project")}</span>
+    <span class="pt-col-time">{$t("projectAnalytics.time")}</span>
+    <span class="pt-col-earnings">{$t("projectAnalytics.earnings")}</span>
+    <span class="pt-col-share">{$t("projectAnalytics.share")}</span>
   </div>
   {#each projectStats as p (p.projectId || "__none__")}
     <div class="project-table-row">
@@ -107,16 +107,8 @@
         <span class="pt-dot" style="background: {p.projectColor}"></span>
         {p.projectName}
       </span>
-      <span class="pt-col-bar">
-        <div class="pt-bar-track">
-          <div
-            class="pt-bar-fill"
-            style="width: {maxMs > 0 ? Math.max(2, (p.totalMs / maxMs) * 100) : 0}%; background: {p.projectColor}"
-          ></div>
-        </div>
-      </span>
       <span class="pt-col-time">{formatTime(p.totalMs)}</span>
-      <span class="pt-col-earnings">{p.earnings > 0 ? p.earnings.toLocaleString("ru-RU") + " ₽" : "—"}</span>
+      <span class="pt-col-earnings">{p.earnings > 0 ? p.earnings.toLocaleString($t("locale.numberLocale")) + " " + $t("locale.currencySymbol") : "—"}</span>
       <span class="pt-col-share">{getShare(p.totalMs)}</span>
     </div>
   {/each}
@@ -129,7 +121,7 @@
 
   .project-table-header {
     display: grid;
-    grid-template-columns: 1fr 2fr 90px 80px 60px;
+    grid-template-columns: 1fr 90px 80px 60px;
     gap: 8px;
     padding: 6px 0;
     font-size: 10px;
@@ -142,7 +134,7 @@
 
   .project-table-row {
     display: grid;
-    grid-template-columns: 1fr 2fr 90px 80px 60px;
+    grid-template-columns: 1fr 90px 80px 60px;
     gap: 8px;
     padding: 8px 0;
     align-items: center;
@@ -170,24 +162,6 @@
     height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
-  }
-
-  .pt-col-bar {
-    min-width: 0;
-  }
-
-  .pt-bar-track {
-    width: 100%;
-    height: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .pt-bar-fill {
-    height: 100%;
-    border-radius: 3px;
-    transition: width 0.3s ease;
   }
 
   .pt-col-time {

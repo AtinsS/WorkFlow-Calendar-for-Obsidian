@@ -13,6 +13,10 @@
     addIncomeCategory,
     removeIncomeCategory,
   } from "./financialAnalyticsStorage";
+  import { t, tArray } from "../i18n";
+
+  $: numberLocale = $t("locale.numberLocale");
+  $: currencySymbol = $t("locale.currencySymbol");
 
   let filterTab: "all" | "done" | "todo" = "all";
   let showAddIncome = false;
@@ -37,7 +41,7 @@
   let selectedYear = now.getFullYear();
   let selectedMonth = now.getMonth() + 1;
 
-  const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+  $: monthNames = $tArray("common.months.long");
 
   $: allWorkTasks = $tasks.filter((t) => {
     if (!t.isWorkTask) return false;
@@ -97,7 +101,7 @@
         const proj = task.projectId ? allProjects.find((p) => p.id === task.projectId) : null;
         groups.set(pKey, {
           projectId: task.projectId,
-          projectName: proj?.name || "Без проекта",
+          projectName: proj?.name || $t("projectAnalytics.noProject"),
           projectColor: proj?.color || "#647177",
           tasks: [],
           totalEarnings: 0,
@@ -129,7 +133,7 @@
     const match = task.dateUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
     if (match) {
       const date = new Date(match[1]);
-      return date.toLocaleDateString("ru-RU", {
+      return date.toLocaleDateString(numberLocale, {
         day: "numeric",
         month: "short",
         year: "numeric",
@@ -147,10 +151,10 @@
 
   function getTaskPaymentInfo(task: any): string {
     if (task.paymentType === "hour" && task.rate) {
-      return `${task.rate} ₽/час`;
+      return $t("financeAnalytics.ratePerHour", { rate: task.rate, currency: currencySymbol });
     }
     if (task.paymentType === "day" && task.rate) {
-      return `${task.rate} ₽/день`;
+      return $t("financeAnalytics.ratePerDay", { rate: task.rate, currency: currencySymbol });
     }
     return "—";
   }
@@ -184,7 +188,7 @@
   }
 
   function deleteIncomeSource(id: string): void {
-    if (confirm("Удалить источник дохода?")) {
+    if (confirm($t("financeAnalytics.deleteIncomeSource"))) {
       removeManualIncomeSource(id);
     }
   }
@@ -194,7 +198,7 @@
     editName = source.name;
     editAmount = source.amount;
     editDate = source.date;
-    editCategory = source.category || "Другое";
+    editCategory = source.category || $t("financeAnalytics.defaultCategory");
   }
 
   function saveEditSource(): void {
@@ -215,7 +219,7 @@
   function formatDate(dateStr: string): string {
     if (!dateStr) return "—";
     const date = new Date(dateStr);
-    return date.toLocaleDateString("ru-RU", {
+    return date.toLocaleDateString(numberLocale, {
       day: "numeric",
       month: "short",
       year: "numeric",
@@ -223,14 +227,14 @@
   }
 
   function formatMoney(amount: number): string {
-    return amount.toLocaleString("ru-RU");
+    return amount.toLocaleString(numberLocale);
   }
 
-  const STATUS_LABELS: Record<string, string> = {
-    done: "Выполнено",
-    progress: "В работе",
-    todo: "Надо сделать",
-    paused: "Приостановлено",
+  $: STATUS_LABELS = {
+    done: $t("financeAnalytics.completed"),
+    progress: $t("financeAnalytics.inProgress"),
+    todo: $t("financeAnalytics.todo"),
+    paused: $t("financeAnalytics.paused"),
   };
 
   const STATUS_COLORS: Record<string, string> = {
@@ -243,7 +247,7 @@
 
 <div class="financial-analytics">
   <div class="fa-header">
-    <h2>Финансовая аналитика</h2>
+    <h2>{$t("financeAnalytics.title")}</h2>
     <div class="fa-month-selector">
       <button class="fa-month-nav" on:click={() => {
         if (selectedMonth === 1) {
@@ -272,53 +276,53 @@
   <!-- Summary Cards -->
   <div class="fa-summary">
     <div class="fa-summary-card">
-      <span class="fa-summary-icon">Задачи</span>
-      <span class="fa-summary-value">{formatMoney(totalTaskEarnings)} ₽</span>
-      <span class="fa-summary-label">Из задач</span>
+      <span class="fa-summary-icon">{$t("financeAnalytics.tasks")}</span>
+      <span class="fa-summary-value">{formatMoney(totalTaskEarnings)} {$t("locale.currencySymbol")}</span>
+      <span class="fa-summary-label">{$t("financeAnalytics.fromTasks")}</span>
     </div>
     <div class="fa-summary-card">
-      <span class="fa-summary-icon">Доп. доход</span>
-      <span class="fa-summary-value">{formatMoney(totalManualIncome)} ₽</span>
-      <span class="fa-summary-label">Доп. доход</span>
+      <span class="fa-summary-icon">{$t("financeAnalytics.extraIncome")}</span>
+      <span class="fa-summary-value">{formatMoney(totalManualIncome)} {$t("locale.currencySymbol")}</span>
+      <span class="fa-summary-label">{$t("financeAnalytics.extraIncome")}</span>
     </div>
     <div class="fa-summary-card total">
-      <span class="fa-summary-icon">Итого</span>
-      <span class="fa-summary-value">{formatMoney(grandTotal)} ₽</span>
-      <span class="fa-summary-label">Итого</span>
+      <span class="fa-summary-icon">{$t("financeAnalytics.total")}</span>
+      <span class="fa-summary-value">{formatMoney(grandTotal)} {$t("locale.currencySymbol")}</span>
+      <span class="fa-summary-label">{$t("financeAnalytics.total")}</span>
     </div>
   </div>
 
   <!-- Tasks Section -->
   <div class="fa-section">
     <div class="fa-section-header">
-      <h3>Задачи</h3>
+      <h3>{$t("financeAnalytics.tasks")}</h3>
       <div class="fa-tabs">
         <button
           class="fa-tab"
           class:active={filterTab === "all"}
           on:click={() => (filterTab = "all")}
         >
-          Все ({allWorkTasks.length})
+          {$t("common.all")} ({allWorkTasks.length})
         </button>
         <button
           class="fa-tab"
           class:active={filterTab === "done"}
           on:click={() => (filterTab = "done")}
         >
-          Выполнено ({doneTasks.length})
+          {$t("financeAnalytics.completed")} ({doneTasks.length})
         </button>
         <button
           class="fa-tab"
           class:active={filterTab === "todo"}
           on:click={() => (filterTab = "todo")}
         >
-          Надо сделать ({todoTasks.length})
+          {$t("financeAnalytics.todo")} ({todoTasks.length})
         </button>
       </div>
     </div>
 
     {#if filteredTasks.length === 0}
-      <div class="fa-empty">Нет задач для отображения</div>
+      <div class="fa-empty">{$t("financeAnalytics.noTasks")}</div>
     {:else}
       <div class="fa-project-groups">
         {#each tasksByProject as group (group.projectId || "__none__")}
@@ -335,7 +339,7 @@
               <span class="fa-project-name">{group.projectName}</span>
               <span class="fa-project-count">{group.tasks.length}</span>
               {#if group.totalEarnings > 0}
-                <span class="fa-project-earnings">{formatMoney(group.totalEarnings)} ₽</span>
+                <span class="fa-project-earnings">{formatMoney(group.totalEarnings)} {$t("locale.currencySymbol")}</span>
               {/if}
             </button>
 
@@ -364,7 +368,7 @@
                     <div class="fa-task-payment">
                       <div class="fa-task-rate">{getTaskPaymentInfo(task)}</div>
                       <div class="fa-task-earning">
-                        {formatMoney(calculateTaskEarnings(task))} ₽
+                        {formatMoney(calculateTaskEarnings(task))} {$t("locale.currencySymbol")}
                       </div>
                     </div>
                   </div>
@@ -380,32 +384,32 @@
   <!-- Manual Income Section -->
   <div class="fa-section">
     <div class="fa-section-header">
-      <h3>Дополнительные источники дохода</h3>
+      <h3>{$t("financeAnalytics.extraSources")}</h3>
       <button class="fa-add-btn" on:click={() => (showAddIncome = !showAddIncome)}>
-        {showAddIncome ? "Отмена" : "+ Добавить"}
+        {showAddIncome ? $t("common.cancel") : $t("common.add")}
       </button>
     </div>
 
     {#if showAddIncome}
       {#if incomeCategories.length === 0}
-        <div class="fa-empty">Сначала добавьте хотя бы одну категорию ниже</div>
+        <div class="fa-empty">{$t("financeAnalytics.addCategoryFirst")}</div>
       {:else}
         <div class="fa-add-form">
           <input
             type="text"
             bind:value={newIncomeName}
-            placeholder="Название источника"
+            placeholder={$t("financeAnalytics.sourceName")}
             class="fa-input"
           />
           <input
             type="number"
             bind:value={newIncomeAmount}
-            placeholder="Сумма"
+            placeholder={$t("financeAnalytics.amount")}
             min="0"
             class="fa-input fa-input-amount"
           />
           <select bind:value={newIncomeCategory} class="fa-input fa-category-select">
-            <option value="">Категория...</option>
+            <option value="">{$t("financeAnalytics.category")}</option>
             {#each incomeCategories as cat}
               <option value={cat}>{cat}</option>
             {/each}
@@ -416,7 +420,7 @@
             class="fa-input"
           />
           <button class="fa-submit-btn" on:click={addIncomeSource} disabled={!newIncomeCategory}>
-            Добавить
+            {$t("common.add")}
           </button>
         </div>
       {/if}
@@ -426,13 +430,13 @@
     <div class="fa-manage-categories">
       <div class="fa-manage-header">
         {#if incomeCategories.length === 0}
-          Добавьте категории для источников дохода
+          {$t("financeAnalytics.addCategoriesManage")}
         {:else}
-          Категории ({incomeCategories.length})
+          {$t("financeAnalytics.categories")} ({incomeCategories.length})
           <button
             class="fa-cat-toggle-btn"
             on:click={() => showManageCategories = !showManageCategories}
-          >{showManageCategories ? "Скрыть" : "Редактировать"}</button>
+          >{showManageCategories ? $t("financeAnalytics.hide") : $t("common.edit")}</button>
         {/if}
       </div>
 
@@ -441,18 +445,18 @@
           <input
             type="text"
             bind:value={newCategoryName}
-            placeholder="Название категории"
+            placeholder={$t("financeAnalytics.categoryNamePlaceholder")}
             class="fa-input"
             on:keydown={(e) => { if (e.key === 'Enter') handleAddCategory(); }}
           />
-          <button class="fa-submit-btn" on:click={handleAddCategory}>Добавить</button>
+          <button class="fa-submit-btn" on:click={handleAddCategory}>{$t("common.add")}</button>
         </div>
         {#if incomeCategories.length > 0}
           <div class="fa-category-tags">
             {#each incomeCategories as cat}
               <span class="fa-category-tag">
                 {cat}
-                <button class="fa-tag-remove" on:click={() => handleRemoveCategory(cat)} title="Удалить категорию">✕</button>
+                <button class="fa-tag-remove" on:click={() => handleRemoveCategory(cat)} title={$t("financeAnalytics.deleteCategoryTitle")}>✕</button>
               </span>
             {/each}
           </div>
@@ -467,7 +471,7 @@
           class="fa-cat-btn"
           class:active={categoryFilter === "all"}
           on:click={() => categoryFilter = "all"}
-        >Все</button>
+        >{$t("common.all")}</button>
         {#each incomeCategories as cat}
           {#if $financialAnalyticsData.manualIncomeSources.some(s => s.category === cat)}
             <button
@@ -481,14 +485,14 @@
     {/if}
 
     {#if $financialAnalyticsData.manualIncomeSources.length === 0}
-      <div class="fa-empty">Нет дополнительных источников дохода</div>
+      <div class="fa-empty">{$t("financeAnalytics.noExtraSources")}</div>
     {:else}
       <div class="fa-income-list">
         {#each filteredManualSources as source (source.id)}
           {#if editingSourceId === source.id}
             <div class="fa-income-item fa-income-editing">
               <div class="fa-edit-fields">
-                <input type="text" bind:value={editName} placeholder="Название" class="fa-input fa-edit-name" />
+                <input type="text" bind:value={editName} placeholder={$t("financeAnalytics.editNamePlaceholder")} class="fa-input fa-edit-name" />
                 <input type="number" bind:value={editAmount} min="0" class="fa-input fa-edit-amount" />
                 <select bind:value={editCategory} class="fa-input fa-edit-category">
                   {#each incomeCategories as cat}
@@ -507,20 +511,20 @@
               <div class="fa-income-info">
                 <div class="fa-income-name">{source.name}</div>
                 <div class="fa-income-meta">
-                  <span class="fa-income-category">{source.category || "Другое"}</span>
+                  <span class="fa-income-category">{source.category || $t("financeAnalytics.defaultCategory")}</span>
                   <span class="fa-income-date">{formatDate(source.date)}</span>
                 </div>
               </div>
               <div class="fa-income-right">
-                <span class="fa-income-amount">{formatMoney(source.amount)} ₽</span>
-                <button class="fa-edit-btn" on:click={() => startEditSource(source)} title="Редактировать">✎</button>
-                <button class="fa-delete-btn" on:click={() => deleteIncomeSource(source.id)} title="Удалить">✕</button>
+                <span class="fa-income-amount">{formatMoney(source.amount)} {$t("locale.currencySymbol")}</span>
+                <button class="fa-edit-btn" on:click={() => startEditSource(source)} title={$t("common.edit")}>✎</button>
+                <button class="fa-delete-btn" on:click={() => deleteIncomeSource(source.id)} title={$t("common.delete")}>✕</button>
               </div>
             </div>
           {/if}
         {/each}
         {#if filteredManualSources.length === 0}
-          <div class="fa-empty">Нет записей в этой категории</div>
+          <div class="fa-empty">{$t("financeAnalytics.noCategoryRecords")}</div>
         {/if}
       </div>
     {/if}

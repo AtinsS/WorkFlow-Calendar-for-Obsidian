@@ -7,6 +7,7 @@
   import { getActiveTimer, formatDuration, formatEstimate } from "./TimerManager";
   import { TaskModal } from "./TaskModal";
   import { syncTaskToNote } from "./noteTasks";
+  import { t } from "../i18n";
 
   export let task: ITask;
   export let appInstance: App;
@@ -102,7 +103,7 @@
   }
 
   async function handleDelete() {
-    if (!confirm("Удалить задачу?")) return;
+    if (!confirm(get(t)("tasks.item.deleteConfirm"))) return;
     if (task.notePath && appInstance) {
       const { deleteNoteTask } = await import("./noteTasks");
       await deleteNoteTask(task.notePath, appInstance);
@@ -143,25 +144,26 @@
     menu.style.fontFamily = "var(--font-interface)";
     menu.style.fontSize = "13px";
 
+    const translate = get(t);
     type MenuItem = { label: string; action?: () => void; danger?: boolean } | { divider: true };
     const items: MenuItem[] = [];
 
     if (task.status === "done") {
-      items.push({ label: "🔄 Вернуть в Сделать", action: () => { quickStatus("todo"); } });
-      items.push({ label: "⏰ Вернуть в работу", action: () => { quickStatus("progress"); } });
+      items.push({ label: translate("tasks.item.returnToTodo"), action: () => { quickStatus("todo"); } });
+      items.push({ label: translate("tasks.item.returnToWork"), action: () => { quickStatus("progress"); } });
       items.push({ divider: true });
-      items.push({ label: "❌ Удалить", action: () => { handleDelete(); }, danger: true });
+      items.push({ label: translate("tasks.item.delete"), action: () => { handleDelete(); }, danger: true });
     } else {
       if (task.status !== "progress" && task.status !== "paused")
-        items.push({ label: "⏰ В работу", action: () => { quickStatus("progress"); } });
+        items.push({ label: translate("tasks.item.toWork"), action: () => { quickStatus("progress"); } });
       if (task.status === "progress")
-        items.push({ label: "⏸ На паузу", action: () => { quickStatus("paused"); } });
+        items.push({ label: translate("tasks.item.toPause"), action: () => { quickStatus("paused"); } });
       if (task.status === "paused")
-        items.push({ label: "▶ Продолжить", action: () => { quickStatus("progress"); } });
-      items.push({ label: "✅ Готово", action: () => { dispatch("complete", { task }); } });
+        items.push({ label: translate("tasks.item.continue"), action: () => { quickStatus("progress"); } });
+      items.push({ label: translate("tasks.item.markDone"), action: () => { dispatch("complete", { task }); } });
       items.push({ divider: true });
-      items.push({ label: "✏ Редактировать", action: () => { handleEdit(); } });
-      items.push({ label: "❌ Удалить", action: () => { handleDelete(); }, danger: true });
+      items.push({ label: translate("tasks.item.edit"), action: () => { handleEdit(); } });
+      items.push({ label: translate("tasks.item.delete"), action: () => { handleDelete(); }, danger: true });
     }
 
     for (const item of items) {
@@ -227,7 +229,7 @@
     {/if}
 
     {#if task.description}
-      <button class="task-descr-toggle" on:click|stopPropagation={() => showDescription = !showDescription} title={showDescription ? "Скрыть" : "Описание"}>
+      <button class="task-descr-toggle" on:click|stopPropagation={() => showDescription = !showDescription} title={showDescription ? $t("tasks.item.hide") : $t("tasks.item.description")}>
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="4" x2="9" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="3" y1="6.5" x2="7.5" y2="6.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
       </button>
     {/if}
@@ -238,7 +240,7 @@
       <span class="task-priority medium">~</span>
     {/if}
 
-    <button class="checklist-toggle" on:click|stopPropagation={() => showChecklist = !showChecklist} title="Чек-лист">
+    <button class="checklist-toggle" on:click|stopPropagation={() => showChecklist = !showChecklist} title={$t("tasks.item.checklist")}>
       <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 6l1.5 1.5L8.5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       {#if checklistTotal > 0}{checklistDone}/{checklistTotal}{:else}+{/if}
     </button>
@@ -255,21 +257,21 @@
   <div class="task-item-row-meta">
     {#if $activeTab === "all" && task.status !== "done"}
       <span class="task-status-badge status-badge-{task.status}">
-        {#if task.status === "todo"}Сделать{:else if task.status === "progress"}🔥 В работе{:else if task.status === "paused"}☕ На паузе{/if}
+        {#if task.status === "todo"}{$t("tasks.tabs.todo")}{:else if task.status === "progress"}{$t("tasks.item.progress")}{:else if task.status === "paused"}{$t("tasks.item.paused")}{/if}
       </span>
     {/if}
 
     {#if task.isWorkTask}
-      <span class="task-work-badge">💼 Рабочая</span>
+      <span class="task-work-badge">{$t("tasks.item.workBadge")}</span>
     {/if}
 
     {#if task.recurrence}
-      <span class="task-recurring-icon" title="Повторяющаяся задача">🔄</span>
+      <span class="task-recurring-icon" title={$t("tasks.item.recurring")}>🔄</span>
     {/if}
 
     {#if task.scheduledTime}
       {#if task.status === "done"}
-        <span class="task-scheduled done">✓ Готово</span>
+        <span class="task-scheduled done">{$t("tasks.item.done")}</span>
       {:else}
         <span class="task-scheduled {scheduledTimePassed ? 'passed' : ''}">
           {scheduledTimePassed ? "⚠" : "🕐"} {task.scheduledTime}{#if task.endTime} — {task.endTime}{/if}
@@ -300,11 +302,11 @@
         <div class="checklist-item" class:checked={item.checked}>
           <input type="checkbox" checked={item.checked} on:change={() => handleToggleChecklist(item.id)} on:click|stopPropagation />
           <span class="checklist-title">{item.title}</span>
-          <button class="checklist-remove" on:click|stopPropagation={() => handleRemoveChecklistItem(item.id)} title="Удалить">✕</button>
+          <button class="checklist-remove" on:click|stopPropagation={() => handleRemoveChecklistItem(item.id)} title={$t("common.delete")}>✕</button>
         </div>
       {/each}
       <div class="checklist-add">
-        <input type="text" placeholder="Новый пункт..." bind:value={newChecklistTitle} on:keydown|stopPropagation={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddChecklistItem(); } }} on:click|stopPropagation />
+        <input type="text" placeholder={$t("tasks.item.checkistNew")} bind:value={newChecklistTitle} on:keydown|stopPropagation={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddChecklistItem(); } }} on:click|stopPropagation />
         <button on:click|stopPropagation={handleAddChecklistItem}>+</button>
       </div>
     </div>

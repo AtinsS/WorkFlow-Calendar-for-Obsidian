@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount, afterUpdate } from "svelte";
+  import { t } from "../i18n";
 
   export let segments: { label: string; value: number; color: string }[] = [];
   export let centerLabel: string = "";
@@ -86,7 +87,7 @@
 
 <div class="donut-chart" bind:this={container}>
   {#if segments.length === 0 || total === 0}
-    <div class="donut-empty">Нет данных</div>
+    <div class="donut-empty">{$t("components.noData")}</div>
   {:else}
     <canvas bind:this={canvas}></canvas>
     <div class="donut-legend">

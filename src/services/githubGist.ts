@@ -3,6 +3,7 @@
  */
 
 import { requestUrl } from "obsidian";
+import { tRaw } from "../i18n";
 
 const GIST_API_URL = "https://api.github.com/gists";
 
@@ -51,14 +52,10 @@ export async function createGist(
   if (response.status !== 200 && response.status !== 201) {
     const errorBody = response.text;
     if (response.status === 403) {
-      throw new Error(
-        "Нет прав для создания Gist. Убедитесь что токен имеет scope 'gist'. " +
-        "Для классического токена: Settings → Developer settings → Personal access tokens → создайте новый с галочкой 'gist'. " +
-        "Для fine-grained токена: добавьте quyền 'Gists' → 'Read and write'."
-      );
+      throw new Error(tRaw("gist.noScope"));
     }
     if (response.status === 401) {
-      throw new Error("Неверный GitHub токен. Проверьте токен в настройках.");
+      throw new Error(tRaw("gist.invalidToken"));
     }
     throw new Error(`GitHub API error ${response.status}: ${errorBody}`);
   }
@@ -91,7 +88,7 @@ export async function verifyToken(token: string): Promise<{ login: string; scope
 
   if (response.status !== 200) {
     if (response.status === 401) {
-      throw new Error("Неверный GitHub токен.");
+      throw new Error(tRaw("gist.invalidTokenShort"));
     }
     throw new Error(`GitHub API error ${response.status}`);
   }

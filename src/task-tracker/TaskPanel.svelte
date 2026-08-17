@@ -17,6 +17,7 @@
   import TimeLogsModal from "./TimeLogsModal.svelte";
   import { TaskModal } from "./TaskModal";
   import { ProjectModal } from "./ProjectModal";
+  import { t } from "../i18n";
 
   export let appInstance: App;
   export let onOpenSchedule: (() => void) | undefined = undefined;
@@ -205,7 +206,7 @@
     const result: { dateUID: string; dateLabel: string; groups: { project: IProject | null; tasks: ITask[] }[] }[] = [];
     for (const dateKey of sortedDates) {
       const dateTasks = byDate.get(dateKey)!;
-      const label = dateKey === "unassigned" ? "Без даты" : formatDate(dateKey);
+      const label = dateKey === "unassigned" ? $t("tasks.panel.noDate") : formatDate(dateKey);
       const groups = groupTasksByProject(dateTasks, projectList);
       result.push({ dateUID: dateKey, dateLabel: label, groups });
     }
@@ -213,7 +214,7 @@
   }
 
   function formatDate(dateUID: string): string {
-    if (!dateUID) return "Дата не выбрана";
+    if (!dateUID) return $t("tasks.panel.dateNotSelected");
     const match = dateUID.match(/^(?:day|week|month)-(\d{4}-\d{2}-\d{2})/);
     if (match) {
       try {
@@ -274,8 +275,8 @@
     if (!appInstance) return;
     const allTasksList = get(tasks);
     const completedTasks = allTasksList.filter((t) => t.completed);
-    if (completedTasks.length === 0) { alert("Нет выполненных задач"); return; }
-    if (!confirm(`Удалить ${completedTasks.length} выполненных задач?`)) return;
+    if (completedTasks.length === 0) { alert($t("tasks.panel.noCompleted")); return; }
+    if (!confirm($t("tasks.panel.deleteCompleted", { count: completedTasks.length }))) return;
     for (const task of completedTasks) {
       if (task.notePath) {
         const file = appInstance.vault.getAbstractFileByPath(task.notePath);
@@ -295,29 +296,29 @@
     const recurringParents = allTasksList.filter((t) => t.recurrence && !t.isRecurringInstance);
     const recurringInstances = allTasksList.filter((t) => t.isRecurringInstance);
     const total = recurringParents.length + recurringInstances.length;
-    if (total === 0) { alert("Нет повторяющихся задач"); return; }
-    if (!confirm(`Удалить ${recurringParents.length} повторяющихся задач и ${recurringInstances.length} их экземпляров?`)) return;
+    if (total === 0) { alert($t("tasks.panel.noRecurring")); return; }
+    if (!confirm($t("tasks.panel.deleteCompleted", { count: recurringParents.length }))) return;
     const result = clearAllRecurringTasks();
-    alert(`Удалено: ${result.parentCount} задач с повторением и ${result.instanceCount} экземпляров`);
+    alert($t("tasks.panel.deleteCompleted", { count: result.parentCount }));
   }
 </script>
 
-<div class="task-tracker-panel" role="region" aria-label="Панель задач">
+<div class="task-tracker-panel" role="region" aria-label={$t("tasks.panel.title")}>
   <!-- ═══════ MOBILE HEADER ═══════ -->
   {#if isMobile}
     <div class="task-tracker-mob-header">
       <button class="task-tracker-btn all-tasks-btn" class:active={!currentDate}
         on:click|stopPropagation={() => { currentDate ? selectedDate.set(null) : goToday(); }}
-        title={currentDate ? "Все задачи" : "Сегодня"}>📋</button>
+        title={currentDate ? $t("tasks.panel.allTasks") : $t("tasks.panel.today")}>📋</button>
       <div class="task-tracker-mob-project-picker">
         <button class="task-tracker-mob-project-btn" on:click|stopPropagation={() => showProjectPicker = !showProjectPicker}>
           {#if $taskFilter.projectId}
             {@const proj = $projects.find(p => p.id === $taskFilter.projectId)}
             <span style="color: {proj?.color || 'var(--mcp-accent)'}">{proj?.icon || '📁'}</span>
-            <span>{proj?.name || 'Проект'}</span>
+            <span>{proj?.name || $t("tasks.modal.project")}</span>
           {:else}
             <span>📋</span>
-            <span>Все</span>
+            <span>{$t("tasks.tabs.all")}</span>
           {/if}
           <span class="project-picker-arrow" class:rotated={showProjectPicker}>▾</span>
         </button>
@@ -325,7 +326,7 @@
           <div class="task-tracker-mob-project-dropdown" on:click|stopPropagation>
             <button class="project-dropdown-item" class:active={$taskFilter.projectId === null}
               on:click={() => { taskFilter.update(f => ({ ...f, projectId: null })); showProjectPicker = false; }}>
-              <span>📋</span> Все
+              <span>📋</span> {$t("tasks.tabs.all")}
             </button>
             {#each $projects.filter(p => !p.archived) as project (project.id)}
               <button class="project-dropdown-item" class:active={$taskFilter.projectId === project.id}
@@ -337,31 +338,31 @@
         {/if}
       </div>
       <button class="task-tracker-btn icon-btn" class:active={showSearch}
-        on:click|stopPropagation={toggleSearch} title="Поиск">🔍</button>
+        on:click|stopPropagation={toggleSearch} title={$t("tasks.panel.search")}>🔍</button>
       <button class="task-tracker-btn sort-btn" class:active={sortMode === "priority"}
         on:click|stopPropagation={toggleSortMode}
-        title={sortMode === "time" ? "По времени" : "По приоритету"}>
+        title={sortMode === "time" ? $t("tasks.panel.sortByTime") : $t("tasks.panel.sortByPriority")}>
         {sortMode === "time" ? "🕐" : "🔺"}
       </button>
       <button class="task-tracker-btn add-btn" on:click|stopPropagation={openCreateTask}>+</button>
       <div class="task-tracker-menu-wrapper">
-        <button class="task-tracker-btn" on:click|stopPropagation={toggleMenu} title="Ещё">⋮</button>
+        <button class="task-tracker-btn" on:click|stopPropagation={toggleMenu} title={$t("tasks.panel.more")}>⋮</button>
         {#if showMenu}
           <div class="task-tracker-dropdown" on:click|stopPropagation role="menu">
-            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { onOpenSchedule?.(); closeMenu(); }}>📅 Расписание</button>
-            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { openProjectSettings(); closeMenu(); }}>📂 Проекты</button>
-            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { showTimeLogs = true; closeMenu(); }}>⏱ Логи времени</button>
-            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { clearCompletedTasks(); closeMenu(); }}>🗑 Очистить выполненные</button>
+            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { onOpenSchedule?.(); closeMenu(); }}>{$t("tasks.panel.menuSchedule")}</button>
+            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { openProjectSettings(); closeMenu(); }}>{$t("tasks.panel.menuProjects")}</button>
+            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { showTimeLogs = true; closeMenu(); }}>{$t("tasks.panel.menuTimeLogs")}</button>
+            <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { clearCompletedTasks(); closeMenu(); }}>{$t("tasks.panel.menuCleanDone")}</button>
           </div>
         {/if}
       </div>
     </div>
     <div class="task-tracker-mob-filters">
-      <button class="mob-filter-btn" class:active={$activeTab === "all"} on:click={() => activeTab.set("all")}>Все</button>
-      <button class="mob-filter-btn" class:active={$activeTab === "todo"} on:click={() => activeTab.set("todo")}>Сделать</button>
-      <button class="mob-filter-btn" class:active={$activeTab === "progress"} on:click={() => activeTab.set("progress")}>В работе</button>
-      <button class="mob-filter-btn" class:active={$activeTab === "paused"} on:click={() => activeTab.set("paused")}>На паузе</button>
-      <button class="mob-filter-btn" class:active={$activeTab === "done"} on:click={() => activeTab.set("done")}>Готово</button>
+      <button class="mob-filter-btn" class:active={$activeTab === "all"} on:click={() => activeTab.set("all")}>{$t("tasks.tabs.all")}</button>
+      <button class="mob-filter-btn" class:active={$activeTab === "todo"} on:click={() => activeTab.set("todo")}>{$t("tasks.tabs.todo")}</button>
+      <button class="mob-filter-btn" class:active={$activeTab === "progress"} on:click={() => activeTab.set("progress")}>{$t("tasks.tabs.progress")}</button>
+      <button class="mob-filter-btn" class:active={$activeTab === "paused"} on:click={() => activeTab.set("paused")}>{$t("tasks.tabs.paused")}</button>
+      <button class="mob-filter-btn" class:active={$activeTab === "done"} on:click={() => activeTab.set("done")}>{$t("tasks.tabs.done")}</button>
     </div>
     <div class="task-tracker-mob-date">
       {#if currentDate}
@@ -369,7 +370,7 @@
         <span class="task-tracker-date" on:click={goToday}>{formatDate(currentDate)}</span>
         <button class="date-nav-btn" on:click={nextDay}>›</button>
       {:else}
-        <span class="task-tracker-date-all">Все задачи</span>
+        <span class="task-tracker-date-all">{$t("tasks.panel.allTasks")}</span>
       {/if}
     </div>
   {/if}
@@ -378,15 +379,15 @@
   {#if !isMobile}
     <div class="task-tracker-header">
       <div class="task-tracker-header-left">
-        <span class="task-tracker-title">Задачи</span>
+        <span class="task-tracker-title">{$t("tasks.panel.title")}</span>
         {#if currentDate}
           <div class="task-tracker-date-nav">
-            <button class="date-nav-btn" on:click={prevDay} title="Предыдущий день">‹</button>
-            <span class="task-tracker-date" on:click={goToday} title="Сегодня">{formatDate(currentDate)}</span>
-            <button class="date-nav-btn" on:click={nextDay} title="Следующий день">›</button>
+            <button class="date-nav-btn" on:click={prevDay} title={$t("tasks.panel.prevDay")}>‹</button>
+            <span class="task-tracker-date" on:click={goToday} title={$t("tasks.panel.today")}>{formatDate(currentDate)}</span>
+            <button class="date-nav-btn" on:click={nextDay} title={$t("tasks.panel.nextDay")}>›</button>
           </div>
         {:else}
-          <span class="task-tracker-date-all">Все задачи</span>
+          <span class="task-tracker-date-all">{$t("tasks.panel.allTasks")}</span>
         {/if}
       </div>
       <div class="task-tracker-header-right">
@@ -395,23 +396,23 @@
         {/if}
         <button class="task-tracker-btn all-tasks-btn" class:active={!currentDate}
           on:click|stopPropagation={() => { currentDate ? selectedDate.set(null) : goToday(); }}
-          title={currentDate ? "Все задачи" : "Сегодня"}>📋</button>
-        <button class="task-tracker-btn schedule-btn" on:click|stopPropagation={() => onOpenSchedule?.()} title="Расписание">📅</button>
+          title={currentDate ? $t("tasks.panel.allTasks") : $t("tasks.panel.today")}>📋</button>
+        <button class="task-tracker-btn schedule-btn" on:click|stopPropagation={() => onOpenSchedule?.()} title={$t("tasks.panel.menuSchedule")}>📅</button>
         <button class="task-tracker-btn sort-btn" class:active={sortMode === "priority"}
           on:click|stopPropagation={toggleSortMode}
-          title={sortMode === "time" ? "По времени" : "По приоритету"}>
+          title={sortMode === "time" ? $t("tasks.panel.sortByTime") : $t("tasks.panel.sortByPriority")}>
           {sortMode === "time" ? "🕐" : "🔺"}
         </button>
-        <button class="task-tracker-btn icon-btn" class:active={showSearch} on:click|stopPropagation={toggleSearch} title="Поиск">🔍</button>
+        <button class="task-tracker-btn icon-btn" class:active={showSearch} on:click|stopPropagation={toggleSearch} title={$t("tasks.panel.search")}>🔍</button>
         <button class="task-tracker-btn add-btn" on:click|stopPropagation={openCreateTask}>+</button>
         <div class="task-tracker-menu-wrapper">
           <button class="task-tracker-btn" on:click|stopPropagation={toggleMenu}>⋮</button>
           {#if showMenu}
             <div class="task-tracker-dropdown" on:click|stopPropagation role="menu">
-              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { openProjectSettings(); closeMenu(); }}>📂 Проекты</button>
-              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { showTimeLogs = true; closeMenu(); }}>⏱ Логи времени</button>
-              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { clearCompletedTasks(); closeMenu(); }}>🗑 Очистить выполненные</button>
-              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { handleClearRecurring(); closeMenu(); }}>🔄 Очистить повторяющиеся</button>
+              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { openProjectSettings(); closeMenu(); }}>{$t("tasks.panel.menuProjects")}</button>
+              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { showTimeLogs = true; closeMenu(); }}>{$t("tasks.panel.menuTimeLogs")}</button>
+              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { clearCompletedTasks(); closeMenu(); }}>{$t("tasks.panel.menuCleanDone")}</button>
+              <button class="task-tracker-dropdown-item" role="menuitem" on:click|stopPropagation={() => { handleClearRecurring(); closeMenu(); }}>{$t("tasks.panel.menuCleanRecurring")}</button>
             </div>
           {/if}
         </div>
@@ -422,7 +423,7 @@
 
   {#if showSearch}
     <div class="task-tracker-search-bar">
-      <input type="text" class="task-tracker-search-input" placeholder="Поиск задач..." bind:value={searchQuery} />
+      <input type="text" class="task-tracker-search-input" placeholder={$t("tasks.panel.search")} bind:value={searchQuery} />
     </div>
   {/if}
 
@@ -432,8 +433,8 @@
     <div class="task-tracker-list">
       {#if filteredTasks.length === 0}
         <div class="task-tracker-empty">
-          <div class="empty-title">Нет задач</div>
-          <div class="empty-subtitle">Создайте первую задачу</div>
+          <div class="empty-title">{$t("tasks.panel.empty")}</div>
+          <div class="empty-subtitle">{$t("tasks.panel.emptyHint")}</div>
         </div>
       {:else if showAllDates}
         {#each taskGroups as dateGroup (dateGroup.dateUID)}

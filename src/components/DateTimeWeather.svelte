@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
+  import { t } from "../i18n";
   import { tasks } from "../task-tracker/stores";
   import { habits, habitLogs, toggleHabitCompletion } from "../habit-tracker/stores";
   import { settings } from "../ui/stores";
@@ -83,7 +84,7 @@
     const tooltip = document.createElement("div");
     tooltip.className = "dtw-tooltip dtw-habit-tooltip";
 
-    let html = `<div class="dtw-tooltip-title">Привычки на сегодня</div>`;
+    let html = `<div class="dtw-tooltip-title">${$t("dtw.habitsToday")}</div>`;
     for (const h of todayHabitList) {
       const statusClass = h.completed ? " done" : h.partial ? " progress" : "";
       const nameClass = h.completed ? " done-name" : "";
@@ -122,13 +123,14 @@
     activeTooltip = tooltip;
   }
 
-  $: dateStr = now.toLocaleDateString("ru-RU", {
+  $: numberLocale = $t("locale.numberLocale");
+  $: dateStr = now.toLocaleDateString(numberLocale, {
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
-  $: timeStr = now.toLocaleTimeString("ru-RU", {
+  $: timeStr = now.toLocaleTimeString(numberLocale, {
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -152,7 +154,7 @@
     monthGoals = goals.map((g) => {
       const remaining = (g.targetAmount || 0) - (g.currentAmount || 0);
       return {
-        name: g.name || "Цель",
+        name: g.name || $t("dtw.defaultGoal"),
         icon: g.icon || "🎯",
         remaining,
         done: remaining <= 0,
@@ -274,12 +276,12 @@
       on:click={() => switchToTasks()}
       on:mouseenter={(e) => {
         if (todayTaskList.length > 0)
-          showTooltip(e.currentTarget, "Задачи на сегодня", todayTaskList.map(t => ({ status: t.status, name: t.title })));
+          showTooltip(e.currentTarget, $t("dtw.tasksToday"), todayTaskList.map(t => ({ status: t.status, name: t.title })));
       }}
       on:mouseleave={removeTooltip}
     >
       <span class="dtw-icon">✅</span>
-      <span>Задачи: {completedToday} / {totalToday}</span>
+      <span>{$t("dtw.tasksLabel")}: {completedToday} / {totalToday}</span>
     </span>
   {/if}
   {#if inProgressCount > 0}
@@ -289,12 +291,12 @@
       on:click={() => switchToTasks()}
       on:mouseenter={(e) => {
         if (inProgressTaskList.length > 0)
-          showTooltip(e.currentTarget, "В работе", inProgressTaskList.map(t => ({ status: t.status, name: t.title })));
+          showTooltip(e.currentTarget, $t("dtw.inProgress"), inProgressTaskList.map(t => ({ status: t.status, name: t.title })));
       }}
       on:mouseleave={removeTooltip}
     >
       <span class="dtw-icon">▶️</span>
-      <span>В работе: {inProgressCount}</span>
+      <span>{$t("dtw.inProgress")}: {inProgressCount}</span>
     </span>
   {/if}
   {#if habitTotalCount > 0}
@@ -304,12 +306,12 @@
       on:click={() => { const el = document.querySelector('.dtw-habits-trigger'); if (el) showHabitTooltip(el); }}
       on:mouseenter={(e) => {
         if (todayHabitList.length > 0)
-          showTooltip(e.currentTarget, "Привычки", todayHabitList.map(h => ({ status: h.completed ? "done" : h.partial ? "progress" : "todo", name: `${h.icon} ${h.title}` })));
+          showTooltip(e.currentTarget, $t("dtw.habits"), todayHabitList.map(h => ({ status: h.completed ? "done" : h.partial ? "progress" : "todo", name: `${h.icon} ${h.title}` })));
       }}
       on:mouseleave={removeTooltip}
     >
       <span class="dtw-icon">🔄</span>
-      <span>Привычки: {habitDoneCount} / {habitTotalCount}</span>
+      <span>{$t("dtw.habits")}: {habitDoneCount} / {habitTotalCount}</span>
     </span>
   {/if}
   {#if monthGoals.length > 0}
@@ -319,15 +321,15 @@
       on:click={() => switchToTasks()}
       on:mouseenter={(e) => {
         if (monthGoals.length > 1)
-          showTooltip(e.currentTarget, "Цели на месяц", monthGoals.map(g => ({ status: g.done ? "done" : "progress", name: `${g.icon} ${g.name}: ${g.done ? "✓" : g.remaining.toLocaleString("ru-RU") + " ₽"}` })));
+          showTooltip(e.currentTarget, $t("dtw.monthGoals"), monthGoals.map(g => ({ status: g.done ? "done" : "progress", name: `${g.icon} ${g.name}: ${g.done ? "✓" : g.remaining.toLocaleString($t("locale.numberLocale")) + " " + $t("locale.currencySymbol")}` })));
       }}
       on:mouseleave={removeTooltip}
     >
       <span class="dtw-icon">{monthGoals[0].icon}</span>
       {#if monthGoals.length === 1}
-        <span>{monthGoals[0].name}: {monthGoals[0].done ? "✓" : monthGoals[0].remaining.toLocaleString("ru-RU") + " ₽"}</span>
+        <span>{monthGoals[0].name}: {monthGoals[0].done ? "✓" : monthGoals[0].remaining.toLocaleString($t("locale.numberLocale")) + " " + $t("locale.currencySymbol")}</span>
       {:else}
-        <span>Цели: {monthGoals.filter(g => g.done).length}/{monthGoals.length}</span>
+        <span>{$t("dtw.goalsLabel")}: {monthGoals.filter(g => g.done).length}/{monthGoals.length}</span>
       {/if}
     </span>
   {/if}
@@ -337,7 +339,7 @@
       class="dtw-item dtw-hoverable dtw-sync"
       class:syncing={$singularitySyncStatus.syncing}
       on:click={() => triggerManualSync()}
-      title={$singularitySyncStatus.syncing ? "Синхронизация..." : $singularitySyncStatus.lastSync ? `Синхронизировано: ${$singularitySyncStatus.lastSync}` : "Синхронизировать"}
+      title={$singularitySyncStatus.syncing ? $t("dtw.syncing") : $singularitySyncStatus.lastSync ? $t("dtw.synced", { time: $singularitySyncStatus.lastSync }) : $t("dtw.sync")}
     >
       <svg class="dtw-sync-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
         <path d="M1.5 8a6.5 6.5 0 0 1 11.1-4.6M14.5 8a6.5 6.5 0 0 1-11.1 4.6" />

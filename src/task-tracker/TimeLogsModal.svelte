@@ -3,6 +3,7 @@
   import { timeLogs } from "./stores";
   import { formatDuration, groupLogsByDate } from "./TimerManager";
   import BarChart from "../components/BarChart.svelte";
+  import { t } from "../i18n";
 
   export let onClose: () => void;
 
@@ -12,14 +13,14 @@
   function formatDate(dateStr: string): string {
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0];
-    if (dateStr === today) return "Сегодня";
-    if (dateStr === yesterday) return "Вчера";
+    if (dateStr === today) return $t("tasks.timeLogs.today");
+    if (dateStr === yesterday) return $t("tasks.timeLogs.yesterday");
     const d = new Date(dateStr);
     return d.toLocaleDateString("ru-RU", { day: "numeric", month: "long" });
   }
 
   function clearAll() {
-    if (!confirm("Удалить все логи времени?")) return;
+    if (!confirm($t("tasks.timeLogs.clearConfirm"))) return;
     timeLogs.set([]);
   }
 
@@ -45,13 +46,13 @@
 <div class="time-logs-overlay" on:click={handleBackdrop}>
   <div class="time-logs-popup">
     <div class="time-logs-header">
-      <h2>&#9201; Логи времени</h2>
+      <h2>{$t("tasks.timeLogs.title")}</h2>
       <button class="time-logs-close" on:click={onClose}>&#10005;</button>
     </div>
 
     <div class="time-logs-body">
       {#if dates.length === 0}
-        <div class="time-logs-empty">Нет логов времени</div>
+        <div class="time-logs-empty">{$t("tasks.timeLogs.empty")}</div>
       {:else}
         <div class="time-logs-chart">
           <BarChart logs={$timeLogs} />
@@ -72,7 +73,7 @@
 
     {#if dates.length > 0}
       <div class="time-logs-footer">
-        <button class="time-logs-clear" on:click={clearAll}>Очистить все</button>
+        <button class="time-logs-clear" on:click={clearAll}>{$t("tasks.timeLogs.clearAll")}</button>
       </div>
     {/if}
   </div>

@@ -6,6 +6,8 @@
   import timeGridPlugin from "@fullcalendar/timegrid";
   import interactionPlugin from "@fullcalendar/interaction";
 
+  import { tRaw, locale } from "../i18n";
+  import { settings } from "../ui/stores";
   import type CalendarPlugin from "../main";
   import type { ITask, IChecklistItem } from "../task-tracker/types";
   import {
@@ -60,6 +62,21 @@
   let isDragging = false;
   let suppressRefetch = false;
   let currentViewType = "dayGridMonth";
+
+  // Reactive start of week — depends on settings and locale
+  let startOfWeek = 1;
+  let currentLocale = "ru";
+  $: {
+    const sow = $settings.startOfWeek || "system";
+    if (sow === "monday") startOfWeek = 1;
+    else if (sow === "sunday") startOfWeek = 0;
+    else startOfWeek = $locale === "en" ? 0 : 1;
+  }
+  $: currentLocale = $locale === "en" ? "en" : "ru";
+  $: if (calendar && $locale) {
+    calendar.setOption("firstDay", startOfWeek);
+    calendar.setOption("locale", currentLocale);
+  }
 
   // Weather state
   let weatherByDate: Map<string, DayWeather> = new Map();
@@ -308,7 +325,7 @@
       calendarEl.setAttribute("role", "application");
       calendarEl.setAttribute(
         "aria-label",
-        "Расписание — используйте стрелки для навигации",
+        tRaw("schedule.ariaLabel"),
       );
     }
     // Delegate deadline click → navigate to month view + blink
@@ -414,13 +431,13 @@
       plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
       initialView,
       timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      locale: "ru",
+      locale: tRaw("locale.momentLocale"),
       headerToolbar,
-      buttonText: { month: "Месяц", week: "Неделя", day: "День" },
+      buttonText: { month: tRaw("schedule.month"), week: tRaw("schedule.week"), day: tRaw("schedule.day") },
       slotMinTime: "06:00:00",
       slotMaxTime: "30:00:00",
       allDaySlot: true,
-      allDayText: "Без времени",
+      allDayText: tRaw("schedule.untimed"),
       slotDuration: isSmallPhone ? "00:15:00" : "00:30:00",
       snapDuration: isSmallPhone ? "00:15:00" : "00:30:00",
       editable: !isMobile,
@@ -434,7 +451,7 @@
       select: handleCalendarSelect,
       dayMaxEvents: true,
       weekends: true,
-      firstDay: 1,
+      firstDay: Number(tRaw("locale.startOfWeek")),
       height: "100%",
       nowIndicator: true,
       scrollTimeReset: false,
@@ -480,15 +497,15 @@
         ? {
             timeGridDay: {
               titleFormat: { day: "numeric", month: "short" },
-              buttonText: "День",
+              buttonText: tRaw("schedule.day"),
             },
             timeGridWeek: {
               titleFormat: { day: "numeric", month: "short" },
-              buttonText: "Неделя",
+              buttonText: tRaw("schedule.week"),
             },
             dayGridMonth: {
               titleFormat: { month: "long", year: "numeric" },
-              buttonText: "Месяц",
+              buttonText: tRaw("schedule.month"),
             },
           }
         : {},
@@ -543,10 +560,10 @@
         currentViewType = view.type;
         const viewType =
           view.type === "dayGridMonth"
-            ? "Месяц"
+            ? tRaw("schedule.month")
             : view.type === "timeGridWeek"
-              ? "Неделя"
-              : "День";
+              ? tRaw("schedule.week")
+              : tRaw("schedule.day");
         announceView(`${viewType}: ${view.title}`);
 
         // Load weather for the visible date range
@@ -663,15 +680,15 @@
     const displayTime = endTimeStr ? `${startTime} — ${endTimeStr}` : startTime;
     const statusLabel = showStatus
       ? task.status === "progress"
-        ? "В работе"
+        ? tRaw("schedule.statusInProgress")
         : task.status === "paused"
-          ? "На паузе"
+          ? tRaw("schedule.statusPaused")
           : task.status === "done"
-            ? "Готово"
+            ? tRaw("schedule.statusDone")
             : ""
       : "";
     const statusHtml = statusLabel
-      ? `<span class="sch-event-status sch-status-${task.status}" data-action="toggle-status" title="${"Нажмите для смены статуса"}">${statusLabel}</span>`
+      ? `<span class="sch-event-status sch-status-${task.status}" data-action="toggle-status" title="${tRaw("schedule.clickToChange")}">${statusLabel}</span>`
       : "";
     const priorityBadge = showPriority
       ? task.priority === "high"
@@ -682,11 +699,11 @@
       : "";
     const workBadge =
       showWorkBadge && task.isWorkTask
-        ? `<span class="sch-work-badge" title="${"Рабочая задача"}">&#128188;</span>`
+        ? `<span class="sch-work-badge" title="${tRaw("schedule.workTask")}">&#128188;</span>`
         : "";
     const noteBadge =
       showNoteBadge && task.boundNotePath
-        ? `<span class="sch-note-badge" data-action="open-note" title="${"Открыть заметку"}">&#128279;</span>`
+        ? `<span class="sch-note-badge" data-action="open-note" title="${tRaw("schedule.openNote")}">&#128279;</span>`
         : "";
 
     let deadlineHtml = "";
@@ -705,13 +722,13 @@
           (dl.getTime() - today.getTime()) / 86400000,
         );
         let dlLabel = "";
-        if (diffDays < 0) dlLabel = `${Math.abs(diffDays)}д просрочено`;
-        else if (diffDays === 0) dlLabel = "Сегодня";
-        else if (diffDays === 1) dlLabel = "Завтра";
-        else dlLabel = `${diffDays}д`;
+        if (diffDays < 0) dlLabel = tRaw("schedule.overdueDays", {days: Math.abs(diffDays)});
+        else if (diffDays === 0) dlLabel = tRaw("schedule.today");
+        else if (diffDays === 1) dlLabel = tRaw("schedule.tomorrow");
+        else dlLabel = `${diffDays}${tRaw("schedule.days")}`;
         if (task.deadlineTime) dlLabel += ` ${task.deadlineTime}`;
         const isOverdue = diffDays < 0;
-        deadlineHtml = `<span class="sch-deadline sch-deadline-transparent ${isOverdue ? "sch-deadline-overdue" : ""}" title="Показать в календаре" data-deadline-date="${y}-${m}-${d}" style="cursor:pointer">${dlLabel}</span>`;
+        deadlineHtml = `<span class="sch-deadline sch-deadline-transparent ${isOverdue ? "sch-deadline-overdue" : ""}" title="${tRaw("components.showInCalendar")}" data-deadline-date="${y}-${m}-${d}" style="cursor:pointer">${dlLabel}</span>`;
       }
     }
 
@@ -736,10 +753,10 @@
           const diffH = Math.floor(diffMin / 60);
           const diffD = Math.floor(diffH / 24);
           let overdueLabel = "";
-          if (diffD > 0) overdueLabel = `${diffD}д ${diffH % 24}ч`;
-          else if (diffH > 0) overdueLabel = `${diffH}ч ${diffMin % 60}м`;
-          else overdueLabel = `${diffMin}м`;
-          overdueHtml = `<span class="sch-overdue" title="Просрочено">⚠ ${overdueLabel}</span>`;
+          if (diffD > 0) overdueLabel = `${diffD}${tRaw("schedule.days")} ${diffH % 24}${tRaw("schedule.hours")}`;
+          else if (diffH > 0) overdueLabel = `${diffH}${tRaw("schedule.hours")} ${diffMin % 60}${tRaw("schedule.minutes")}`;
+          else overdueLabel = `${diffMin}${tRaw("schedule.minutes")}`;
+          overdueHtml = `<span class="sch-overdue" title="${tRaw("schedule.overdue")}">⚠ ${overdueLabel}</span>`;
         }
       }
     }
@@ -748,7 +765,7 @@
     const checklistDone = checklistItems.filter((c) => c.checked).length;
     const checklistTotal = checklistItems.length;
     const checklistBadge = checklistTotal > 0
-      ? `<span class="sch-checklist-badge" title="Чек-лист: ${checklistDone}/${checklistTotal}">☑ ${checklistDone}/${checklistTotal}</span>`
+      ? `<span class="sch-checklist-badge" title="${tRaw("schedule.checklist")}: ${checklistDone}/${checklistTotal}">☑ ${checklistDone}/${checklistTotal}</span>`
       : "";
 
     const descriptionHtml =
@@ -795,7 +812,7 @@
         : "";
       el.setAttribute(
         "title",
-        `Дедлайн задачи: ${task.title}\nДата: ${deadlineDateStr}${task.deadlineTime ? " " + task.deadlineTime : ""}\nНажмите, чтобы найти задачу`,
+        `${tRaw("schedule.deadlineTask", {title: task.title})}\n${tRaw("schedule.dateLabel", {date: deadlineDateStr})}${task.deadlineTime ? " " + task.deadlineTime : ""}\n${tRaw("components.clickToFindTask")}`,
       );
       return;
     }
@@ -818,11 +835,11 @@
     }
     if (task.recurrence) {
       const recMap: Record<string, string> = {
-        daily: "Ежедневно",
-        weekly: "Еженедельно",
-        monthly: "Ежемесячно",
+        daily: tRaw("schedule.recurrenceDaily"),
+        weekly: tRaw("schedule.recurrenceWeekly"),
+        monthly: tRaw("schedule.recurrenceMonthly"),
       };
-      let recText = `Повторение: ${recMap[task.recurrence.type] || task.recurrence.type}`;
+      let recText = `${tRaw("schedule.recurrenceLabel")} ${recMap[task.recurrence.type] || task.recurrence.type}`;
       if (task.recurrence.until) {
         const untilDate = task.recurrence.until.replace(/^day-/, "");
         recText += ` (до ${untilDate})`;
@@ -832,7 +849,7 @@
     if (task.estimatedTime) {
       const h = Math.floor(task.estimatedTime / 60);
       const m = task.estimatedTime % 60;
-      lines.push(`Ожидаемое: ${h > 0 ? h + "ч " : ""}${m > 0 ? m + "м" : ""}`);
+      lines.push(`${tRaw("schedule.expected")} ${h > 0 ? h + tRaw("schedule.hours") + " " : ""}${m > 0 ? m + tRaw("schedule.minutes") : ""}`);
     }
     if (lines.length > 0) {
       el.setAttribute("title", lines.join("\n"));
@@ -849,7 +866,7 @@
           tooltip.className = "sch-checklist-tooltip";
 
           const done = checklistItems.filter((c) => c.checked).length;
-          let html = `<div class="sch-checklist-tooltip-title">Чек-лист (${done}/${checklistItems.length}):</div>`;
+          let html = `<div class="sch-checklist-tooltip-title">${tRaw("schedule.checklist")} (${done}/${checklistItems.length}):</div>`;
           for (const item of checklistItems) {
             const icon = item.checked ? "✅" : "⬜";
             const strikeStyle = item.checked ? ' style="text-decoration:line-through;opacity:0.6"' : "";
@@ -1209,7 +1226,7 @@
       plugin.app,
       async (data) => {
         const task = addTask({
-          title: data.title || "Новая задача",
+          title: data.title || tRaw("schedule.newTask"),
           description: data.description,
           completed: false,
           status: "todo",
@@ -1289,21 +1306,21 @@
     const items = [
       // Редактирование только для незавершённых задач
       ...(task.status !== "done"
-        ? [{ label: `${priorityPrefix}📝 Редактировать`, action: () => contextEditTask() }]
+        ? [{ label: `${priorityPrefix}${tRaw("schedule.edit")}`, action: () => contextEditTask() }]
         : []),
       ...(task.boundNotePath
         ? [
             {
-              label: `${priorityPrefix}📄 Открыть заметку`,
+              label: `${priorityPrefix}${tRaw("schedule.openNote")}`,
               action: () => contextOpenNote(),
             },
           ]
         : []),
-      { label: "Перевести статус:", disabled: true },
+      { label: tRaw("schedule.changeStatus"), disabled: true },
       ...(task.status !== "todo"
         ? [
             {
-              label: ` ${"🟢 Сделать"}`,
+              label: ` ${tRaw("schedule.statusTodo")}`,
               action: () => contextChangeStatus("todo"),
             },
           ]
@@ -1311,7 +1328,7 @@
       ...(task.status !== "progress"
         ? [
             {
-              label: ` ${"▶️ В работу"}`,
+              label: ` ${tRaw("schedule.statusToWork")}`,
               action: () => contextChangeStatus("progress"),
             },
           ]
@@ -1319,7 +1336,7 @@
       ...(task.status !== "paused"
         ? [
             {
-              label: `${"⏸️ На паузу"}`,
+              label: `${tRaw("schedule.statusToPause")}`,
               action: () => contextChangeStatus("paused"),
             },
           ]
@@ -1327,14 +1344,14 @@
       ...(task.status !== "done"
         ? [
             {
-              label: ` ${"✅ Готово"}`,
+              label: ` ${tRaw("schedule.statusToDone")}`,
               action: () => contextChangeStatus("done"),
             },
           ]
         : []),
       { divider: true },
       {
-        label: ` ${"🗑️ Удалить"}`,
+        label: ` ${tRaw("schedule.deleteEvent")}`,
         action: () => contextDeleteTask(),
         danger: true,
       },

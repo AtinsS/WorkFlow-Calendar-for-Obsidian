@@ -9,6 +9,7 @@ import { generateIcs, type IcsEvent } from "../finance/icsGenerator";
 import { createGist, verifyToken, type GistConfig, type GistResult } from "./githubGist";
 import { tasks, projects } from "../task-tracker/stores";
 import { settings } from "../ui/stores";
+import { tRaw } from "../i18n";
 
 export interface GistSyncStatus {
   connected: boolean;
@@ -98,13 +99,13 @@ export async function connectGist(
     if (!result.hasGistScope) {
       return {
         success: true,
-        warning: `Токен подключён (${result.login}), но нет scope 'gist'. Создание Gist будет невозможно. Обновите токен с правами на Gist.`,
+        warning: tRaw("gist.tokenConnected", { login: result.login }),
       };
     }
 
     return { success: true };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Ошибка подключения";
+    const msg = e instanceof Error ? e.message : tRaw("gist.connectionError");
     gistSyncStatus.update((s) => ({ ...s, error: msg }));
     return { success: false, error: msg };
   }
@@ -128,10 +129,10 @@ function tasksToIcsEvents(): IcsEvent[] {
 
     const description = [
       task.description || "",
-      project ? `Проект: ${project.name}` : "",
-      task.scheduledTime ? `Время: ${task.scheduledTime}` : "",
-      task.deadline ? `Дедлайн: ${task.deadline}` : "",
-      task.isWorkTask ? `Рабочая задача${task.rate ? ` (${task.rate}₽)` : ""}` : "",
+      project ? tRaw("gist.project", { name: project.name }) : "",
+      task.scheduledTime ? tRaw("gist.time", { time: task.scheduledTime }) : "",
+      task.deadline ? tRaw("gist.deadline", { deadline: task.deadline }) : "",
+      task.isWorkTask ? `${tRaw("gist.workTask")}${task.rate ? ` (${task.rate}₽)` : ""}` : "",
     ]
       .filter(Boolean)
       .join("\\n");
@@ -180,10 +181,10 @@ function tasksToIcsEvents(): IcsEvent[] {
       if (dlMatch) {
         events.push({
           uid: `deadline-${task.id}@calendar-plugin-remastered`,
-          summary: `⏰ Дедлайн: ${task.title}`,
+          summary: tRaw("gist.deadlineEvent", { title: task.title }),
           dtstart: `${dlMatch[1]}${dlMatch[2]}${dlMatch[3]}`,
           allday: true,
-          categories: ["Дедлайн"],
+          categories: [tRaw("gist.deadlineCategory")],
         });
       }
     }
@@ -200,7 +201,7 @@ export async function syncToGist(): Promise<{ success: boolean; error?: string; 
   console.log("[GistSync] syncToGist called, gistId:", gistId ? gistId.substring(0, 8) + "..." : "NONE");
 
   if (!token) {
-    return { success: false, error: "GitHub токен не настроен" };
+    return { success: false, error: tRaw("gist.tokenNotConfigured") };
   }
 
   gistSyncStatus.update((s) => ({ ...s, syncing: true, error: "" }));
@@ -240,7 +241,7 @@ export async function syncToGist(): Promise<{ success: boolean; error?: string; 
 
     return { success: true, url: result.rawUrl };
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Ошибка синхронизации";
+    const msg = e instanceof Error ? e.message : tRaw("gist.syncError");
     gistSyncStatus.update((s) => ({ ...s, syncing: false, error: msg }));
     return { success: false, error: msg };
   }

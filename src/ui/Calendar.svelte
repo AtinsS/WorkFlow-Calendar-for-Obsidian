@@ -10,6 +10,7 @@
   import { onDestroy, onMount, afterUpdate } from "svelte";
 
   import { activeFile, dailyNotes, settings, weeklyNotes } from "./stores";
+  import { t, tRaw, locale } from "../i18n";
   import { tasks } from "../task-tracker/stores";
   import { habitLogs } from "../habit-tracker/stores";
   import { selectedDate } from "../task-tracker/stores";
@@ -25,8 +26,8 @@
     const lon = $settings.weatherLongitude;
     if (lat && lon && $settings.weatherEnabled !== false) {
       const base = today.clone().add(weatherWeekOffset, "weeks");
-      const start = base.clone().startOf("isoWeek").format("YYYY-MM-DD");
-      const end = base.clone().endOf("isoWeek").format("YYYY-MM-DD");
+      const start = base.clone().startOf("week").format("YYYY-MM-DD");
+      const end = base.clone().endOf("week").format("YYYY-MM-DD");
       fetchWeekWeather(lat, lon, start, end, $settings.weatherProvider as any, $settings.weatherApiKey).then(data => {
         weekWeather = data;
       }).catch(() => { weekWeather = []; });
@@ -37,49 +38,56 @@
     weatherWeekOffset += delta;
   }
 
-  // Initialize Russian locale with Monday as first day
+  // Initialize locale-aware calendar with correct first day of week
   $: {
-    configureGlobalMomentLocale("ru", "monday");
-    window.moment.updateLocale("ru", {
+    const $loc = $locale;
+    const momentLocale = $loc === "en" ? "en" : "ru";
+    const sow = $settings.startOfWeek || "system";
+    let firstDay: "monday" | "sunday";
+    if (sow === "monday") firstDay = "monday";
+    else if (sow === "sunday") firstDay = "sunday";
+    else firstDay = $loc === "en" ? "sunday" : "monday";
+    configureGlobalMomentLocale(momentLocale, firstDay);
+    window.moment.updateLocale(momentLocale, {
       calendar: {
-        sameDay: "[Сегодня в] LT",
-        nextDay: "[Завтра в] LT",
-        lastDay: "[Вчера в] LT",
+        sameDay: tRaw("calendar.sameDay"),
+        nextDay: tRaw("calendar.nextDay"),
+        lastDay: tRaw("calendar.lastDay"),
         nextWeek: function (now: moment.Moment) {
           if (now.week() !== this.week()) {
             switch (this.day()) {
               case 0:
-                return "[В следующее] dddd, [в] LT";
+                return tRaw("calendar.nextWeekNeuter");
               case 1:
               case 2:
               case 4:
-                return "[В следующий] dddd, [в] LT";
+                return tRaw("calendar.nextWeek");
               case 3:
               case 5:
-                return "[В следующую] dddd, [в] LT";
+                return tRaw("calendar.nextWeekFeminine");
               case 6:
-                return "[В следующую субботу, в] LT";
+                return tRaw("calendar.nextWeekSaturday");
               default:
-                return "[В] dddd, [в] LT";
+                return tRaw("calendar.defaultDay");
             }
           }
-          return "[В] dddd, [в] LT";
+          return tRaw("calendar.defaultDay");
         },
         lastWeek: function () {
           switch (this.day()) {
             case 0:
-              return "[В прошлое] dddd, [в] LT";
+              return tRaw("calendar.lastWeekNeuter");
             case 1:
             case 2:
             case 4:
-              return "[В прошлый] dddd, [в] LT";
+              return tRaw("calendar.lastWeek");
             case 3:
             case 5:
-              return "[В прошлую] dddd, [в] LT";
+              return tRaw("calendar.lastWeekFeminine");
             case 6:
-              return "[В прошлую субботу, в] LT";
+              return tRaw("calendar.lastWeekSaturday");
             default:
-              return "[В] dddd, [в] LT";
+              return tRaw("calendar.defaultDay");
           }
         },
         sameElse: "L",
@@ -262,13 +270,13 @@
     showWeekNums={$settings.showWeeklyNote}
   />
   {#if $settings.weatherEnabled !== false}
-    {@const weekStart = today.clone().add(weatherWeekOffset, "weeks").startOf("isoWeek")}
-    {@const weekEnd = today.clone().add(weatherWeekOffset, "weeks").endOf("isoWeek")}
+    {@const weekStart = today.clone().add(weatherWeekOffset, "weeks").startOf("week")}
+    {@const weekEnd = today.clone().add(weatherWeekOffset, "weeks").endOf("week")}
     <div class="cal-weather">
       <div class="cal-weather-title">
-        <button class="cal-weather-nav" on:click={() => shiftWeatherWeek(-1)} aria-label="Предыдущая неделя">‹</button>
+        <button class="cal-weather-nav" on:click={() => shiftWeatherWeek(-1)} aria-label={$t("calendar.weatherPrevWeek")}>‹</button>
         <span class="cal-weather-title-text">{weekStart.format("D.MM")} – {weekEnd.format("D.MM")}</span>
-        <button class="cal-weather-nav" on:click={() => shiftWeatherWeek(1)} aria-label="Следующая неделя">›</button>
+        <button class="cal-weather-nav" on:click={() => shiftWeatherWeek(1)} aria-label={$t("calendar.weatherNextWeek")}>›</button>
       </div>
       {#if weekWeather.length > 0}
         {#each weekWeather as day (day.date)}
@@ -283,7 +291,7 @@
           </div>
         {/each}
       {:else}
-        <div class="cal-weather-empty">Нет данных за эту неделю</div>
+        <div class="cal-weather-empty">{$t("calendar.weatherNoData")}</div>
       {/if}
       {#if getWeatherAttribution($settings.weatherProvider)}
         <div class="cal-weather-attr" title={getWeatherAttribution($settings.weatherProvider)}>{getWeatherAttribution($settings.weatherProvider)}</div>

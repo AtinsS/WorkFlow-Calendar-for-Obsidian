@@ -2,6 +2,7 @@
   import { onMount, afterUpdate } from "svelte";
   import type { TimeLog } from "../task-tracker/types";
   import { formatDuration } from "../task-tracker/TimerManager";
+  import { t, locale } from "../i18n";
 
   export let logs: TimeLog[] = [];
   export let mode: "bar" | "area" = "bar";
@@ -17,7 +18,7 @@
     totalMs: number;
   }
 
-  function aggregateByDay(logs: TimeLog[]): DayData[] {
+  function aggregateByDay(logs: TimeLog[], currentLocale: string): DayData[] {
     const map = new Map<string, number>();
     for (const log of logs) {
       map.set(log.date, (map.get(log.date) || 0) + log.duration);
@@ -26,7 +27,7 @@
     const result: DayData[] = [];
     for (const [date, totalMs] of map) {
       const d = new Date(date + "T12:00:00");
-      const label = d.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+      const label = d.toLocaleDateString(currentLocale === "ru" ? "ru-RU" : "en-US", { day: "numeric", month: "short" });
       result.push({ date, label, totalMs });
     }
 
@@ -38,7 +39,7 @@
     return result;
   }
 
-  $: dayData = aggregateByDay(logs);
+  $: dayData = aggregateByDay(logs, $locale);
   $: maxMs = dayData.length > 0 ? Math.max(...dayData.map((d) => d.totalMs)) : 0;
 
   let dpr = 1;
@@ -302,7 +303,7 @@
 
 <div class="bar-chart-container" bind:this={container}>
   {#if dayData.length === 0}
-    <div class="bar-chart-empty">Нет данных для графика</div>
+    <div class="bar-chart-empty">{$t("components.noChartData")}</div>
   {:else}
     <canvas
       bind:this={canvas}
@@ -310,8 +311,8 @@
       on:mouseleave={handleMouseLeave}
     ></canvas>
     <div class="bar-chart-summary">
-      <span class="bar-chart-total">Всего: {formatDuration(dayData.reduce((s, d) => s + d.totalMs, 0))}</span>
-      <span class="bar-chart-avg">Среднее: {formatDuration(dayData.reduce((s, d) => s + d.totalMs, 0) / dayData.length)}</span>
+      <span class="bar-chart-total">{$t("components.total", { value: formatDuration(dayData.reduce((s, d) => s + d.totalMs, 0)) })}</span>
+      <span class="bar-chart-avg">{$t("components.average", { value: formatDuration(dayData.reduce((s, d) => s + d.totalMs, 0) / dayData.length) })}</span>
     </div>
   {/if}
 </div>

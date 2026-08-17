@@ -3,14 +3,12 @@
   import moment from "moment";
   import { settings } from "../ui/stores";
   import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
+  import { t, tArray } from "../i18n";
 
   export let onOpenTasks: (() => void) | undefined = undefined;
   export let onOpenAnalytics: (() => void) | undefined = undefined;
   export let onOpenFinance: (() => void) | undefined = undefined;
   export let onOpenSchedule: (() => void) | undefined = undefined;
-
-  const RU_MONTHS = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"];
-  const RU_DAYS = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
 
   let now = moment();
   let clockTimer: ReturnType<typeof setInterval> | null = null;
@@ -49,12 +47,14 @@
   $: showFinanceBtn = $settings.helloShowFinanceBtn !== false;
   $: showScheduleBtn = $settings.helloShowScheduleBtn !== false;
   $: hour = now.hour();
-  $: greetingText = hour < 6 ? "Доброй ночи" : hour < 12 ? "Доброе утро" : hour < 18 ? "Добрый день" : "Добрый вечер";
+  $: greetingText = hour < 6 ? $t("hello.goodNight") : hour < 12 ? $t("hello.goodMorning") : hour < 18 ? $t("hello.goodAfternoon") : $t("hello.goodEvening");
   $: greeting = userName ? `${greetingText}, ${userName}` : greetingText;
   $: greetingEmoji = hour < 6 ? "🌙" : hour < 12 ? "☀️" : hour < 18 ? "🌤" : "🌆";
-  $: monthName = RU_MONTHS[now.month()];
+  $: monthNames = $tArray("common.months.genitive");
+  $: dayNames = $tArray("common.weekdays.long");
+  $: monthName = monthNames[now.month()] || "";
   $: year = now.format("YYYY");
-  $: dateDisplay = `${now.date()} ${monthName} ${year}, ${RU_DAYS[now.day()]}`;
+  $: dateDisplay = `${now.date()} ${monthName} ${year}, ${dayNames[now.day()] || ""}`;
 
   // Time-of-day theme
   $: timeTheme = hour < 6 ? "night" : hour < 12 ? "morning" : hour < 18 ? "day" : "evening";
@@ -127,25 +127,25 @@
     {#if showTasksBtn}
       <button class="hello-nav-btn" on:click={onOpenTasks}>
         <span class="hello-nav-icon">✅</span>
-        <span>Задачи</span>
+        <span>{$t("hello.navTasks")}</span>
       </button>
     {/if}
     {#if showAnalyticsBtn}
       <button class="hello-nav-btn" on:click={onOpenAnalytics}>
         <span class="hello-nav-icon">📊</span>
-        <span>Аналитика</span>
+        <span>{$t("hello.navAnalytics")}</span>
       </button>
     {/if}
     {#if showFinanceBtn}
       <button class="hello-nav-btn" on:click={onOpenFinance}>
         <span class="hello-nav-icon">💰</span>
-        <span>Финансы</span>
+        <span>{$t("hello.navFinance")}</span>
       </button>
     {/if}
     {#if showScheduleBtn}
       <button class="hello-nav-btn" on:click={onOpenSchedule}>
         <span class="hello-nav-icon">📅</span>
-        <span>Расписание</span>
+        <span>{$t("hello.navSchedule")}</span>
       </button>
     {/if}
   </div>

@@ -1,4 +1,5 @@
 import { requestUrl } from "obsidian";
+import { tRaw } from "../i18n";
 
 export type WeatherProvider = "open-meteo" | "openweathermap" | "weatherapi" | "visual-crossing";
 
@@ -14,36 +15,26 @@ export function getWeatherAttribution(provider = "open-meteo"): string {
 }
 
 // WMO Weather interpretation codes → emoji + description
-const WMO_CODES: Record<number, { icon: string; label: string }> = {
-  0:  { icon: "☀️",  label: "Ясно" },
-  1:  { icon: "🌤️", label: "Малооблачно" },
-  2:  { icon: "⛅",  label: "Облачно" },
-  3:  { icon: "☁️",  label: "Пасмурно" },
-  45: { icon: "🌫️", label: "Туман" },
-  48: { icon: "🌫️", label: "Иней" },
-  51: { icon: "🌦️", label: "Лёгкая морось" },
-  53: { icon: "🌦️", label: "Морось" },
-  55: { icon: "🌧️", label: "Сильная морось" },
-  56: { icon: "🌧️", label: "Ледяная морось" },
-  57: { icon: "🌧️", label: "Сильная ледяная морось" },
-  61: { icon: "🌧️", label: "Небольшой дождь" },
-  63: { icon: "🌧️", label: "Дождь" },
-  65: { icon: "🌧️", label: "Сильный дождь" },
-  66: { icon: "🌧️", label: "Ледяной дождь" },
-  67: { icon: "🌧️", label: "Сильный ледяной дождь" },
-  71: { icon: "🌨️", label: "Небольшой снег" },
-  73: { icon: "🌨️", label: "Снег" },
-  75: { icon: "❄️", label: "Сильный снег" },
-  77: { icon: "❄️", label: "Снежные зёрна" },
-  80: { icon: "🌦️", label: "Небольшой ливень" },
-  81: { icon: "🌧️", label: "Ливень" },
-  82: { icon: "⛈️", label: "Сильный ливень" },
-  85: { icon: "🌨️", label: "Небольшой снежный ливень" },
-  86: { icon: "🌨️", label: "Снежный ливень" },
-  95: { icon: "⛈️", label: "Гроза" },
-  96: { icon: "⛈️", label: "Гроза с градом" },
-  99: { icon: "⛈️", label: "Сильная гроза с градом" },
+const WMO_ICONS: Record<number, string> = {
+  0: "☀️", 1: "🌤️", 2: "⛅", 3: "☁️",
+  45: "🌫️", 48: "🌫️",
+  51: "🌦️", 53: "🌦️", 55: "🌧️", 56: "🌧️", 57: "🌧️",
+  61: "🌧️", 63: "🌧️", 65: "🌧️", 66: "🌧️", 67: "🌧️",
+  71: "🌨️", 73: "🌨️", 75: "❄️", 77: "❄️",
+  80: "🌦️", 81: "🌧️", 82: "⛈️", 85: "🌨️", 86: "🌨️",
+  95: "⛈️", 96: "⛈️", 99: "⛈️",
 };
+
+function getWeatherLabel(code: number): string {
+  return tRaw(`weather.codes.${code}`) || tRaw("weather.codes.0");
+}
+
+function getWmoCode(code: number): { icon: string; label: string } {
+  return {
+    icon: WMO_ICONS[code] || "🌡️",
+    label: getWeatherLabel(code),
+  };
+}
 
 export interface DayWeather {
   date: string; // YYYY-MM-DD
@@ -141,7 +132,7 @@ async function fetchOpenMeteo(
 
   return json.daily.time.map((date: string, i: number) => {
     const code = Number(json.daily.weather_code[i]);
-    const info = WMO_CODES[code] || { icon: "🌡️", label: `Код ${code}` };
+    const info = getWmoCode(code) || { icon: "🌡️", label: `Code ${code}` };
     return {
       date,
       tempMax: Math.round(json.daily.temperature_2m_max[i]),
@@ -156,14 +147,15 @@ async function fetchOpenMeteo(
 async function fetchOpenWeatherMap(
   lat: number, lon: number, startDate: string, endDate: string, apiKey?: string
 ): Promise<DayWeather[]> {
-  if (!apiKey) throw new Error("Требуется API-ключ OpenWeatherMap");
+  if (!apiKey) throw new Error(tRaw("weather.errorApiKey", { provider: "OpenWeatherMap" }));
 
   // OpenWeatherMap free tier: use forecast API (5 day / 3 hour)
-  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=ru`;
+  const weatherLang = tRaw("locale.weatherApiLang");
+  const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=${weatherLang}`;
   const response = await requestUrl({ url, method: "GET" });
   const json = response.json;
   if (json?.cod && json.cod !== "200" && json.cod !== 200) {
-    throw new Error(json.message || `OpenWeatherMap ошибка ${json.cod}`);
+    throw new Error(json.message || `OpenWeatherMap error ${json.cod}`);
   }
   if (!json?.list) return [];
 
@@ -184,7 +176,7 @@ async function fetchOpenWeatherMap(
     const tempMin = Math.round(Math.min(...data.temps));
     const mainCode = data.codes[Math.floor(data.codes.length / 2)]; // pick middle
     const wmo = owmIdToWmo(mainCode);
-    const info = WMO_CODES[wmo] || { icon: "🌡️", label: data.descs[0] || `ID ${mainCode}` };
+    const info = getWmoCode(wmo) || { icon: "🌡️", label: data.descs[0] || `ID ${mainCode}` };
     return { date, tempMax, tempMin, weatherCode: wmo, icon: info.icon, label: info.label };
   }).sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -192,13 +184,14 @@ async function fetchOpenWeatherMap(
 async function fetchWeatherAPI(
   lat: number, lon: number, startDate: string, endDate: string, apiKey?: string
 ): Promise<DayWeather[]> {
-  if (!apiKey) throw new Error("Требуется API-ключ WeatherAPI");
+  if (!apiKey) throw new Error(tRaw("weather.errorApiKey", { provider: "WeatherAPI" }));
 
-  const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=14&lang=ru`;
+  const weatherLang = tRaw("locale.weatherApiLang");
+  const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=14&lang=${weatherLang}`;
   const response = await requestUrl({ url, method: "GET" });
   const json = response.json;
   if (json?.error) {
-    throw new Error(json.error.message || `WeatherAPI ошибка ${json.error.code}`);
+    throw new Error(json.error.message || `WeatherAPI error ${json.error.code}`);
   }
   if (!json?.forecast?.forecastday) return [];
 
@@ -207,7 +200,7 @@ async function fetchWeatherAPI(
     .map((d: any) => {
       const code = d.day?.condition?.code ?? 0;
       const wmo = weatherapiCodeToWmo(code);
-      const info = WMO_CODES[wmo] || { icon: "🌡️", label: d.day?.condition?.text ?? `Код ${code}` };
+      const info = getWmoCode(wmo) || { icon: "🌡️", label: d.day?.condition?.text ?? `Code ${code}` };
       return {
         date: d.date,
         tempMax: Math.round(d.day?.maxtemp_c ?? 0),
@@ -222,9 +215,10 @@ async function fetchWeatherAPI(
 async function fetchVisualCrossing(
   lat: number, lon: number, startDate: string, endDate: string, apiKey?: string
 ): Promise<DayWeather[]> {
-  if (!apiKey) throw new Error("Требуется API-ключ Visual Crossing");
+  if (!apiKey) throw new Error(tRaw("weather.errorApiKey", { provider: "Visual Crossing" }));
 
-  const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${lat},${lon}/${startDate}/${endDate}?key=${apiKey}&unitGroup=metric&lang=ru&include=days`;
+  const weatherLang = tRaw("locale.weatherApiLang");
+  const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${lat},${lon}/${startDate}/${endDate}?key=${apiKey}&unitGroup=metric&lang=${weatherLang}&include=days`;
   const response = await requestUrl({ url, method: "GET" });
   const json = response.json;
   if (json?.message && !json?.days) {
@@ -234,7 +228,7 @@ async function fetchVisualCrossing(
 
   return json.days.map((d: any) => {
     const wmo = visualCrossingCodeToWmo(d.conditions ?? "", d.icon ?? "");
-    const info = WMO_CODES[wmo] || { icon: "🌡️", label: d.conditions ?? `Код ${wmo}` };
+    const info = getWmoCode(wmo) || { icon: "🌡️", label: d.conditions ?? `Code ${wmo}` };
     return {
       date: d.datetime,
       tempMax: Math.round(d.tempmax ?? 0),
@@ -247,7 +241,7 @@ async function fetchVisualCrossing(
 }
 
 export function getWMOInfo(code: number): { icon: string; label: string } {
-  return WMO_CODES[code] || { icon: "🌡️", label: `Код ${code}` };
+  return getWmoCode(code) || { icon: "🌡️", label: `Code ${code}` };
 }
 
 // OpenWeatherMap condition ID → WMO code (approximate mapping)

@@ -1,10 +1,10 @@
 {
-  "id": "calendar-plugin-remastered",
+  "id": "WorkLife Calendar",
   "name": "WorkLife Calendar",
   "description": "calendar + task tracker + habit tracker + financhial planner forked from Liamcain's calendar plugin",
-  "version": "2.10.17",
+  "version": "2.11.17",
   "author": "AtinsS",
-  "authorUrl": "https://github.com/AtinsS/obsidian-calendar-plugin-remastered",
+  "authorUrl": "",
   "fundingUrl": "https://pay.cloudtips.ru/p/cbaa3c81",
   "isDesktopOnly": false,
   "minAppVersion": "1.12.0" 

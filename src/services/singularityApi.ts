@@ -4,6 +4,7 @@
  */
 
 import { requestUrl } from "obsidian";
+import { tRaw } from "../i18n";
 
 const BASE_URL = "https://api.singularity-app.com/v2";
 
@@ -139,7 +140,7 @@ async function apiRequest<T>(
 
       // Retry on rate limit (429) and transient server errors (5xx)
       if (status === 429 || (status >= 500 && status < 600)) {
-        const label = status === 429 ? "Превышен лимит запросов" : `Серверная ошибка ${status}`;
+        const label = status === 429 ? tRaw("singularity.rateLimit") : `${tRaw("singularity.serverError")} ${status}`;
         lastError = new Error(`SingularityApp: ${label} (${status})`);
         if (status === 429 && noRetry429) {
           throw lastError; // fail fast, caller handles backoff
@@ -194,14 +195,14 @@ async function apiRequest<T>(
 
 class SINGULARITY_AUTH_ERROR extends Error {
   constructor() {
-    super("Неверный SingularityApp токен. Проверьте токен в настройках.");
+    super(tRaw("singularity.invalidToken"));
     this.name = "SingularityAuthError";
   }
 }
 
 class SINGULARITY_NOT_FOUND_ERROR extends Error {
   constructor(path: string) {
-    super(`SingularityApp: ресурс не найден (${path})`);
+    super(`SingularityApp: ${tRaw("singularity.notFound")} (${path})`);
     this.name = "SingularityNotFoundError";
   }
 }

@@ -7,6 +7,7 @@ import moment from "moment";
 import type { TaskStatus, RecurrenceConfig } from "src/task-tracker/types";
 import type { SingularityTask, SingularityRecurrence } from "./singularityApi";
 import { quillDeltaToMarkdown } from "./quillDeltaParser";
+import { tRaw } from "../i18n";
 
 // --- Constants ---
 
@@ -399,7 +400,7 @@ export function buildLocalTaskFromRemote(remote: SingularityTask, reverseProject
   // For instances, parentTaskId is the generator's singularityId
   const parentTaskId = isRecurringInstance ? remote.recurrenceGeneratorId : undefined;
   return {
-    title: remote.title || "Без названия",
+    title: remote.title || tRaw("singularity.untitled"),
     description: remote.note ? quillDeltaToMarkdown(remote.note) : undefined,
     status,
     completed,
@@ -486,7 +487,7 @@ export function buildLocalHabitFromRemote(remote: { title?: string; color?: stri
   icon: string;
 } {
   return {
-    title: remote.title || "Без названия",
+    title: remote.title || tRaw("singularity.untitled"),
     color: singularityColorToHex(remote.color),
     icon: "🔁",
   };

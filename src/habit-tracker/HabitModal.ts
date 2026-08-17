@@ -1,6 +1,9 @@
 import { Setting } from "obsidian";
 import type { App } from "obsidian";
+import { get } from "svelte/store";
 import { CustomModal } from "../ui/CustomModal";
+import { tRaw, tArrayRaw, locale } from "../i18n";
+import { settings } from "../ui/stores";
 
 import type { IHabit } from "./types";
 
@@ -46,14 +49,14 @@ export class HabitModal extends CustomModal {
     this.containerEl.addClass("wf-habit-modal");
 
     this.contentEl.createEl("h2", {
-      text: this.habit ? "Редактировать привычку" : "Новая привычка",
+      text: this.habit ? tRaw("habits.modal.editHabit") : tRaw("habits.modal.newHabit"),
     });
 
     new Setting(this.contentEl)
-      .setName("Название")
+      .setName(tRaw("habits.modal.name"))
       .addText((text) =>
         text
-          .setPlaceholder("Название привычки")
+          .setPlaceholder(tRaw("habits.modal.namePlaceholder"))
           .setValue(this.titleInput)
           .onChange((value) => {
             this.titleInput = value;
@@ -61,8 +64,8 @@ export class HabitModal extends CustomModal {
       );
 
     new Setting(this.contentEl)
-      .setName("Иконка")
-      .setDesc("Эмодзи или символ")
+      .setName(tRaw("habits.modal.icon"))
+      .setDesc(tRaw("habits.modal.iconDesc"))
       .addText((text) =>
         text
           .setPlaceholder("💧")
@@ -94,11 +97,11 @@ export class HabitModal extends CustomModal {
     }
 
     new Setting(this.contentEl)
-      .setName("Частота")
+      .setName(tRaw("habits.modal.frequency"))
       .addDropdown((dropdown) => {
-        dropdown.addOption("daily", "Ежедневно");
-        dropdown.addOption("weekly", "Ежедневно (выбор дней)");
-        dropdown.addOption("monthly", "Ежемесячно");
+        dropdown.addOption("daily", tRaw("habits.modal.frequencyDaily"));
+        dropdown.addOption("weekly", tRaw("habits.modal.frequencyWeekly"));
+        dropdown.addOption("monthly", tRaw("habits.modal.frequencyMonthly"));
         dropdown.setValue(this.frequencyInput);
         dropdown.onChange((value) => {
           this.frequencyInput = value as "daily" | "weekly" | "monthly";
@@ -107,10 +110,17 @@ export class HabitModal extends CustomModal {
       });
 
     // Days of week — для frequency=weekly
-    // Visual order: Mon-Sun, moment convention: 0=Sun,1=Mon,...,6=Sat
-    this.customDaysSetting = new Setting(this.contentEl).setName("Дни недели");
-    const dayLabels = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-    const dayIndices = [1, 2, 3, 4, 5, 6, 0];
+    // Visual order depends on startOfWeek setting
+    this.customDaysSetting = new Setting(this.contentEl).setName(tRaw("habits.modal.weekdays"));
+    const rawLabels = tArrayRaw("common.weekdays.short");
+    const sow = get(settings).startOfWeek || "system";
+    let dayIndices: number[];
+    if (sow === "monday") dayIndices = [1, 2, 3, 4, 5, 6, 0];
+    else if (sow === "sunday") dayIndices = [0, 1, 2, 3, 4, 5, 6];
+    else dayIndices = get(locale) === "en" ? [0, 1, 2, 3, 4, 5, 6] : [1, 2, 3, 4, 5, 6, 0];
+    const dayLabels = sow === "sunday" || (sow === "system" && get(locale) === "en")
+      ? [...rawLabels.slice(-1), ...rawLabels.slice(0, -1)]
+      : rawLabels;
     const daysContainer = this.customDaysSetting.settingEl.createDiv({
       cls: "task-tracker-recurrence-days",
     });
@@ -138,11 +148,11 @@ export class HabitModal extends CustomModal {
 
     // Monthly day picker — для frequency=monthly
     this.monthlyDaySetting = new Setting(this.contentEl)
-      .setName("День месяца")
-      .setDesc("День месяца, когда выполнять привычку")
+      .setName(tRaw("habits.modal.monthDay"))
+      .setDesc(tRaw("habits.modal.monthDayDesc"))
       .addText((text) => {
         text
-          .setPlaceholder("1-31")
+          .setPlaceholder(tRaw("habits.modal.monthDayPlaceholder"))
           .setValue(String(this.monthlyDayInput))
           .onChange((value) => {
             const v = parseInt(value) || 1;
@@ -158,11 +168,11 @@ export class HabitModal extends CustomModal {
 
     const buttonsEl = this.contentEl.createDiv("task-tracker-modal-buttons");
 
-    const cancelBtn = buttonsEl.createEl("button", { text: "Отмена" });
+    const cancelBtn = buttonsEl.createEl("button", { text: tRaw("common.cancel") });
     cancelBtn.addEventListener("click", () => this.close());
 
     const submitBtn = buttonsEl.createEl("button", {
-      text: this.habit ? "Сохранить" : "Создать",
+      text: this.habit ? tRaw("common.save") : tRaw("common.create"),
       cls: "mod-cta",
     });
     submitBtn.addEventListener("click", () => this.handleSubmit());

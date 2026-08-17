@@ -7,19 +7,28 @@
   import type CalendarPlugin from "../main";
   import { settings } from "../ui/stores";
   import { fetchWeekWeather, type DayWeather } from "../services/weatherService";
+  import { t, tRaw, tArray, locale } from "../i18n";
 
   export let plugin: CalendarPlugin;
   export let onClose: () => void = () => {};
 
   // Use Obsidian's global moment to guarantee locale data is loaded
   const m = (typeof window !== "undefined" && window.moment) ? window.moment : moment;
-  m.locale("ru");
-  m.updateLocale("ru", {
-    week: {
-      dow: 1, // Monday
-      doy: 4,
-    },
-  });
+
+  // Reactive locale updates — depends on $locale and $settings stores
+  $: {
+    const sow = $settings.startOfWeek || "system";
+    let dow: number;
+    if (sow === "monday") dow = 1;
+    else if (sow === "sunday") dow = 0;
+    else dow = $locale === "en" ? 0 : 1;
+
+    const loc = $locale === "en" ? "en" : "ru";
+    m.locale(loc);
+    m.updateLocale(loc, {
+      week: { dow, doy: 4 },
+    });
+  }
 
   const DAY_START = 6;
   const DAY_END = 30; // 6 AM next day (24 + 6)
@@ -34,7 +43,7 @@
   let weatherByDate: Map<string, DayWeather> = new Map();
 
   $: dateStr = currentDate.format("YYYY-MM-DD");
-  $: dayLabel = currentDate.locale("ru").format("dddd, D MMMM");
+  $: dayLabel = currentDate.locale(tRaw("locale.momentLocale")).format("dddd, D MMMM");
   $: dayTasks = $tasks.filter((t) => {
     const match = t.dateUID?.match(/^day-(\d{4}-\d{2}-\d{2})/);
     return match && match[1] === dateStr;
@@ -146,7 +155,7 @@
   // Month view
   $: monthStart = currentDate.clone().startOf("month");
   $: monthEnd = currentDate.clone().endOf("month");
-  $: monthLabel = currentDate.locale("ru").format("MMMM YYYY");
+  $: monthLabel = currentDate.locale(tRaw("locale.momentLocale")).format("MMMM YYYY");
   $: calendarDays = (() => {
     const start = monthStart.clone().startOf("week");
     const end = monthEnd.clone().endOf("week");
@@ -246,16 +255,16 @@
     const priorityPrefix = priorityIcon ? `${priorityIcon} ` : "";
 
     const items = [
-      { label: `${priorityPrefix}📝 Редактировать`, action: () => contextEditTask() },
-      ...(task.notePath ? [{ label: `${priorityPrefix}📄 Открыть заметку`, action: () => contextOpenNote() }] : []),
+      { label: `${priorityPrefix}${tRaw("schedule.edit")}`, action: () => contextEditTask() },
+      ...(task.notePath ? [{ label: `${priorityPrefix}${tRaw("schedule.openNote")}`, action: () => contextOpenNote() }] : []),
       { divider: true },
-      { label: "Перевести статус:", disabled: true },
-      ...(task.status !== "todo" ? [{ label: `🟢 Сделать`, action: () => contextChangeStatus("todo") }] : []),
-      ...(task.status !== "progress" ? [{ label: `▶️ В работу`, action: () => contextChangeStatus("progress") }] : []),
-      ...(task.status !== "paused" ? [{ label: `⏸️ На паузу`, action: () => contextChangeStatus("paused") }] : []),
-      ...(task.status !== "done" ? [{ label: `✅ Готово`, action: () => contextChangeStatus("done") }] : []),
+      { label: tRaw("schedule.changeStatus"), disabled: true },
+      ...(task.status !== "todo" ? [{ label: tRaw("schedule.statusTodo"), action: () => contextChangeStatus("todo") }] : []),
+      ...(task.status !== "progress" ? [{ label: tRaw("schedule.statusToWork"), action: () => contextChangeStatus("progress") }] : []),
+      ...(task.status !== "paused" ? [{ label: tRaw("schedule.statusToPause"), action: () => contextChangeStatus("paused") }] : []),
+      ...(task.status !== "done" ? [{ label: tRaw("schedule.statusToDone"), action: () => contextChangeStatus("done") }] : []),
       { divider: true },
-      { label: `🗑️ Удалить`, action: () => contextDeleteTask(), danger: true },
+      { label: tRaw("schedule.deleteEvent"), action: () => contextDeleteTask(), danger: true },
     ];
 
     for (const item of items) {
@@ -340,15 +349,15 @@
 <div class="mobile-schedule" bind:this={containerEl}>
   <!-- Header -->
   <div class="ms-header">
-    <button class="ms-nav-btn" on:click={viewMode === "day" ? prevDay : prevMonth} aria-label={"Назад"}>‹</button>
+    <button class="ms-nav-btn" on:click={viewMode === "day" ? prevDay : prevMonth} aria-label={$t("mobileSchedule.back")}>‹</button>
     <button class="ms-title" on:click={viewMode === "day" ? goToday : toggleViewMode}>
       {viewMode === "day" ? dayLabel : monthLabel}
     </button>
-    <button class="ms-nav-btn" on:click={viewMode === "day" ? nextDay : nextMonth} aria-label={"Вперёд"}>›</button>
-    <button class="ms-view-toggle" on:click={toggleViewMode} aria-label={"Переключить вид"}>
+    <button class="ms-nav-btn" on:click={viewMode === "day" ? nextDay : nextMonth} aria-label={$t("mobileSchedule.forward")}>›</button>
+    <button class="ms-view-toggle" on:click={toggleViewMode} aria-label={$t("mobileSchedule.toggleView")}>
       {viewMode === "day" ? "📅" : "📋"}
     </button>
-    <button class="ms-close-btn" on:click={onClose} aria-label={"Закрыть"}>✕</button>
+    <button class="ms-close-btn" on:click={onClose} aria-label={$t("common.close")}>✕</button>
   </div>
 
   <!-- Week strip (only in day mode) -->
@@ -362,7 +371,7 @@
           class:today={day.format("YYYY-MM-DD") === m().format("YYYY-MM-DD")}
           on:click={() => selectDay(day)}
         >
-          <span class="ms-week-day-label">{day.locale("ru").format("dd")}</span>
+          <span class="ms-week-day-label">{day.locale(tRaw("locale.momentLocale")).format("dd")}</span>
           <span class="ms-week-day-num">{day.format("D")}</span>
           {#if dayWeather}
             <span class="ms-week-day-weather">{dayWeather.icon}{dayWeather.tempMax}°</span>
@@ -377,7 +386,7 @@
     <div class="ms-month-grid">
       <!-- Weekday headers -->
       <div class="ms-month-header">
-        {#each ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] as dayName, i}
+        {#each $tArray("common.weekdays.short") as dayName, i}
           <div class="ms-month-header-day" class:weekend={i >= 5}>{dayName}</div>
         {/each}
       </div>
@@ -480,14 +489,14 @@
               <span class="ms-task-priority ms-priority-mid">~</span>
             {/if}
             {#if task.recurrence}
-              <span class="ms-task-recurring" title="Повторяющаяся">🔄</span>
+              <span class="ms-task-recurring" title={$t("mobileSchedule.recurring")}>🔄</span>
             {/if}
             {#if task.status === "progress"}
-              <span class="ms-task-status ms-status-progress">{"В работе"}</span>
+              <span class="ms-task-status ms-status-progress">{$t("schedule.statusInProgress")}</span>
             {:else if task.status === "paused"}
-              <span class="ms-task-status ms-status-paused">{"На паузе"}</span>
+              <span class="ms-task-status ms-status-paused">{$t("schedule.statusPaused")}</span>
             {:else if task.status === "done"}
-              <span class="ms-task-status ms-status-done">{"Готово"}</span>
+              <span class="ms-task-status ms-status-done">{$t("schedule.statusDone")}</span>
             {/if}
           </div>
           {#if task.description}
@@ -501,7 +510,7 @@
     {#if untimedTasks.length > 0}
       <div class="ms-untimed-section">
         <div class="ms-untimed-header">
-          <span class="ms-untimed-title">{"Без времени"}</span>
+          <span class="ms-untimed-title">{$t("mobileSchedule.untimed")}</span>
         </div>
         <div class="ms-untimed-list">
           {#each untimedTasks as task (task.id)}
@@ -519,17 +528,17 @@
                 <span class="ms-task-priority ms-priority-mid">~</span>
               {/if}
               {#if task.recurrence}
-                <span class="ms-task-recurring" title="Повторяющаяся">🔄</span>
+                <span class="ms-task-recurring" title={$t("mobileSchedule.recurring")}>🔄</span>
               {/if}
               {#if task.isWorkTask}
                 <span class="ms-task-work-icon">💼</span>
               {/if}
               {#if task.status === "progress"}
-                <span class="ms-task-status ms-status-progress">{"В работе"}</span>
+                <span class="ms-task-status ms-status-progress">{$t("schedule.statusInProgress")}</span>
               {:else if task.status === "paused"}
-                <span class="ms-task-status ms-status-paused">{"На паузе"}</span>
+                <span class="ms-task-status ms-status-paused">{$t("schedule.statusPaused")}</span>
               {:else if task.status === "done"}
-                <span class="ms-task-status ms-status-done">{"Готово"}</span>
+                <span class="ms-task-status ms-status-done">{$t("schedule.statusDone")}</span>
               {/if}
             </div>
           {/each}

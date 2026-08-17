@@ -2,6 +2,7 @@ import { writable, get } from "svelte/store";
 import type { TimeLog } from "./types";
 import { MAX_TIME_LOGS } from "./types";
 import { settings } from "../ui/stores";
+import { tRaw } from "../i18n";
 
 export const activeTimers = writable<Map<string, number>>(new Map());
 export const timerTick = writable<number>(0);
@@ -115,10 +116,12 @@ export function formatDuration(ms: number): string {
 }
 
 export function formatEstimate(minutes: number): string {
-  if (minutes < 60) return `${minutes} мин`;
+  const min = tRaw("timer.minutes");
+  const hr = tRaw("timer.hours");
+  if (minutes < 60) return `${minutes} ${min}`;
   const hours = Math.floor(minutes / 60);
   const mins = minutes % 60;
-  return mins > 0 ? `${hours} ч ${mins} мин` : `${hours} ч`;
+  return mins > 0 ? `${hours} ${hr} ${mins} ${min}` : `${hours} ${hr}`;
 }
 
 export function groupLogsByDate(logs: TimeLog[]): Map<string, TimeLog[]> {

@@ -4,6 +4,7 @@
   import { tasks, projects } from "../task-tracker/stores";
   import type { IProject, ITask } from "../task-tracker/types";
   import { getActiveTimer } from "../task-tracker/TimerManager";
+  import { t, locale } from "../i18n";
 
   export let onOpenTasks: (() => void) | undefined = undefined;
   export let onOpenSchedule: (() => void) | undefined = undefined;
@@ -80,16 +81,16 @@
   }
 
   function statusLabel(task: ITask): string {
-    if (task.status === "progress") return "В работе";
-    if (task.status === "paused") return "Пауза";
-    if (task.status === "done") return "Готово";
-    return "Сделать";
+    if (task.status === "progress") return $t("tasks.tabs.progress");
+    if (task.status === "paused") return $t("tasks.tabs.paused");
+    if (task.status === "done") return $t("tasks.tabs.done");
+    return $t("tasks.tabs.todo");
   }
 
   $: today = moment(now).format("YYYY-MM-DD");
   $: tomorrow = moment(now).add(1, "day").format("YYYY-MM-DD");
   $: nowTime = moment(now).format("HH:mm");
-  $: dateTitle = moment(now).locale("ru").format("D MMMM, dddd");
+  $: dateTitle = moment(now).locale($locale).format("D MMMM, dddd");
   $: projectMap = new Map($projects.map((project) => [project.id, project]));
   $: activeTasks = $tasks.filter((task) => !isDone(task));
   $: todayTasks = activeTasks
@@ -142,37 +143,37 @@
 <div class="daily-overview">
   <header class="do-header">
     <div>
-      <div class="do-kicker">Ежедневный обзор</div>
+      <div class="do-kicker">{$t("dailyOverview.title")}</div>
       <h2>{dateTitle}</h2>
     </div>
     <div class="do-actions">
-      <button type="button" on:click={() => onOpenSchedule?.()}>Расписание</button>
-      <button type="button" class="primary" on:click={() => onOpenTasks?.()}>Задачи</button>
+      <button type="button" on:click={() => onOpenSchedule?.()}>{$t("dailyOverview.schedule")}</button>
+      <button type="button" class="primary" on:click={() => onOpenTasks?.()}>{$t("dailyOverview.tasks")}</button>
     </div>
   </header>
 
   <div class="do-stats">
     <div class="do-stat danger">
       <span class="do-stat-value">{overdueTasks.length}</span>
-      <span class="do-stat-label">просрочено</span>
+      <span class="do-stat-label">{$t("dailyOverview.overdue")}</span>
     </div>
     <div class="do-stat">
       <span class="do-stat-value">{todayTasks.length}</span>
-      <span class="do-stat-label">задач сегодня</span>
+      <span class="do-stat-label">{$t("dailyOverview.tasksToday")}</span>
     </div>
     <div class="do-stat warn">
       <span class="do-stat-value">{deadlineToday.length}</span>
-      <span class="do-stat-label">дедлайнов</span>
+      <span class="do-stat-label">{$t("dailyOverview.deadlines")}</span>
     </div>
     <div class="do-stat ok">
       <span class="do-stat-value">{completedToday}</span>
-      <span class="do-stat-label">готово сегодня</span>
+      <span class="do-stat-label">{$t("dailyOverview.doneToday")}</span>
     </div>
   </div>
 
   <div class="do-plan">
     <div class="do-plan-top">
-      <span>План-факт по времени</span>
+      <span>{$t("dailyOverview.planFact")}</span>
       <strong>{formatMinutes(actualToday)} / {formatMinutes(plannedToday)}</strong>
     </div>
     <div class="do-progress">
@@ -183,16 +184,16 @@
   <div class="do-grid">
     <section class="do-panel">
       <div class="do-panel-head">
-        <h3>Сейчас</h3>
+        <h3>{$t("dailyOverview.now")}</h3>
         <span>{inProgressTasks.length + upcomingToday.length}</span>
       </div>
       {#if inProgressTasks.length === 0 && upcomingToday.length === 0}
-        <p class="do-empty">Нет активных и ближайших задач</p>
+        <p class="do-empty">{$t("dailyOverview.noTasks")}</p>
       {:else}
         <div class="do-list">
           {#each [...inProgressTasks, ...upcomingToday].slice(0, 5) as task (task.id)}
             <div class="do-task" class:progress={task.status === "progress"}>
-              <span class="do-time">{task.scheduledTime || "сейчас"}</span>
+              <span class="do-time">{task.scheduledTime || $t("dailyOverview.nowLabel")}</span>
               <span class="do-title">{task.title}</span>
               <span class="do-status">{statusLabel(task)}</span>
             </div>
@@ -203,11 +204,11 @@
 
     <section class="do-panel">
       <div class="do-panel-head">
-        <h3>Просрочено</h3>
+        <h3>{$t("dailyOverview.overdueSection")}</h3>
         <span>{overdueTasks.length}</span>
       </div>
       {#if overdueTasks.length === 0}
-        <p class="do-empty">Просрочек нет</p>
+        <p class="do-empty">{$t("dailyOverview.noOverdue")}</p>
       {:else}
         <div class="do-list">
           {#each overdueTasks.slice(0, 5) as task (task.id)}
@@ -223,16 +224,16 @@
 
     <section class="do-panel">
       <div class="do-panel-head">
-        <h3>Дедлайны</h3>
+        <h3>{$t("dailyOverview.deadlinesSection")}</h3>
         <span>{deadlineToday.length + deadlineTomorrow.length}</span>
       </div>
       {#if deadlineToday.length === 0 && deadlineTomorrow.length === 0}
-        <p class="do-empty">Ближайших дедлайнов нет</p>
+        <p class="do-empty">{$t("dailyOverview.noDeadlines")}</p>
       {:else}
         <div class="do-list">
           {#each [...deadlineToday, ...deadlineTomorrow].slice(0, 5) as task (task.id)}
             <div class="do-task warn">
-              <span class="do-time">{taskDate(task.deadline) === today ? "сегодня" : "завтра"}</span>
+              <span class="do-time">{taskDate(task.deadline) === today ? $t("dailyOverview.todayLabel") : $t("dailyOverview.tomorrowLabel")}</span>
               <span class="do-title">{task.title}</span>
               <span class="do-status">{task.deadlineTime || ""}</span>
             </div>
@@ -243,11 +244,11 @@
 
     <section class="do-panel">
       <div class="do-panel-head">
-        <h3>Без времени</h3>
+        <h3>{$t("dailyOverview.noTime")}</h3>
         <span>{unscheduledToday.length}</span>
       </div>
       {#if unscheduledToday.length === 0}
-        <p class="do-empty">Все задачи сегодня с временем</p>
+        <p class="do-empty">{$t("dailyOverview.allTimed")}</p>
       {:else}
         <div class="do-list">
           {#each unscheduledToday.slice(0, 5) as task (task.id)}
@@ -265,7 +266,7 @@
   {#if projectRows.length > 0}
     <section class="do-projects">
       <div class="do-panel-head">
-        <h3>Активные проекты</h3>
+        <h3>{$t("dailyOverview.activeProjects")}</h3>
         <span>{projectRows.length}</span>
       </div>
       <div class="do-project-list">
@@ -275,8 +276,8 @@
               class="do-project-dot"
               style="background: {row.project?.color || 'var(--interactive-accent)'}"
             ></span>
-            <span class="do-project-name">{row.project?.name || "Без проекта"}</span>
-            <span class="do-project-count">{row.today} сегодня</span>
+            <span class="do-project-name">{row.project?.name || $t("dailyOverview.noProject")}</span>
+            <span class="do-project-count">{row.today} {$t("dailyOverview.todayLabel")}</span>
             {#if row.overdue > 0}
               <span class="do-project-overdue">{row.overdue} проср.</span>
             {/if}

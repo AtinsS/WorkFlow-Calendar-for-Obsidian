@@ -23,6 +23,7 @@ import { customTagsSource, streakSource, wordCountSource } from "./ui/sources";
 import { tasks, selectedDate } from "./task-tracker/stores";
 import { taskDotSource } from "./task-tracker/taskDotSource";
 import { habitSource } from "./habit-tracker/habitSource";
+import { QuickAddModal } from "./task-tracker/QuickAddModal";
 
 export default class CalendarView extends ItemView {
   private calendar: Calendar;
@@ -120,8 +121,10 @@ export default class CalendarView extends ItemView {
 
   private onContextMenuDay(date: Moment, event: MouseEvent): void {
     const note = getDailyNote(date, get(dailyNotes));
-    if (!note) return;
-    showNoteContextMenu(this.app, note, { x: event.pageX, y: event.pageY });
+    const onQuickAdd = () => {
+      new QuickAddModal(this.app, date).open();
+    };
+    showNoteContextMenu(this.app, note || null, { x: event.pageX, y: event.pageY }, onQuickAdd);
   }
 
   private onContextMenuWeek(date: Moment, event: MouseEvent): void {

@@ -4,6 +4,7 @@
   import type { HabitStats } from "../habit-tracker/stores";
   import { habitLogs } from "../habit-tracker/stores";
   import moment from "moment";
+  import { t } from "../i18n";
 
   export let habit: IHabit;
 
@@ -47,9 +48,9 @@
 
   function translateFrequency(freq: string): string {
     switch (freq) {
-      case "daily": return "ежедневно";
-      case "weekly": return "еженедельно";
-      case "custom": return "по расписанию";
+      case "daily": return $t("components.habitFreqDaily");
+      case "weekly": return $t("components.habitFreqWeekly");
+      case "custom": return $t("components.habitFreqScheduled");
       default: return freq;
     }
   }
@@ -68,28 +69,28 @@
   <div class="habit-card-stats">
     <div class="habit-stat">
       <span class="habit-stat-value">{stats.currentStreak}</span>
-      <span class="habit-stat-label">серия</span>
-      <span class="habit-stat-sub">дней</span>
+      <span class="habit-stat-label">{$t("components.streak")}</span>
+      <span class="habit-stat-sub">{$t("components.streakDays")}</span>
     </div>
     <div class="habit-stat">
       <span class="habit-stat-value">{stats.longestStreak}</span>
-      <span class="habit-stat-label">макс.</span>
-      <span class="habit-stat-sub">дней</span>
+      <span class="habit-stat-label">{$t("components.maxStreak")}</span>
+      <span class="habit-stat-sub">{$t("components.streakDays")}</span>
     </div>
     <div class="habit-stat">
       <span class="habit-stat-value">{stats.totalCompletions}</span>
-      <span class="habit-stat-label">всего</span>
-      <span class="habit-stat-sub">выполнений</span>
+      <span class="habit-stat-label">{$t("components.totalCompletions")}</span>
+      <span class="habit-stat-sub">{$t("components.completions")}</span>
     </div>
     <div class="habit-stat">
       <span class="habit-stat-value stat-accent">{stats.completionRate}%</span>
-      <span class="habit-stat-label">процент</span>
+      <span class="habit-stat-label">{$t("components.percent")}</span>
     </div>
   </div>
 
   {#if stats.lastCompleted}
     <div class="habit-card-last">
-      Последнее: {stats.lastCompleted}
+      {$t("components.lastHabit", { date: stats.lastCompleted })}
     </div>
   {/if}
 </div>

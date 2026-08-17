@@ -17,6 +17,7 @@
     getExpectedEarningsForMonth,
   } from "../task-tracker/stores";
   import { financialAnalyticsData } from "./financialAnalyticsStorage";
+  import { t, tArray, locale } from "../i18n";
 
   type DistributionIncomeSource = "plan" | "fact" | "manual";
 
@@ -41,13 +42,8 @@
   let editingMainCatId: string | null = null;
   let editingSavingsId: string | null = null;
 
-  const MONTH_NAMES = [
-    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
-    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь",
-  ];
-
   $: [displayYear, displayMonth] = monthKey.split("-").map(Number);
-  $: displayMonthName = `${MONTH_NAMES[displayMonth - 1]} ${displayYear}`;
+  $: displayMonthName = `${$tArray("common.months.long")[displayMonth - 1]} ${displayYear}`;
 
   function prevMonth(): void {
     const d = new Date(displayYear, displayMonth - 2, 1);
@@ -209,7 +205,7 @@
   function addMainCategory() {
     const newCat: FinanceCategory = {
       id: generateCategoryId(),
-      name: "Новая категория",
+      name: get(t)("finance.newCategory"),
       icon: "📦",
       amount: 0,
       order: monthData.mainAccountCategories.length,
@@ -238,7 +234,7 @@
     const newGoal: MonthGoal = {
       id: generateGoalId(),
       icon: "🎯",
-      name: "Новая цель",
+      name: get(t)("finance.newGoal"),
       currentAmount: 0,
       targetAmount: 0,
     };
@@ -265,7 +261,7 @@
   function addSavingsCategory() {
     const newCat: SavingsCategory = {
       id: generateCategoryId(),
-      name: "Место куда отложить",
+      name: get(t)("finance.newSavings"),
       icon: "👛",
       amount: 0,
       order: monthData.savingsCategories.length,
@@ -306,13 +302,13 @@
   }
 
   function formatMoney(amount: number): string {
-    return amount.toLocaleString("ru-RU");
+    return amount.toLocaleString(get(locale) === "en" ? "en-US" : "ru-RU");
   }
 
   function formatDelta(amount: number): string {
     if (amount === 0) return "";
-    const sign = amount > 0 ? "+" : "";
-    return `${sign}${formatMoney(amount)} ₽ к прошлому месяцу`;
+    const translate = get(t);
+    return translate("finance.deltaFromLastMonth", { amount: formatMoney(Math.abs(amount)), currency: translate("locale.currencySymbol") });
   }
 
   // ── Cleanup ──
@@ -359,7 +355,7 @@
   }
 
   function clearCurrentMonth(): void {
-    if (!confirm(`Очистить данные за ${displayMonthName}?`)) return;
+    if (!confirm(get(t)("finance.clearMonthConfirm", { month: displayMonthName }))) return;
     updateMonthData(monthKey, {
       mainAccountCategories: [],
       savingsCategories: [],
@@ -372,11 +368,11 @@
   function clearOldMonths(): void {
     if (oldKeys.length === 0) return;
     const count = deleteMonthsBefore(getCurrentMonthKey());
-    alert(`Удалены данные за ${count} мес.`);
+    alert(get(t)("finance.deletedMonths", { count }));
   }
 
   function clearAllData(): void {
-    if (!confirm("Удалить ВСЕ данные финансов? Это необратимо.")) return;
+    if (!confirm(get(t)("finance.deleteAllConfirm"))) return;
     for (const k of storedKeys) deleteMonthData(k);
   }
 </script>
@@ -388,18 +384,18 @@
     <select bind:value={monthKey} class="month-select">
       {#each Array.from({length: 12}, (_, i) => i + 1) as m}
         <option value="{displayYear}-{String(m).padStart(2, '0')}">
-          {MONTH_NAMES[m - 1]} {displayYear}
+          {$tArray("common.months.long")[m - 1]} {displayYear}
         </option>
       {/each}
     </select>
     <button class="month-nav-btn" on:click={nextMonth}>&#8250;</button>
   </div>
 
-  <h2>💰 Распределение финансовых средств</h2>
+  <h2>{$t("finance.title")}</h2>
 
   {#if prevMonthKey}
     <button class="dup-btn" on:click={duplicatePrevMonth}>
-      Дублировать траты с прошлого месяца
+      {$t("finance.duplicateExpenses")}
     </button>
   {/if}
 
@@ -407,28 +403,28 @@
   <div class="glass-card">
     <div class="glass-card-header">
       <span class="glass-icon">💎</span>
-      <h3>Общий баланс</h3>
+      <h3>{$t("finance.balance")}</h3>
     </div>
     <div class="income-toggle">
       <button
         class="toggle-btn"
         class:active={incomeSource === "plan"}
         on:click={() => setIncomeSource("plan")}
-      >Планы на месяц</button>
+      >{$t("finance.planToggle")}</button>
       <button
         class="toggle-btn"
         class:active={incomeSource === "fact"}
         on:click={() => setIncomeSource("fact")}
-      >Факт</button>
+      >{$t("finance.factToggle")}</button>
       <button
         class="toggle-btn"
         class:active={incomeSource === "manual"}
         on:click={() => setIncomeSource("manual")}
-      >Вручную</button>
+      >{$t("finance.manualToggle")}</button>
     </div>
     <div class="balance-grid">
       <div class="balance-item">
-        <span class="balance-label">Поступления</span>
+        <span class="balance-label">{$t("finance.income")}</span>
         {#if incomeSource === "manual"}
           <input
             type="number"
@@ -438,7 +434,7 @@
             class="balance-input income-input"
           />
         {:else}
-          <span class="balance-value income">{formatMoney(monthData.monthlyIncome)} ₽</span>
+          <span class="balance-value income">{formatMoney(monthData.monthlyIncome)} {$t("locale.currencySymbol")}</span>
         {/if}
         {#if incomeDelta !== 0}
           <span class="balance-delta" class:delta-up={incomeDelta > 0} class:delta-down={incomeDelta < 0}>
@@ -447,8 +443,8 @@
         {/if}
       </div>
       <div class="balance-item">
-        <span class="balance-label">Основные расходы</span>
-        <span class="balance-value expense">{formatMoney(mainTotal)} ₽</span>
+        <span class="balance-label">{$t("finance.expenses")}</span>
+        <span class="balance-value expense">{formatMoney(mainTotal)} {$t("locale.currencySymbol")}</span>
         {#if expenseDelta !== 0}
           <span class="balance-delta" class:delta-up={expenseDelta < 0} class:delta-down={expenseDelta > 0}>
             {formatDelta(-expenseDelta)}
@@ -456,8 +452,8 @@
         {/if}
       </div>
       <div class="balance-item total">
-        <span class="balance-label">Остаток</span>
-        <span class="balance-value {balance >= 0 ? 'income' : 'expense'}">{formatMoney(balance)} ₽</span>
+        <span class="balance-label">{$t("finance.remainder")}</span>
+        <span class="balance-value {balance >= 0 ? 'income' : 'expense'}">{formatMoney(balance)} {$t("locale.currencySymbol")}</span>
         {#if balanceDelta !== 0}
           <span class="balance-delta" class:delta-up={balanceDelta > 0} class:delta-down={balanceDelta < 0}>
             {formatDelta(balanceDelta)}
@@ -471,8 +467,8 @@
   <div class="glass-card">
     <div class="glass-card-header">
       <span class="glass-icon">🏦</span>
-      <h3>Основной счёт</h3>
-      <span class="glass-badge">{formatMoney(mainTotal)} ₽</span>
+      <h3>{$t("finance.mainAccount")}</h3>
+      <span class="glass-badge">{formatMoney(mainTotal)} {$t("locale.currencySymbol")}</span>
     </div>
     <div class="categories-list">
       {#each monthData.mainAccountCategories as cat (cat.id)}
@@ -487,20 +483,20 @@
           <div class="category-row" on:click={() => editingMainCatId = cat.id}>
             <span class="cat-icon-display">{cat.icon}</span>
             <span class="cat-name-display">{cat.name}</span>
-            <span class="cat-amount-display">{formatMoney(cat.amount)} ₽</span>
+            <span class="cat-amount-display">{formatMoney(cat.amount)} {$t("locale.currencySymbol")}</span>
             <button class="cat-delete" on:click|stopPropagation={() => removeMainCategory(cat.id)}>✕</button>
           </div>
         {/if}
       {/each}
     </div>
-    <button class="glass-add-btn" on:click={addMainCategory}>+ Добавить</button>
+    <button class="glass-add-btn" on:click={addMainCategory}>{$t("finance.addCategory")}</button>
   </div>
 
   <!-- Блок 3: Цели на месяц -->
   <div class="glass-card">
     <div class="glass-card-header">
       <span class="glass-icon">🎯</span>
-      <h3>Цели на месяц</h3>
+      <h3>{$t("finance.monthGoals")}</h3>
     </div>
     <div class="goals-list">
       {#each (monthData.monthGoals || []) as goal (goal.id)}
@@ -509,10 +505,10 @@
             <input type="text" value={goal.icon} on:input={(e) => updateGoal(goal.id, { icon: inputVal(e) })} class="goal-edit-icon" maxlength="2" />
             <div class="goal-info">
               <div class="goal-edit-row">
-                <input type="text" value={goal.name} on:input={(e) => updateGoal(goal.id, { name: inputVal(e) })} class="goal-edit-name" placeholder="Название" />
-                <input type="number" value={goal.currentAmount} on:input={(e) => updateGoal(goal.id, { currentAmount: parseFloat(inputVal(e)) || 0 })} min="0" class="goal-edit-amount" placeholder="Накоплено" />
+                <input type="text" value={goal.name} on:input={(e) => updateGoal(goal.id, { name: inputVal(e) })} class="goal-edit-name" placeholder="{$t('finance.newGoal')}" />
+                <input type="number" value={goal.currentAmount} on:input={(e) => updateGoal(goal.id, { currentAmount: parseFloat(inputVal(e)) || 0 })} min="0" class="goal-edit-amount" placeholder="{$t('finance.amountPlaceholder')}" />
                 <span class="goal-edit-sep">/</span>
-                <input type="number" value={goal.targetAmount} on:input={(e) => updateGoal(goal.id, { targetAmount: parseFloat(inputVal(e)) || 0 })} min="0" class="goal-edit-amount" placeholder="Цель" />
+                <input type="number" value={goal.targetAmount} on:input={(e) => updateGoal(goal.id, { targetAmount: parseFloat(inputVal(e)) || 0 })} min="0" class="goal-edit-amount" placeholder="{$t('finance.goalPlaceholder')}" />
               </div>
             </div>
             <button class="goal-done-btn" on:click={() => editingGoalId = null}>✓</button>
@@ -523,7 +519,7 @@
             <div class="goal-info">
               <div class="goal-header">
                 <span class="goal-name">{goal.name}</span>
-                <span class="goal-amounts">{formatMoney(goal.currentAmount)} ₽ / {formatMoney(goal.targetAmount)} ₽</span>
+                <span class="goal-amounts">{formatMoney(goal.currentAmount)} {$t("locale.currencySymbol")} / {formatMoney(goal.targetAmount)} {$t("locale.currencySymbol")}</span>
               </div>
               <div class="goal-progress-bar">
                 <div class="goal-progress-fill" style="width: {goal.targetAmount > 0 ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) : 0}%"></div>
@@ -535,16 +531,16 @@
         {/if}
       {/each}
     </div>
-    <button class="glass-add-btn" on:click={addGoal}>+ Добавить цель</button>
+    <button class="glass-add-btn" on:click={addGoal}>{$t("finance.addGoal")}</button>
   </div>
 
   <!-- Блок 4: Куда отложить -->
   <div class="glass-card" class:over-budget={savingsTotal > balance}>
     <div class="glass-card-header">
       <span class="glass-icon">💰</span>
-      <h3>Куда отложить</h3>
+      <h3>{$t("finance.savings")}</h3>
       <span class="glass-badge" class:badge-warn={savingsTotal > balance}>
-        осталось {formatMoney(Math.max(0, balance - savingsTotal))} ₽
+        {$t("finance.remaining", { amount: formatMoney(Math.max(0, balance - savingsTotal)) })}
       </span>
     </div>
     <div class="categories-list">
@@ -555,12 +551,12 @@
             <input type="text" value={cat.name} on:input={(e) => updateSavingsCategory(cat.id, { name: inputVal(e) })} class="cat-edit-name" />
             <div class="savings-edit-fields">
               <div class="savings-field">
-                <span class="savings-field-label">Сумма</span>
+                <span class="savings-field-label">{$t("finance.amount")}</span>
                 <input type="number" value={cat.amount} on:input={(e) => { const amount = parseFloat(inputVal(e)) || 0; const percent = balance > 0 ? Math.round((amount / balance) * 100) : 0; updateSavingsCategory(cat.id, { amount, percent }); }} min="0" class="savings-field-input" />
-                <span class="savings-field-unit">₽</span>
+                <span class="savings-field-unit">{$t("locale.currencySymbol")}</span>
               </div>
               <div class="savings-field">
-                <span class="savings-field-label">Процент</span>
+                <span class="savings-field-label">{$t("finance.percent")}</span>
                 <input type="number" value={cat.percent} on:input={(e) => { const percent = parseFloat(inputVal(e)) || 0; const amount = Math.round(balance * percent / 100); updateSavingsCategory(cat.id, { amount, percent }); }} min="0" max="100" class="savings-field-input" />
                 <span class="savings-field-unit">%</span>
               </div>
@@ -571,17 +567,17 @@
           <div class="category-row" on:click={() => editingSavingsId = cat.id}>
             <span class="cat-icon-display">{cat.icon}</span>
             <span class="cat-name-display">{cat.name}</span>
-            <span class="cat-amount-display">{formatMoney(cat.amount)} ₽</span>
+            <span class="cat-amount-display">{formatMoney(cat.amount)} {$t("locale.currencySymbol")}</span>
             <span class="cat-percent">{cat.percent}%</span>
             <button class="cat-delete" on:click|stopPropagation={() => removeSavingsCategory(cat.id)}>✕</button>
           </div>
         {/if}
       {/each}
     </div>
-    <button class="glass-add-btn" on:click={addSavingsCategory}>+ Добавить</button>
+    <button class="glass-add-btn" on:click={addSavingsCategory}>{$t("finance.addCategory")}</button>
     {#if savingsTotal > balance}
       <div class="glass-warning">
-        ⚠️ Превышение бюджета на {formatMoney(savingsTotal - balance)} ₽
+        {$t("finance.overBudget", { amount: formatMoney(savingsTotal - balance), currency: $t("locale.currencySymbol") })}
       </div>
     {/if}
   </div>
@@ -590,18 +586,18 @@
   <div class="glass-card">
     <div class="glass-card-header">
       <span class="glass-icon">📋</span>
-      <h3>Правила распределения</h3>
+      <h3>{$t("finance.rules")}</h3>
     </div>
     {#if editingRules}
       <textarea
         class="glass-textarea rules"
         bind:value={rulesText}
-        placeholder="Правила распределения..."
+        placeholder="{$t('finance.rulesPlaceholder')}"
         rows="6"
       ></textarea>
       <div class="rules-actions">
-        <button class="rules-save-btn" on:click={saveRules}>Сохранить</button>
-        <button class="rules-cancel-btn" on:click={() => { editingRules = false; rulesText = monthData.distributionRules.join("\n"); }}>Отмена</button>
+        <button class="rules-save-btn" on:click={saveRules}>{$t("common.save")}</button>
+        <button class="rules-cancel-btn" on:click={() => { editingRules = false; rulesText = monthData.distributionRules.join("\n"); }}>{$t("common.cancel")}</button>
       </div>
     {:else}
       <div class="rules-display" on:click={startEditRules}>
@@ -612,9 +608,9 @@
           </div>
         {/each}
         {#if monthData.distributionRules.length === 0}
-          <div class="rules-empty">Нажмите, чтобы добавить правила</div>
+          <div class="rules-empty">{$t("finance.rulesHint")}</div>
         {/if}
-        <div class="rules-edit-hint">✏️ Нажмите для редактирования</div>
+        <div class="rules-edit-hint">{$t("finance.editHint")}</div>
       </div>
     {/if}
   </div>
@@ -623,23 +619,23 @@
   <div class="glass-card cleanup-card">
     <button class="cleanup-toggle" on:click={() => showCleanup = !showCleanup}>
       <span class="glass-icon">🗑️</span>
-      <span>Управление данными</span>
+      <span>{$t("finance.dataManagement")}</span>
       <span class="cleanup-arrow" class:open={showCleanup}>&#8250;</span>
     </button>
     {#if showCleanup}
       <div class="cleanup-body">
         <div class="cleanup-info">
-          Хранится месяцев: <strong>{storedKeys.length}</strong>
+          {$t("finance.monthsStored")} <strong>{storedKeys.length}</strong>
           {#if oldKeys.length > 0}
-            <span class="cleanup-old">({oldKeys.length} устаревших)</span>
+            <span class="cleanup-old">({oldKeys.length} {$t("finance.outdated")})</span>
           {/if}
         </div>
         <div class="cleanup-actions">
-          <button class="cleanup-btn" on:click={clearCurrentMonth}>Очистить текущий месяц</button>
+          <button class="cleanup-btn" on:click={clearCurrentMonth}>{$t("finance.clearMonth")}</button>
           {#if oldKeys.length > 0}
-            <button class="cleanup-btn warn" on:click={clearOldMonths}>Удалить {oldKeys.length} устаревших мес.</button>
+            <button class="cleanup-btn warn" on:click={clearOldMonths}>{$t("finance.deleteOutdated", { count: oldKeys.length })}</button>
           {/if}
-          <button class="cleanup-btn danger" on:click={clearAllData}>Удалить всё</button>
+          <button class="cleanup-btn danger" on:click={clearAllData}>{$t("finance.deleteAll")}</button>
         </div>
       </div>
     {/if}

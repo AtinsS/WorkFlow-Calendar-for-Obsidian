@@ -2,6 +2,7 @@ import moment from "moment";
 import "moment/locale/ru";
 import type { Moment, WeekSpec } from "moment";
 import { App, Plugin, WorkspaceLeaf } from "obsidian";
+import { get } from "svelte/store";
 
 const registeredMarkdownCodeBlocks = new Set<string>();
 
@@ -22,7 +23,6 @@ import {
 import { settings } from "./ui/stores";
 import { app as appStore } from "./stores/appStore";
 import {
-  appHasPeriodicNotesPluginLoaded,
   CalendarSettingsTab,
   ISettings,
   applyAccentColor,
@@ -48,6 +48,7 @@ import {
 import { initHabitStores, reloadHabitStores, immediateSave as immediateHabitSave } from "./habit-tracker/stores";
 import { initFinanceStores, reloadFinanceStores, immediateFinanceSave } from "./finance/storage";
 import { initFinancialAnalyticsStores, reloadFinancialAnalyticsStores, immediateAnalyticsSave } from "./finance/financialAnalyticsStorage";
+import { initLocale, locale, tRaw } from "./i18n";
 import CalendarNav from "./components/CalendarNav.svelte";
 import DateTimeWeather from "./components/DateTimeWeather.svelte";
 import Dashboard from "./dashboard/Dashboard.svelte";
@@ -133,8 +134,12 @@ export default class CalendarPlugin extends Plugin {
     // Track current instance so view factories reference the live plugin after hot-reload
     currentPluginInstance = this;
 
-    // Set Russian locale for month names
-    moment.locale("ru");
+    // Initialize locale from settings
+    initLocale(this.options?.language || "system");
+
+    // Set moment locale based on i18n locale
+    const currentLocale = get(locale) || "ru";
+    moment.locale(currentLocale);
 
     // Set the app store so components can access the Obsidian App instance
     appStore.set(this.app);
@@ -143,6 +148,11 @@ export default class CalendarPlugin extends Plugin {
       settings.subscribe((value) => {
         this.options = value;
         this.notificationService?.restart();
+        // Update locale when language setting changes
+        if (value.language) {
+          initLocale(value.language);
+          moment.locale(get(locale) || "ru");
+        }
       })
     );
 
@@ -228,39 +238,20 @@ export default class CalendarPlugin extends Plugin {
     });
 
     this.addCommand({
-      id: "open-weekly-note",
-      name: "Open Weekly Note",
-      checkCallback: (checking) => {
-        if (checking) {
-          return !appHasPeriodicNotesPluginLoaded();
-        }
-        if (this.view) this.view.selectDateForWeek(moment());
-      },
-    });
-
-    this.addCommand({
-      id: "reveal-active-note",
-      name: "Reveal active note",
-      callback: () => {
-        if (this.view) this.view.revealActiveNote();
-      },
-    });
-
-    this.addCommand({
       id: "open-schedule-view",
-      name: "Открыть расписание",
+      name: tRaw("main.commands.openSchedule"),
       callback: () => this.activateScheduleView(),
     });
 
     this.addCommand({
       id: "open-habit-analytics",
-      name: "Открыть аналитику",
+      name: tRaw("main.commands.openAnalytics"),
       callback: () => this.activateHabitAnalyticsView(),
     });
 
     this.addCommand({
       id: "open-finance-view",
-      name: "Открыть распределение финансов",
+      name: tRaw("main.commands.openFinance"),
       callback: () => this.activateFinanceView(),
     });
 
@@ -268,25 +259,25 @@ export default class CalendarPlugin extends Plugin {
     document.querySelectorAll("[data-mcp-ribbon]").forEach(el => el.remove());
 
     if (!this.ribbonIconsRegistered) {
-      const tasksIcon = this.addRibbonIcon("checkbox-glyph", "Задачи", () => {
+      const tasksIcon = this.addRibbonIcon("checkbox-glyph", tRaw("main.ribbon.tasks"), () => {
         this.activateTaskView();
       });
       tasksIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(tasksIcon);
 
-      const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", "Календарь", () => {
+      const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", tRaw("main.ribbon.calendar"), () => {
         this.activateCalendarView();
       });
       calendarIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(calendarIcon);
 
-      const analyticsIcon = this.addRibbonIcon("bar-chart", "Аналитика", () => {
+      const analyticsIcon = this.addRibbonIcon("bar-chart", tRaw("main.ribbon.analytics"), () => {
         this.activateHabitAnalyticsView();
       });
       analyticsIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(analyticsIcon);
 
-      const financeIcon = this.addRibbonIcon("coins", "Финансы", () => {
+      const financeIcon = this.addRibbonIcon("coins", tRaw("main.ribbon.finance"), () => {
         this.activateFinanceView();
       });
       financeIcon.dataset.mcpRibbon = "true";
@@ -382,7 +373,7 @@ export default class CalendarPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("editor-menu", (menu) => {
         menu.addItem((item) => {
-          item.setTitle("Вставить блок даты, времени и погоды")
+          item.setTitle(tRaw("main.contextMenu.insertDateTimeWeather"))
             .setIcon("calendar-range")
             .onClick(() => {
               const view = this.app.workspace.activeLeaf?.view;
@@ -395,7 +386,7 @@ export default class CalendarPlugin extends Plugin {
             });
         });
         menu.addItem((item) => {
-          item.setTitle("Вставить дашборд")
+          item.setTitle(tRaw("main.contextMenu.insertDashboard"))
             .setIcon("layout-grid")
             .onClick(() => {
               const view = this.app.workspace.activeLeaf?.view;
@@ -408,7 +399,7 @@ export default class CalendarPlugin extends Plugin {
             });
         });
         menu.addItem((item) => {
-          item.setTitle("Вставить приветствие")
+          item.setTitle(tRaw("main.contextMenu.insertHello"))
             .setIcon("hand")
             .onClick(() => {
               const view = this.app.workspace.activeLeaf?.view;

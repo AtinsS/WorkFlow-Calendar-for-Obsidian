@@ -1,5 +1,7 @@
 # WorkLife Calendar for Obsidian
 
+> **All-in-one:** smart calendar, task & habit tracker, time tracking and financial planner, linked into a single ecosystem inside Obsidian.
+>
 > **Всё в одном:** умный календарь, трекер задач и привычек, учёт времени и финансовый планировщик, связанные в единую экосистему внутри Obsidian.
 
 <div align="center">
@@ -63,6 +65,7 @@
 
 ### ✅ Задачи и тайм-менеджмент
 - **4 статуса:** *Сделать* → *В работе* → *На паузе* → *Готово*.
+- **Быстрое добавление задач** — long-click по дню в календаре → введите название → задача создана. Поддерживает парсинг времени: `14:00 купить молоко`, `14-15 совещание`, `с 14:00 до 15:00 встреча`.
 - **Повторяющиеся задачи:** ежедневно / еженедельно / ежемесячно с настраиваемым интервалом.
 - **Проекты:** группировка задач с цветовой маркировкой.
 - **Таймер:** встроенный учёт времени с автовозобновлением при перезапуске Obsidian.
@@ -86,6 +89,12 @@
 - Стеклянные панели (glassmorphism) с настраиваемым фоном и прозрачностью.
 - **Панель информации** под вкладками (дата, время, погода, задачи) с настройкой отображения.
 - **Дашборд** для быстрого доступа к заметкам
+
+### 🌍 Локализация и язык
+- **Два языка:** Русский и English. Переключение в настройках плагина.
+- **Системный язык** — автоматическое определение языка ОС.
+- **Начало недели** — настройка первого дня недели (Понедельник / Воскресенье / по языку). Влияет на календарь, расписание, создание повторяющихся задач и привычек.
+- Все строки переведены: интерфейс, настройки, уведомления, погода, аналитика.
 
 ---
 
@@ -238,11 +247,27 @@ tasks:Задачи
 
 ---
 
-## ☕ Поддержка
+## ☕ Поддержка / Support
 
 Если плагин экономит ваше время и помогает в работе, вы можете поддержать разработку:
 - ⭐ Поставьте звезду репозиторию.
 - [☕ Угостить автора кофе с булочкой](https://pay.cloudtips.ru/p/cbaa3c81).
+
+---
+
+## 🇬🇧 English Summary
+
+**WorkLife Calendar** is an all-in-one productivity plugin for Obsidian that combines:
+- **Calendar & Schedule** — day/week/month views with drag & drop, weather integration
+- **Task Management** — 4 statuses, recurring tasks, projects, time tracking, checklists, deadlines
+- **Quick Add Tasks** — long-click calendar day → type title → done. Supports time parsing: `14:00 buy milk`, `14-15 meeting`, `! urgent task`
+- **Habit Tracker** — flexible frequency, streak tracking, calendar indicators
+- **Finance & Analytics** — income/expense tracking, budgets, charts
+- **Localization** — Russian and English, auto-detect system language
+- **Start of Week** — Monday/Sunday/System setting
+- **Sync** — GitHub Gist (.ics), SingularityApp, WebDAV, ntfy.sh notifications
+
+**Installation:** via [BRAT](https://github.com/TfTHacker/obsidian42-brat) or manually copy `main.js`, `manifest.json`, `styles.css` to `.obsidian/plugins/calendar-plugin-remastered/`.
 
 ---
 

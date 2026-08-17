@@ -6,6 +6,7 @@
 import { get, writable } from "svelte/store";
 import moment from "moment";
 import type CalendarPlugin from "src/main";
+import { tRaw } from "../i18n";
 import { tasks, projects, checklists } from "src/task-tracker/stores";
 import { habits, habitLogs } from "src/habit-tracker/stores";
 import { settings } from "src/ui/stores";
@@ -646,7 +647,7 @@ async function doSync(direction: "push" | "pull" | "both"): Promise<void> {
       pulledCount: s.pulledCount + pulled,
     }));
   } catch (e) {
-    const msg = e instanceof Error ? e.message : "Ошибка синхронизации";
+    const msg = e instanceof Error ? e.message : tRaw("singularity.syncError");
     singularitySyncStatus.update((s) => ({
       ...s,
       syncing: false,

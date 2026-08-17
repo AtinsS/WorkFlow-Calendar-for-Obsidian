@@ -1,22 +1,23 @@
 <script lang="ts">
   import type { TaskStatus } from "./types";
   import { tasks, activeTab, selectedDate } from "./stores";
+  import { t } from "../i18n";
 
   $: currentDate = $selectedDate;
 
   $: counts = (() => {
     const result = { all: 0, todo: 0, progress: 0, paused: 0, done: 0 };
-    for (const t of $tasks) {
-      if (currentDate && t.dateUID !== currentDate) continue;
-      if (t.status === "done") {
+    for (const task of $tasks) {
+      if (currentDate && task.dateUID !== currentDate) continue;
+      if (task.status === "done") {
         result.done++;
-      } else if (t.status === "todo") {
+      } else if (task.status === "todo") {
         result.todo++;
         result.all++;
-      } else if (t.status === "progress") {
+      } else if (task.status === "progress") {
         result.progress++;
         result.all++;
-      } else if (t.status === "paused") {
+      } else if (task.status === "paused") {
         result.paused++;
         result.all++;
       }
@@ -24,12 +25,12 @@
     return result;
   })();
 
-  const tabs: { key: TaskStatus; icon: string; label: string }[] = [
-    { key: "all", icon: "📋", label: "Все" },
-    { key: "todo", icon: "🟢", label: "Сделать" },
-    { key: "progress", icon: "🔥", label: "В работе" },
-    { key: "paused", icon: "☕", label: "На паузе" },
-    { key: "done", icon: "✅", label: "Готово" },
+  $: tabs = [
+    { key: "all" as TaskStatus, icon: "📋", label: $t("tasks.kanban.all") },
+    { key: "todo" as TaskStatus, icon: "🟢", label: $t("tasks.kanban.todo") },
+    { key: "progress" as TaskStatus, icon: "🔥", label: $t("tasks.kanban.progress") },
+    { key: "paused" as TaskStatus, icon: "☕", label: $t("tasks.kanban.paused") },
+    { key: "done" as TaskStatus, icon: "✅", label: $t("tasks.kanban.done") },
   ];
 
   function setTab(tab: TaskStatus) {
