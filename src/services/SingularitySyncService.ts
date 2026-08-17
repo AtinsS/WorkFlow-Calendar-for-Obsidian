@@ -620,13 +620,17 @@ async function doSync(direction: "push" | "pull" | "both"): Promise<void> {
       console.log(`[SingularitySync] doSync: pull skipped (direction=${direction} syncDirection=${syncDirection})`);
     }
 
-    // Sync habits (bidirectional, always runs)
-    await syncHabits();
-    console.log(`[SingularitySync] doSync: habits synced`);
+    // Sync habits — respect syncDirection
+    if (syncDirection === "both" || syncDirection === "pull" || syncDirection === "push") {
+      await syncHabits(syncDirection);
+      console.log(`[SingularitySync] doSync: habits synced (direction=${syncDirection})`);
+    }
 
-    // Sync checklists (bidirectional, always runs)
-    await syncChecklists();
-    console.log(`[SingularitySync] doSync: checklists synced`);
+    // Sync checklists — respect syncDirection
+    if (syncDirection === "both" || syncDirection === "pull" || syncDirection === "push") {
+      await syncChecklists(syncDirection);
+      console.log(`[SingularitySync] doSync: checklists synced (direction=${syncDirection})`);
+    }
 
     // Update last sync time
     const now = Date.now();
@@ -1155,7 +1159,7 @@ export async function syncProjects(): Promise<Record<string, string>> {
 
 let skipNextHabitPush = false;
 
-export async function syncHabits(): Promise<Record<string, string>> {
+export async function syncHabits(syncDirection: "both" | "push" | "pull" = "both"): Promise<Record<string, string>> {
   const token = getToken();
   if (!token || !pluginInstance) return syncMap.habitMap || {};
 
@@ -1175,14 +1179,14 @@ export async function syncHabits(): Promise<Record<string, string>> {
 
     const mappedRemoteIds = new Set(Object.values(habitMap));
 
-    // 0. Clean stale map entries + delete remotely habits removed locally
+    // 0. Clean stale map entries + delete remotely habits removed locally (push only)
     const remoteHabitIds = new Set(remoteHabits.map((h) => h.id));
     const localHabitIds = new Set(localHabits.map((h) => h.id));
     for (const mapLocalId of Object.keys(habitMap)) {
       if (!localHabitIds.has(mapLocalId)) {
         const remoteId = habitMap[mapLocalId];
-        // Delete remotely if the remote habit still exists
-        if (remoteHabitIds.has(remoteId)) {
+        // Delete remotely only when direction allows push
+        if (syncDirection !== "pull" && remoteHabitIds.has(remoteId)) {
           if (isDryRun()) {
             dryLog("DELETE remote habit", `${remoteId} (local removed)`);
           } else {
@@ -1216,7 +1220,7 @@ export async function syncHabits(): Promise<Record<string, string>> {
             const remoteModMs = remote.updatedAt ? new Date(remote.updatedAt).getTime() : 0;
             const localModMs = local.createdAt || 0;
 
-            if (remoteModMs > localModMs) {
+            if (remoteModMs > localModMs && syncDirection !== "push") {
               // Remote is newer — pull to local
               skipNextHabitPush = true;
               const { updateHabit } = await import("src/habit-tracker/stores");
@@ -1225,7 +1229,7 @@ export async function syncHabits(): Promise<Record<string, string>> {
               if (colorChanged) changes.color = remoteColorHex;
               updateHabit(local.id, changes);
               console.log(`[SingularitySync] Pulled habit changes "${remote.title}"`);
-            } else {
+            } else if (syncDirection !== "pull") {
               // Local is newer — push to remote
               try {
                 await apiUpdateHabit(token, remoteId, buildUpdateHabitBody(local));
@@ -1256,8 +1260,8 @@ export async function syncHabits(): Promise<Record<string, string>> {
             updateHabit(local.id, { color: remoteHex });
           }
         }
-      } else {
-        // Create remote habit
+      } else if (syncDirection !== "pull") {
+        // Create remote habit (push only)
         try {
           if (isDryRun()) {
             dryLog("CREATE remote habit", `"${local.title}" color=${local.color}`);
@@ -1329,8 +1333,8 @@ export async function syncHabits(): Promise<Record<string, string>> {
       }
     }
 
-    // 3. Sync habit progress (last 30 days)
-    await syncHabitProgress(token, habitMap);
+    // 3. Sync habit progress (last 30 days) — respect syncDirection
+    await syncHabitProgress(token, habitMap, syncDirection);
 
     // 4. Save
     syncMap.habitMap = habitMap;
@@ -1344,7 +1348,7 @@ export async function syncHabits(): Promise<Record<string, string>> {
   return syncMap.habitMap || {};
 }
 
-async function syncHabitProgress(token: string, habitMap: Record<string, string>): Promise<void> {
+async function syncHabitProgress(token: string, habitMap: Record<string, string>, syncDirection: "both" | "push" | "pull" = "both"): Promise<void> {
   const reverseHabitMap = buildReverseHabitMap(habitMap);
   const localHabits = get(habits);
 
@@ -1441,10 +1445,10 @@ async function syncHabitProgress(token: string, habitMap: Record<string, string>
         action = "none";
       }
 
-      if (action === "pull") {
+      if (action === "pull" && syncDirection !== "push") {
         skipNextHabitPush = true;
         setHabitProgress(localId, date, newProg);
-      } else if (action === "push") {
+      } else if (action === "push" && syncDirection !== "pull") {
         const remoteId = habitMap[localId];
         if (remoteId) {
           // Convert local progress to remote: 0→1(cancel), 1→1, 2→2
@@ -1494,7 +1498,7 @@ async function syncHabitProgress(token: string, habitMap: Record<string, string>
 
 let skipNextChecklistPush = false;
 
-export async function syncChecklists(): Promise<void> {
+export async function syncChecklists(syncDirection: "both" | "push" | "pull" = "both"): Promise<void> {
   const token = getToken();
   if (!token || !pluginInstance) return;
 
@@ -1558,7 +1562,7 @@ export async function syncChecklists(): Promise<void> {
               const remoteModMs = remote.modificatedDate ? new Date(remote.modificatedDate).getTime() : 0;
               const localModMs = local.updatedAt || 0;
 
-              if (remoteModMs > localModMs) {
+              if (remoteModMs > localModMs && syncDirection !== "push") {
                 // Remote is newer — pull to local
                 skipNextChecklistPush = true;
                 const { updateChecklistItem } = await import("src/task-tracker/stores");
@@ -1566,7 +1570,7 @@ export async function syncChecklists(): Promise<void> {
                 if (titleChanged) changes.title = remote.title;
                 if (checkedChanged) changes.checked = remoteChecked;
                 updateChecklistItem(local.id, changes);
-              } else {
+              } else if (syncDirection !== "pull") {
                 // Local is newer — push to remote
                 try {
                   const body: { title?: string; done?: boolean } = {};
@@ -1597,19 +1601,19 @@ export async function syncChecklists(): Promise<void> {
           if (!!match.done !== local.checked) {
             const remoteModMs = match.modificatedDate ? new Date(match.modificatedDate).getTime() : 0;
             const localModMs = local.updatedAt || 0;
-            if (remoteModMs > localModMs) {
+            if (remoteModMs > localModMs && syncDirection !== "push") {
               // Remote is newer — pull to local
               skipNextChecklistPush = true;
               const { updateChecklistItem } = await import("src/task-tracker/stores");
               updateChecklistItem(local.id, { checked: !!match.done });
-            } else {
+            } else if (syncDirection !== "pull") {
               // Local is newer — push to remote
               try {
                 await apiUpdateChecklistItem(token, match.id, { done: local.checked });
               } catch { /* ignore */ }
             }
           }
-        } else {
+        } else if (syncDirection !== "pull") {
           // Push local item to remote
           try {
             const created = await apiCreateChecklistItem(token, {
@@ -1638,8 +1642,8 @@ export async function syncChecklists(): Promise<void> {
         );
         if (existingLocal) {
           checklistMap[existingLocal.id] = remote.id;
-          // Push local checked status to remote (local is authoritative)
-          if (!!remote.done !== existingLocal.checked) {
+          // Push local checked status to remote (local is authoritative) — only when direction allows push
+          if (syncDirection !== "pull" && !!remote.done !== existingLocal.checked) {
             try {
               await apiUpdateChecklistItem(token, remote.id, { done: existingLocal.checked });
             } catch { /* ignore */ }
@@ -1656,14 +1660,16 @@ export async function syncChecklists(): Promise<void> {
         }
       }
 
-      // 3. Delete remotely items that were removed locally
-      const localItemIds = new Set(localItems.map((l) => l.id));
-      for (const [localId, remoteId] of Object.entries(checklistMap)) {
-        if (!localItemIds.has(localId)) {
-          try {
-            await apiDeleteChecklistItem(token, remoteId);
-          } catch { /* already deleted */ }
-          delete checklistMap[localId];
+      // 3. Delete remotely items that were removed locally (push only)
+      if (syncDirection !== "pull") {
+        const localItemIds = new Set(localItems.map((l) => l.id));
+        for (const [localId, remoteId] of Object.entries(checklistMap)) {
+          if (!localItemIds.has(localId)) {
+            try {
+              await apiDeleteChecklistItem(token, remoteId);
+            } catch { /* already deleted */ }
+            delete checklistMap[localId];
+          }
         }
       }
 

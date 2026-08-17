@@ -13,6 +13,7 @@
 
   let now = new Date();
   let timer: ReturnType<typeof setInterval>;
+  let weatherTimer: ReturnType<typeof setInterval> | null = null;
   let completedToday = 0;
   let totalToday = 0;
   let inProgressCount = 0;
@@ -235,10 +236,13 @@
     updateMonthGoal();
     updateHabits();
     loadWeather();
+    // Refresh weather every 30 minutes
+    weatherTimer = setInterval(() => { loadWeather(); }, 30 * 60_000);
   });
 
   onDestroy(() => {
     if (timer) clearInterval(timer);
+    if (weatherTimer) clearInterval(weatherTimer);
     unsubTasks?.();
     unsubFinance?.();
     unsubHabits?.();

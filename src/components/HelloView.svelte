@@ -13,16 +13,20 @@
   const RU_DAYS = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"];
 
   let now = moment();
-  let timer: ReturnType<typeof setInterval> | null = null;
+  let clockTimer: ReturnType<typeof setInterval> | null = null;
+  let weatherTimer: ReturnType<typeof setInterval> | null = null;
   let weather: DayWeather | null = null;
 
   onMount(() => {
-    timer = setInterval(() => { now = moment(); }, 60000);
+    clockTimer = setInterval(() => { now = moment(); }, 60_000);
     loadWeather();
+    // Refresh weather every 30 minutes
+    weatherTimer = setInterval(() => { loadWeather(); }, 30 * 60_000);
   });
 
   onDestroy(() => {
-    if (timer) clearInterval(timer);
+    if (clockTimer) clearInterval(clockTimer);
+    if (weatherTimer) clearInterval(weatherTimer);
   });
 
   async function loadWeather() {

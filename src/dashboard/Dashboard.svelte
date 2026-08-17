@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, onDestroy } from "svelte";
   import { get } from "svelte/store";
   import moment from "moment";
   import type { App } from "obsidian";
@@ -37,6 +37,11 @@
   let showAddCardModal = false;
   let newCardTitle = "";
   let newCardIcon = "📁";
+
+  // Reactive current date — updates every minute so day rollover works
+  let now = moment();
+  const dateInterval = setInterval(() => { now = moment(); }, 60_000);
+  onDestroy(() => clearInterval(dateInterval));
 
   // Widget settings
   $: showTasksWidget = $settings.dashboardShowTasks !== false;
@@ -95,9 +100,9 @@
     dragOverCardId = null;
   }
 
-  // Tasks widget data
-  $: todayStr = moment().format("YYYY-MM-DD");
-  $: todayDateUID = `day-${moment().startOf("day").format()}`;
+  // Tasks widget data — react to `now` so day rollover works
+  $: todayStr = now.format("YYYY-MM-DD");
+  $: todayDateUID = `day-${now.clone().startOf("day").format()}`;
   $: todayAllTasks = $tasks
     .filter((t) => t.dateUID === todayDateUID)
     .sort((a, b) => {
