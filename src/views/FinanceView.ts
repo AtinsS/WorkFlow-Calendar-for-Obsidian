@@ -3,6 +3,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_FINANCE } from "../constants";
 import type CalendarPlugin from "../main";
 import FinanceTracker from "../finance/FinanceTracker.svelte";
+import { tRaw } from "../i18n";
 
 export default class FinanceView extends ItemView {
   private plugin: CalendarPlugin;
@@ -18,7 +19,7 @@ export default class FinanceView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "💰 Распределение финансовых средств";
+    return tRaw("hello.navFinance");
   }
 
   getIcon(): string {

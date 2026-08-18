@@ -3,6 +3,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_MOBILE_TASKS } from "../constants";
 import type CalendarPlugin from "../main";
 import MobileTasks from "../components/MobileTasks.svelte";
+import { tRaw } from "../i18n";
 
 export default class MobileTaskTrackerView extends ItemView {
   private plugin: CalendarPlugin;
@@ -18,7 +19,7 @@ export default class MobileTaskTrackerView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Задачи";
+    return tRaw("hello.navTasks");
   }
 
   getIcon(): string {

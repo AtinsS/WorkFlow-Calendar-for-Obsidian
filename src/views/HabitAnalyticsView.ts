@@ -5,6 +5,7 @@ import { VIEW_TYPE_HABIT_ANALYTICS } from "../constants";
 import type CalendarPlugin from "../main";
 import HabitAnalytics from "../components/HabitAnalytics.svelte";
 import { settings } from "../ui/stores";
+import { tRaw } from "../i18n";
 
 export default class HabitAnalyticsView extends ItemView {
   private plugin: CalendarPlugin;
@@ -20,7 +21,7 @@ export default class HabitAnalyticsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Аналитика";
+    return tRaw("hello.navAnalytics");
   }
 
   getIcon(): string {

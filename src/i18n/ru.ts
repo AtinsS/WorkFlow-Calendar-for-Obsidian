@@ -85,6 +85,10 @@ export const ru = {
       notifications: "Уведомления",
     },
 
+    language: {
+      restartNotice: "Язык изменён. Рекомендуется перезапустить Obsidian для полного применения изменений.",
+    },
+
     general: {
       userName: "Ваше имя",
       userNameDesc: "Имя будет отображаться в приветствии",
@@ -138,6 +142,19 @@ export const ru = {
       supportTitle: "☕ Купить автору кофе",
       supportDesc: "Если плагин оказался полезен — угостите автора кофе!",
       supportBtn: "Поддержать",
+      languageLabel: "Язык / Language",
+      languageDesc: "Язык интерфейса плагина / Plugin interface language",
+      languageSystem: "Системный / System",
+      languageRu: "Русский",
+      languageEn: "English",
+      startOfWeekLabel: "Начало недели / Start of week",
+      startOfWeekDesc: "Первый день недели в календаре / First day of the week in calendar",
+      startOfWeekSystem: "По языку / By language",
+      startOfWeekMonday: "Понедельник / Monday",
+      startOfWeekSunday: "Воскресенье / Sunday",
+      exampleTaskTitle: "Купить молоко",
+      errorPrefix: "Ошибка: {error}",
+      singularityDashboard: "Личный кабинет SingularityApp",
     },
 
     dashboard: {
@@ -711,6 +728,7 @@ export const ru = {
     navAnalytics: "Аналитика",
     navFinance: "Финансы",
     navSchedule: "Расписание",
+    navFinAnalytics: "Финансовая аналитика",
   },
 
   // DailyOverview

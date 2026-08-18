@@ -1,11 +1,11 @@
 {
-  "id": "WorkLife Calendar",
+  "id": "worklife-calendar",
   "name": "WorkLife Calendar",
-  "description": "calendar + task tracker + habit tracker + financhial planner forked from Liamcain's calendar plugin",
+  "description": "Calendar, task tracker, habit tracker, and financial planner — all in one plugin for Obsidian.",
   "version": "2.11.17",
   "author": "AtinsS",
-  "authorUrl": "",
+  "authorUrl": "https://github.com/AtinsS/WorkLife-Calendar-for-Obsidian",
   "fundingUrl": "https://pay.cloudtips.ru/p/cbaa3c81",
   "isDesktopOnly": false,
-  "minAppVersion": "1.12.0" 
+  "minAppVersion": "1.12.0"
 }

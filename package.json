@@ -1,8 +1,8 @@
 {
-  "name": "calendar",
-  "version": "1.5.13",
-  "description": "Calendar view of your daily notes",
-  "author": "liamcain",
+  "name": "worklife-calendar",
+  "version": "2.11.17",
+  "description": "Calendar, task tracker, habit tracker, and financial planner for Obsidian",
+  "author": "AtinsS",
   "main": "main.js",
   "license": "MIT",
   "scripts": {

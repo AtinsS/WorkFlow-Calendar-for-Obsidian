@@ -1,0 +1,52 @@
+{
+  "manualIncomeSources": [
+    {
+      "id": "mi-001",
+      "name": "Freelance web design",
+      "amount": 800,
+      "date": "2026-08-05",
+      "category": "Freelance",
+      "createdAt": 1754371200000
+    },
+    {
+      "id": "mi-002",
+      "name": "Consulting session",
+      "amount": 350,
+      "date": "2026-08-12",
+      "category": "Consulting",
+      "createdAt": 1754976000000
+    },
+    {
+      "id": "mi-003",
+      "name": "Sell old laptop",
+      "amount": 450,
+      "date": "2026-07-20",
+      "category": "One-time",
+      "createdAt": 1753003200000
+    },
+    {
+      "id": "mi-004",
+      "name": "Blog sponsorship",
+      "amount": 200,
+      "date": "2026-07-28",
+      "category": "Passive",
+      "createdAt": 1753693200000
+    },
+    {
+      "id": "mi-005",
+      "name": "Freelance logo design",
+      "amount": 150,
+      "date": "2026-08-15",
+      "category": "Freelance",
+      "createdAt": 1755246000000
+    }
+  ],
+  "incomeCategories": [
+    "Salary",
+    "Freelance",
+    "Consulting",
+    "Passive",
+    "One-time",
+    "Other"
+  ]
+}

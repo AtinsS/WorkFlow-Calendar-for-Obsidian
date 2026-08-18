@@ -3,6 +3,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_FINANCIAL_ANALYTICS } from "../constants";
 import type CalendarPlugin from "../main";
 import FinancialAnalytics from "../finance/FinancialAnalytics.svelte";
+import { tRaw } from "../i18n";
 
 export default class FinancialAnalyticsView extends ItemView {
   private plugin: CalendarPlugin;
@@ -18,7 +19,7 @@ export default class FinancialAnalyticsView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Финансовая аналитика";
+    return tRaw("hello.navFinAnalytics");
   }
 
   getIcon(): string {

@@ -85,6 +85,10 @@ export const en = {
       notifications: "Notifications",
     },
 
+    language: {
+      restartNotice: "Language changed. Please restart Obsidian for all changes to take full effect.",
+    },
+
     general: {
       userName: "Your name",
       userNameDesc: "Name will be displayed in the greeting",
@@ -138,6 +142,19 @@ export const en = {
       supportTitle: "☕ Buy the author a coffee",
       supportDesc: "If you find the plugin useful — treat the author to a coffee!",
       supportBtn: "Support",
+      languageLabel: "Language",
+      languageDesc: "Plugin interface language",
+      languageSystem: "By language",
+      languageRu: "Русский",
+      languageEn: "English",
+      startOfWeekLabel: "Start of week",
+      startOfWeekDesc: "First day of the week in calendar",
+      startOfWeekSystem: "By language",
+      startOfWeekMonday: "Monday",
+      startOfWeekSunday: "Sunday",
+      exampleTaskTitle: "Buy milk",
+      errorPrefix: "Error: {error}",
+      singularityDashboard: "SingularityApp Dashboard",
     },
 
     dashboard: {
@@ -715,6 +732,7 @@ export const en = {
     navAnalytics: "Analytics",
     navFinance: "Finance",
     navSchedule: "Schedule",
+    navFinAnalytics: "Financial Analytics",
   },
 
   // DailyOverview

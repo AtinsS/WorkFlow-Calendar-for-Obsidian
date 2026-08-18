@@ -5,3 +5,5 @@ main.js
 .vscode/
 *.code-workspace
 .mimocode/
+distill_query.mjs
+distill_guery2.mjs

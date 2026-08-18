@@ -3,6 +3,7 @@ import { ItemView, WorkspaceLeaf } from "obsidian";
 import { VIEW_TYPE_MOBILE_SCHEDULE } from "../constants";
 import type CalendarPlugin from "../main";
 import MobileSchedule from "../components/MobileSchedule.svelte";
+import { tRaw } from "../i18n";
 
 export default class MobileScheduleView extends ItemView {
   private plugin: CalendarPlugin;
@@ -18,7 +19,7 @@ export default class MobileScheduleView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Расписание";
+    return tRaw("hello.navSchedule");
   }
 
   getIcon(): string {

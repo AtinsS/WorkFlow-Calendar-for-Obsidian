@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFolder, TextComponent, requestUrl } from "obsidian";
+import { App, PluginSettingTab, Setting, TFolder, TextComponent, requestUrl, Notice } from "obsidian";
 import { generateId } from "./utils/id";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 import type { ILocaleOverride } from "obsidian-calendar-ui";
@@ -428,29 +428,30 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // Language setting
     new Setting(general)
-      .setName("Язык / Language")
-      .setDesc("Язык интерфейса плагина / Plugin interface language")
+      .setName(tRaw("settings.general.languageLabel"))
+      .setDesc(tRaw("settings.general.languageDesc"))
       .addDropdown((dropdown) => {
-        dropdown.addOption("system", "Системный / System");
-        dropdown.addOption("ru", "Русский");
-        dropdown.addOption("en", "English");
+        dropdown.addOption("system", tRaw("settings.general.languageSystem"));
+        dropdown.addOption("ru", tRaw("settings.general.languageRu"));
+        dropdown.addOption("en", tRaw("settings.general.languageEn"));
         dropdown.setValue(this.plugin.options.language || "system");
         dropdown.onChange(async (value: "ru" | "en" | "system") => {
           await this.plugin.writeOptions({ language: value });
           initLocale(value);
           // Re-render settings to reflect new language
           this.display();
+          new Notice(tRaw("settings.language.restartNotice"));
         });
       });
 
     // Start of week setting
     new Setting(general)
-      .setName("Начало недели / Start of week")
-      .setDesc("Первый день недели в календаре / First day of the week in calendar")
+      .setName(tRaw("settings.general.startOfWeekLabel"))
+      .setDesc(tRaw("settings.general.startOfWeekDesc"))
       .addDropdown((dropdown) => {
-        dropdown.addOption("system", "По языку / By language");
-        dropdown.addOption("monday", "Понедельник / Monday");
-        dropdown.addOption("sunday", "Воскресенье / Sunday");
+        dropdown.addOption("system", tRaw("settings.general.startOfWeekSystem"));
+        dropdown.addOption("monday", tRaw("settings.general.startOfWeekMonday"));
+        dropdown.addOption("sunday", tRaw("settings.general.startOfWeekSunday"));
         dropdown.setValue(this.plugin.options.startOfWeek || "system");
         dropdown.onChange(async (value: "monday" | "sunday" | "system") => {
           await this.plugin.writeOptions({ startOfWeek: value });
@@ -1388,13 +1389,13 @@ export class CalendarSettingsTab extends PluginSettingTab {
       </p>
       <pre style="background: var(--background-secondary); padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin: 4px 0;"><code>---
 task_id: abc123
-title: Купить молоко
+title: ${tRaw("settings.general.exampleTaskTitle")}
 status: todo
 date: day-2024-10-25
 priority: medium
 ---
 
-- [ ] Купить молоко 📅 2024-10-25 🛫 14:30 ⏫</code></pre>
+- [ ] ${tRaw("settings.general.exampleTaskTitle")} 📅 2024-10-25 🛫 14:30 ⏫</code></pre>
       <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
         <b>${tRaw("settings.general.formatStatuses")}</b>
       </p>
@@ -1882,7 +1883,7 @@ priority: medium
               return;
             }
             if (!connectResult.success) {
-              alert(`Ошибка: ${connectResult.error}`);
+              alert(tRaw("settings.general.errorPrefix", { error: connectResult.error }));
               return;
             }
 
@@ -1895,7 +1896,7 @@ priority: medium
                 tRaw("settings.sync.gistSyncComplete", { url: status.rawUrl }),
               );
             } else {
-              alert(`Ошибка: ${result.error}`);
+              alert(tRaw("settings.general.errorPrefix", { error: result.error }));
             }
           }),
       );
@@ -1955,7 +1956,7 @@ priority: medium
       </p>
       <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
         <b>${tRaw("settings.sync.singularityHowTo")}</b><br>
-        1. <a href="https://me.singularity-app.com" target="_blank" rel="noopener">Личный кабинет SingularityApp</a><br>
+        1. <a href="https://me.singularity-app.com" target="_blank" rel="noopener">${tRaw("settings.general.singularityDashboard")}</a><br>
         2. ${tRaw("settings.sync.singularityHowToStep1")}<br>
         3. ${tRaw("settings.sync.singularityHowToStep2")}<br>
         4. ${tRaw("settings.sync.singularityHowToStep3")}
@@ -1991,7 +1992,7 @@ priority: medium
             if (result.success) {
               alert(tRaw("settings.sync.singularityCheckOk"));
             } else {
-              alert(`Ошибка: ${result.error}`);
+              alert(tRaw("settings.general.errorPrefix", { error: result.error }));
             }
           }),
       );
@@ -2094,7 +2095,7 @@ priority: medium
               alert(tRaw("settings.sync.singularitySyncComplete"));
               this.display(); // refresh last sync time
             } catch (e) {
-              alert(`Ошибка: ${e instanceof Error ? e.message : e}`);
+              alert(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
             } finally {
               btn.setButtonText(tRaw("settings.sync.singularitySync"));
               btn.setDisabled(false);
@@ -2128,7 +2129,7 @@ priority: medium
               );
               this.display();
             } catch (e) {
-              alert(`Ошибка: ${e instanceof Error ? e.message : e}`);
+              alert(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
             } finally {
               btn.setButtonText(tRaw("settings.sync.singularitySync"));
               btn.setDisabled(false);
@@ -2152,7 +2153,7 @@ priority: medium
               await resetSyncMap();
               alert(tRaw("settings.sync.singularityResetDone"));
             } catch (e) {
-              alert(`Ошибка: ${e instanceof Error ? e.message : e}`);
+              alert(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
             }
           }),
       );
@@ -2170,7 +2171,7 @@ priority: medium
     code.style.cssText =
       "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
     code.textContent =
-      "```calendar-nav\nschedule:Расписание\ntasks:Задачи\nfinance:Финансы\nanalytics:Аналитика\n```";
+      "```calendar-nav\nschedule:" + tRaw("hello.navSchedule") + "\ntasks:" + tRaw("hello.navTasks") + "\nfinance:" + tRaw("hello.navFinance") + "\nanalytics:" + tRaw("hello.navAnalytics") + "\n```";
     desc.appendChild(code);
 
     const p2 = document.createElement("p");
@@ -2187,7 +2188,7 @@ priority: medium
     code2.style.cssText =
       "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
     code2.textContent =
-      "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:Расписание\n```";
+      "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:" + tRaw("hello.navSchedule") + "\n```";
     desc.appendChild(code2);
 
     const p4 = document.createElement("p");

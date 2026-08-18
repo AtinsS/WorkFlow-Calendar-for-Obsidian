@@ -6,6 +6,7 @@
   import timeGridPlugin from "@fullcalendar/timegrid";
   import interactionPlugin from "@fullcalendar/interaction";
 
+  import { configureGlobalMomentLocale } from "obsidian-calendar-ui";
   import { tRaw, locale } from "../i18n";
   import { settings } from "../ui/stores";
   import type CalendarPlugin from "../main";
@@ -74,6 +75,12 @@
   }
   $: currentLocale = $locale === "en" ? "en" : "ru";
   $: if (calendar && $locale) {
+    const sow = $settings.startOfWeek || "system";
+    let momentFirstDay: "monday" | "sunday";
+    if (sow === "monday") momentFirstDay = "monday";
+    else if (sow === "sunday") momentFirstDay = "sunday";
+    else momentFirstDay = $locale === "en" ? "sunday" : "monday";
+    configureGlobalMomentLocale(currentLocale, momentFirstDay);
     calendar.setOption("firstDay", startOfWeek);
     calendar.setOption("locale", currentLocale);
   }

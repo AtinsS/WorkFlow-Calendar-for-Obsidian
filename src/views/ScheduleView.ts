@@ -4,6 +4,7 @@ import { get } from "svelte/store";
 import { VIEW_TYPE_SCHEDULE } from "../constants";
 import type CalendarPlugin from "../main";
 import { settings } from "../ui/stores";
+import { tRaw } from "../i18n";
 import ScheduleCalendar from "../components/ScheduleCalendar.svelte";
 
 export default class ScheduleView extends ItemView {
@@ -21,7 +22,7 @@ export default class ScheduleView extends ItemView {
   }
 
   getDisplayText(): string {
-    return "Расписание";
+    return tRaw("hello.navSchedule");
   }
 
   getIcon(): string {
