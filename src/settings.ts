@@ -370,7 +370,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     const coffeeBtn = coffeeBanner.createEl("a", {
       cls: "settings-coffee-btn",
       text: tRaw("settings.general.supportBtn"),
-      href: "https://pay.cloudtips.ru/p/cbaa3c81",
+      href: "https://boosty.to/atins/donate",
     });
     coffeeBtn.setAttribute("target", "_blank");
     coffeeBtn.setAttribute("rel", "noopener");

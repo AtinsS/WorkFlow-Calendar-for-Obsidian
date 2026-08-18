@@ -77,7 +77,7 @@ Analytics (charts and reports)
 
 If this plugin saves you time and helps with your work, you can support its development:
 - ⭐ Star the repository.
-- [☕ Buy the author a coffee and a pastry](https://pay.cloudtips.ru/p/cbaa3c81).
+- [☕ Buy the author a coffee and a pastry](https://boosty.to/atins/donate).
 
 ---
 
