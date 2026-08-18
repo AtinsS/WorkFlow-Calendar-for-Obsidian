@@ -1,6 +1,6 @@
 # WorkLife Calendar for Obsidian
 
-> **Всё в одном:** умный календарь, трекер задач и привычек, учёт времени и финансовый планировщик, связанные в единую экосистему внутри Obsidian.
+> **All-in-one:** a smart calendar, task and habit tracker, time tracker, and financial planner, all connected into a single ecosystem within Obsidian.
 
 <div align="center">
 
@@ -9,245 +9,244 @@
 [![UI: Svelte](https://img.shields.io/badge/UI-Svelte-FF3E00?logo=svelte&logoColor=white)](https://svelte.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 
-
 </div>
 
 ---
 
 ![alt text](animate.gif)
 
-## 💡 Почему этот плагин существует
+[**Russian README**](https://github.com/AtinsS/WorkLife-Calendar-for-Obsidian/blob/master/README.RU.md)
 
-У многих рабочих процессов одна и та же проблема: задачи живут в одном месте, календарь — в другом, учёт времени — в третьем, а финансы и отчёты собираются вручную в таблицах. В итоге одни и те же данные приходится вводить несколько раз.
+## 💡 Why this plugin exists
 
-**Этот плагин решает именно эту боль.** Он не просто добавляет ещё один календарь или трекер. Он связывает планирование, выполнение и анализ в одной системе:
-- Одна задача влияет на календарь.
-- Календарь влияет на учёт времени.
-- Время влияет на расчёт дохода.
-- Доход формирует автоматическую аналитику.
-- **Мобильный опыт:** работа с задачами из телефона в Obsidian без лишней боли.
+Many workflows share the same problem: tasks live in one place, the calendar in another, time tracking in a third, and finances and reports are compiled manually in spreadsheets. As a result, the same data has to be entered multiple times.
 
----
-
-## 🚀 Для кого это
-
-- **Фрилансеры и разработчики**, которым нужно считать стоимость работы по ставке.
-- **Дизайнеры и консультанты**, ведущие несколько проектов одновременно.
-- **Студенты и исследователи**, которым важна связка дедлайнов, привычек и продуктивности.
-- **Любители автоматизации**, которые хотят, чтобы система работала за них (уведомления, синхронизация, отчёты).
+**This plugin solves exactly that pain point.** It doesn't just add another calendar or tracker. It connects planning, execution, and analysis into a single system:
+- A single task updates the calendar.
+- The calendar drives time tracking.
+- Time spent calculates income.
+- Income generates automatic analytics.
+- **Mobile experience:** work with tasks from your phone in Obsidian without the usual friction.
 
 ---
 
-## ⚙️ Основной Workflow
+## 🚀 Who is this for
+
+- **Freelancers and developers** who need to calculate work costs based on hourly rates.
+- **Designers and consultants** managing multiple projects simultaneously.
+- **Students and researchers** who need to link deadlines, habits, and productivity.
+- **Automation enthusiasts** who want the system to work for them (notifications, sync, reports).
+
+---
+
+## ⚙️ Main Workflow
 
 ```text
-Проект 
+Project 
   ↓
-Задача (с оценкой времени и ставкой)
+Task (with time estimate and hourly rate)
   ↓
-Календарь / Расписание (планирование слотов)
+Calendar / Schedule (slot planning)
   ↓
-Учёт времени (факт vs план)
+Time Tracking (actual vs planned)
   ↓
-Доход и расходы (авторасчёт)
+Income and Expenses (auto-calculated)
   ↓
-Аналитика (графики и отчёты)
+Analytics (charts and reports)
 ```
 
 ---
 
-## 📦 Установка
+## 📦 Installation
 
-### Через BRAT (Рекомендуется)
-1. Установите плагин [BRAT](https://github.com/TfTHacker/obsidian42-brat).
-2. Откройте настройки BRAT → **Add Beta Plugin**.
-3. Вставьте ссылку: `https://github.com/AtinsS/obsidian-calendar-plugin-remastered`
-4. Нажмите **Add Plugin**.
+### Via BRAT (Recommended)
+1. Install the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin.
+2. Open BRAT settings → **Add Beta Plugin**.
+3. Paste the link: `https://github.com/AtinsS/obsidian-calendar-plugin-remastered`
+4. Click **Add Plugin**.
 
-### Вручную
-1. Скачайте архив или клонируйте репозиторий.
-2. Скопируйте `main.js`, `manifest.json` и `styles.css`.
-3. Поместите их в папку `.obsidian/plugins/calendar-plugin-remastered/` (создайте её, если нет).
-4. Включите плагин в *Настройки → Сторонние плагины*.
+### Manual Installation
+1. Download the archive or clone the repository.
+2. Copy `main.js`, `manifest.json`, and `styles.css`.
+3. Place them in the `.obsidian/plugins/calendar-plugin-remastered/` folder (create it if it doesn't exist).
+4. Enable the plugin in *Settings → Community plugins*.
 
 ---
 
-## ☕ Поддержка / Support
+## ☕ Support
 
-Если плагин экономит ваше время и помогает в работе, вы можете поддержать разработку:
-- ⭐ Поставьте звезду репозиторию.
-- [☕ Угостить автора кофе с булочкой](https://pay.cloudtips.ru/p/cbaa3c81).
+If this plugin saves you time and helps with your work, you can support its development:
+- ⭐ Star the repository.
+- [☕ Buy the author a coffee and a pastry](https://pay.cloudtips.ru/p/cbaa3c81).
 
 ---
 
 <details>
-<summary><h3>✨ Подробные возможности (раскрыть)</h3></summary>
+<summary><h3>✨ Detailed Features (click to expand)</h3></summary>
 
-### 📅 Календарь и расписание
-- Полноценный вид (день / неделя / месяц) на базе библиотеки **FullCalendar** с поддержкой drag & drop.
-- Визуальные индикаторы задач и привычек прямо в сетке календаря.
-- Создание задач кликом и изменение времени перетаскиванием.
-- **Погода** на каждый день недели (Open-Meteo API, без ключей) для видимого диапазона дат.
-- Адаптивное мобильное расписание для маленьких экранов.
+### 📅 Calendar and Schedule
+- Full view (day / week / month) based on the **FullCalendar** library with drag & drop support.
+- Visual indicators for tasks and habits directly in the calendar grid.
+- Create tasks with a click and change times by dragging.
+- **Weather** for each day of the week (Open-Meteo API, no keys required) for the visible date range.
+- Adaptive mobile schedule for small screens.
 
-### ✅ Задачи и тайм-менеджмент
-- **4 статуса:** *Сделать* → *В работе* → *На паузе* → *Готово*.
-- **Быстрое добавление задач** — Клик ПКМ по дню в календаре → введите название → задача создана. Поддерживает парсинг времени: `14:00 купить молоко`, `14-15 совещание`, `с 14:00 до 15:00 встреча`.
-- **Повторяющиеся задачи:** ежедневно / еженедельно / ежемесячно с настраиваемым интервалом.
-- **Проекты:** группировка задач с цветовой маркировкой.
-- **Таймер:** встроенный учёт времени с автовозобновлением при перезапуске Obsidian.
-- **Чек-листы:** для каждой задачи можно создать чек-лист.
-- **Дедлайны и оценки:** сравнение запланированного и фактического времени, уведомления о приближении срока.
-- **Двусторонняя синхронизация** с плагином [Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks) и [Dataview](https://github.com/blacksmithgu/obsidian-dataview) через обычные `.md` файлы.
+### ✅ Tasks and Time Management
+- **4 statuses:** *To Do* → *In Progress* → *Paused* → *Done*.
+- **Quick task creation** — Right-click a day in the calendar → enter a name → task created. Supports time parsing: `14:00 buy milk`, `14-15 meeting`, `from 14:00 to 15:00 meeting`.
+- **Recurring tasks:** daily / weekly / monthly with customizable intervals.
+- **Projects:** task grouping with color coding.
+- **Timer:** built-in time tracking with auto-resume on Obsidian restart.
+- **Checklists:** create a checklist for each task.
+- **Deadlines and estimates:** compare planned and actual time, notifications for approaching deadlines.
+- **Two-way sync** with the [Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks) and [Dataview](https://github.com/blacksmithgu/obsidian-dataview) plugins via standard `.md` files.
 
-### 🔄 Трекер привычек
-- Гибкая периодичность (дни недели, день месяца).
-- Количественные цели для каждой привычки.
-- Подсчёт стриков (серий) и визуальные индикаторы на календаре.
+### 🔄 Habit Tracker
+- Flexible frequency (days of the week, day of the month).
+- Quantitative goals for each habit.
+- Streak counting and visual indicators on the calendar.
 
-### 💰 Финансы и аналитика
-- **Доходы:** автоматический расчёт по ставке из рабочих задач или ручной ввод.
-- **Бюджет:** категории расходов с иконками и правила распределения.
-- **Накопления:** цели с процентом выполнения.
-- **Аналитика:** столбчатые и круговые диаграммы по проектам, динамика доходов/расходов по месяцам, сравнение плана и факта.
+### 💰 Finances and Analytics
+- **Income:** automatic calculation based on hourly rates from work tasks or manual entry.
+- **Budget:** expense categories with icons and distribution rules.
+- **Savings:** goals with completion percentages.
+- **Analytics:** bar and pie charts by project, income/expense dynamics by month, planned vs. actual comparisons.
 
-### 🎨 Внешний вид и UI
-- Настраиваемый акцентный цвет.
-- Стеклянные панели (glassmorphism) с настраиваемым фоном и прозрачностью.
-- **Панель информации** под вкладками (дата, время, погода, задачи) с настройкой отображения.
-- **Дашборд** для быстрого доступа к заметкам.
+### 🎨 Appearance and UI
+- Customizable accent color.
+- Glassmorphism panels with customizable background and transparency.
+- **Info panel** under the tabs (date, time, weather, tasks) with display settings.
+- **Dashboard** for quick access to notes.
 
-### 🌍 Локализация и язык
-- **Два языка:** Русский и English. Переключение в настройках плагина.
-- **Системный язык** — автоматическое определение языка ОС.
-- **Начало недели** — настройка первого дня недели (Понедельник / Воскресенье / по языку). Влияет на календарь, расписание, создание повторяющихся задач и привычек.
-- Все строки переведены: интерфейс, настройки, уведомления, погода, аналитика.
+### 🌍 Localization and Language
+- **Two languages:** Russian and English. Switch in the plugin settings.
+- **System language** — automatic OS language detection.
+- **First day of the week** — customize the start of the week (Monday / Sunday / by language). Affects the calendar, schedule, recurring tasks, and habits creation.
+- All strings are translated: interface, settings, notifications, weather, analytics.
 
 </details>
 
 <details>
-<summary><h3>🔗 Синхронизация и интеграции (раскрыть)</h3></summary>
+<summary><h3>🔗 Sync and Integrations (click to expand)</h3></summary>
 
-### Новый формат хранения данных
-Плагин может хранить данные в JSON-формате в папке `calendar-data/` в корне хранилища. При включении функции "Синхронизировать в корень хранилища" он становится основным форматом хранения данных, обеспечивающим быструю загрузку и синхронизацию данных через:
-- **WebDAV** (Яндекс.Диск, OneDrive и др.)
+### New Data Storage Format
+The plugin can store data in JSON format in the `calendar-data/` folder at the root of your vault. When "Sync to vault root" is enabled, it becomes the primary data storage format, ensuring fast loading and data sync via:
+- **WebDAV** (Yandex.Disk, OneDrive, etc.)
 - **Obsidian Sync** / **Remotely Save**
 - **iCloud** / **Google Drive**
 
 > [!NOTE]
-> Опциональная синхронизация с `.md` файлами (через настройку «Tasks plugin sync») предназначена для совместимости с плагинами [Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks) и [Dataview](https://github.com/blacksmithgu/obsidian-dataview).
+> Optional sync with `.md` files (via the "Tasks plugin sync" setting) is intended for compatibility with the [Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks) and [Dataview](https://github.com/blacksmithgu/obsidian-dataview) plugins.
 
-> [!WARNING] Финансовые данные
-> Если вы ведёте учёт финансов в плагине и используете облачную синхронизацию, данные о доходах и расходах будут храниться в открытом виде в облаке. Рекомендуется использовать абстрактные названия проектов или настроить исключение папки `calendar-data/` из синхронизации.
+> [!WARNING] Financial data
+> If you track finances in the plugin and use cloud sync, income and expense data will be stored in plain text in the cloud. It is recommended to use abstract project names or exclude the `calendar-data/` folder from syncing.
 
-### Внешние календари (Google Calendar, Apple Calendar)
-1. Создайте [GitHub Personal Access Token](https://github.com/settings/tokens) (classic) с правами (scope) `gist`.
-2. Вставьте токен в настройки плагина и нажмите **«Синхронизировать»**.
-3. Плагин создаст Gist с `.ics` файлом и выдаст ссылку.
-4. Добавьте эту ссылку в свой календарь через функцию «Подписка по URL».
+### External Calendars (Google Calendar, Apple Calendar)
+1. Create a [GitHub Personal Access Token](https://github.com/settings/tokens) (classic) with the `gist` scope.
+2. Paste the token into the plugin settings and click **"Sync"**.
+3. The plugin will create a Gist with an `.ics` file and provide a link.
+4. Add this link to your calendar via the "Subscribe from URL" feature.
 
-### Интеграция с форматом Tasks (опционально)
-При включённой настройке «Tasks plugin sync» плагин создаёт `.md` файлы для задач, чтобы они были видны в плагинах Tasks и Dataview. Это **дополнительная** фича — основное хранение остаётся в JSON. Пример генерируемого файла:
+### Tasks Plugin Format Integration (Optional)
+When the "Tasks plugin sync" setting is enabled, the plugin creates `.md` files for tasks so they are visible in the Tasks and Dataview plugins. This is an **additional** feature — primary storage remains in JSON. Example of a generated file:
 ```markdown
 ---
 task_id: abc123
-title: Купить молоко
+title: Buy milk
 status: todo
 date: day-2024-10-25
 priority: medium
 ---
-- [ ] Купить молоко 📅 2024-10-25 🛫 14:30 🔼
+- [ ] Buy milk 📅 2024-10-25 🛫 14:30 🔼
 ```
-*(Поддерживаемые статусы: `- [ ]` todo, `- [/]` progress, `- [-]` paused, `- [x]` done)*
+*(Supported statuses: `- [ ]` todo, `- [/]` progress, `- [-]` paused, `- [x]` done)*
 
-### Синхронизация с приложением SingularityApp
+### SingularityApp Integration
 
 > [!IMPORTANT]
-> Двусторонняя синхронизация задач, чек-листов, проектов и привычек. Доступно при статусе Premium или Elite в SingularityApp. Повторяющиеся задачи не синхронизируются.
+> Two-way sync of tasks, checklists, projects, and habits. Available with Premium or Elite status in SingularityApp. Recurring tasks are not synced.
 
-1. Создайте API-токен в личном кабинете на сайте [SingularityApp](https://singularity-app.com).
-2. Вставьте токен в настройки плагина — он проверится автоматически.
-3. Нажмите кнопку синхронизации в панели (кнопка на верхней панели появляется после проверки токена) или включите **автосинхронизацию** с настраиваемым интервалом (от 1 до 30 минут).
+1. Create an API token in your account on the [SingularityApp](https://singularity-app.com) website.
+2. Paste the token into the plugin settings — it will be verified automatically.
+3. Click the sync button in the panel (the button appears in the top bar after token verification) or enable **auto-sync** with a customizable interval (from 1 to 30 minutes).
 
-**Что синхронизируется:**
-- Задачи (создание, обновление, удаление, статусы, дедлайны, время)
-- Проекты (названия, цвета, эмодзи)
-- Чек-листы (пункты, отметки выполнения)
-- Привычки (названия, цвета, прогресс за последние 30 дней)
+**What is synced:**
+- Tasks (creation, updates, deletion, statuses, deadlines, time)
+- Projects (names, colors, emojis)
+- Checklists (items, completion marks)
+- Habits (names, colors, progress for the last 30 days)
 
-**Направление:** по умолчанию двустороннее (оба направления), можно переключить на только отправку или только получение. После синхронизации задачи доступны как в плагине, так и в мобильном приложении SingularityApp.
+**Direction:** two-way by default (both directions), can be switched to send-only or receive-only. After syncing, tasks are available in both the plugin and the SingularityApp mobile app.
 
 </details>
 
 <details>
-<summary><h3>🔔 Уведомления и автоматизация (раскрыть)</h3></summary>
+<summary><h3>🔔 Notifications and Automation (click to expand)</h3></summary>
 
-Плагин предлагает многоуровневую систему уведомлений, чтобы вы не пропустили важное, даже если компьютер выключен.
+The plugin offers a multi-tiered notification system so you don't miss important events, even if your computer is turned off.
 
-| Тип | Когда срабатывает |
+| Type | When it triggers |
 | :--- | :--- |
-| **Локальные** | За N минут до начала, при просрочке, при превышении лимита времени, в день дедлайна. |
-| **На смартфон (ntfy.sh)** | Дублирование уведомлений на телефон. Работает, даже когда Obsidian закрыт. |
-| **При выключенном ПК (GitHub Actions)** | Алёрты через GitHub Actions, если задача просрочена, а компьютер выключен. |
+| **Local** | N minutes before start, when overdue, when time limit is exceeded, on the deadline day. |
+| **To smartphone (ntfy.sh)** | Duplicate notifications to your phone. Works even when Obsidian is closed. |
+| **When PC is off (GitHub Actions)** | Alerts via GitHub Actions if a task is overdue and the computer is off. |
 
-### Настройка ntfy.sh (рекомендуется)
+### Setting up ntfy.sh (Recommended)
 
-Простой способ получать уведомления на телефон:
-1. Установите приложение [ntfy.sh](https://ntfy.sh/) на телефон.
-2. В настройках плагина включите **ntfy.sh** и задайте топик.
-3. Подпишитесь на этот топик в приложении.
+A simple way to get notifications on your phone:
+1. Install the [ntfy.sh](https://ntfy.sh/) app on your phone.
+2. Enable **ntfy.sh** in the plugin settings and set a topic.
+3. Subscribe to this topic in the app.
 
-> [!CAUTION] Безопасность
-> Используйте уникальный топик (например, сгенерированный UUID вроде `a7f9b2c4-8e1d-4f3a-9c5b-2d6e8f0a1b3c`), чтобы никто другой не мог подписаться на ваши уведомления. Плагин отправляет только триггеры («Просрочено: Название задачи»), а не финансовые данные или полные тексты.
+> [!CAUTION] Security
+> Use a unique topic (e.g., a generated UUID like `a7f9b2c4-8e1d-4f3a-9c5b-2d6e8f0a1b3c`) so no one else can subscribe to your notifications. The plugin only sends triggers ("Overdue: Task Name"), not financial data or full texts.
 
-### Настройка GitHub Actions (продвинутый вариант)
+### Setting up GitHub Actions (Advanced)
 
-Если вам нужны уведомления при выключенном компьютере:
-1. Включите в настройках плагина **«Синхронизация в корень хранилища»**.
-2. Скопируйте папку `examples` из репозитория плагина в корень вашего хранилища и переименуйте её в `.github`.
-3. Включите в настройках плагина проверку просроченных задач через GitHub Actions.
-4. Добавьте topic из ntfy.sh как секрет `NTFY_TOPIC` в настройки вашего репозитория на GitHub (Settings → Secrets → Actions). Если секрет не задан, workflow возьмёт topic из `calendar-data/notifications.json`.
-5. Убедитесь, что в репозиторий попадают файлы `calendar-data/taskTracker.json` и `calendar-data/notifications.json`.
-6. Настройте автоматический `git push` (например, через плагин Obsidian Git).
+If you need notifications when your computer is off:
+1. Enable **"Sync to vault root"** in the plugin settings.
+2. Copy the `examples` folder from the plugin repository to the root of your vault and rename it to `.github`.
+3. Enable checking for overdue tasks via GitHub Actions in the plugin settings.
+4. Add the ntfy.sh topic as a secret `NTFY_TOPIC` in your GitHub repository settings (Settings → Secrets → Actions). If the secret is not set, the workflow will take the topic from `calendar-data/notifications.json`.
+5. Ensure the files `calendar-data/taskTracker.json` and `calendar-data/notifications.json` are committed to the repository.
+6. Set up automatic `git push` (e.g., via the Obsidian Git plugin).
 
 > [!NOTE]
-> Отдельный GitHub Personal Access Token для этого workflow не нужен. Action читает задачи из файла `calendar-data/taskTracker.json` в текущем репозитории и отправляет уведомления в `https://ntfy.sh/<topic>`.
+> No separate GitHub Personal Access Token is needed for this workflow. The Action reads tasks from the `calendar-data/taskTracker.json` file in the current repository and sends notifications to `https://ntfy.sh/<topic>`.
 
 </details>
 
 <details>
-<summary><h3>🧭 UI Виджеты в заметках (раскрыть)</h3></summary>
+<summary><h3>🧭 UI Widgets in Notes (click to expand)</h3></summary>
 
-Вставьте блок кода в любую заметку для создания панели быстрой навигации по разделам плагина:
+Insert a code block into any note to create a quick navigation panel for the plugin's sections:
 
 ````markdown
 ```calendar-nav
-schedule:Расписание
-tasks:Задачи
-finance:Финансы
-analytics:Аналитика
+schedule:Schedule
+tasks:Tasks
+finance:Finance
+analytics:Analytics
 ```
 ````
-Доступные ключи: `schedule`, `tasks`, `finance`, `analytics`.
+Available keys: `schedule`, `tasks`, `finance`, `analytics`.
 
-**Кастомизация стиля** (первая строка начинается с `%`):
+**Style Customization** (first line starts with `%`):
 ````markdown
 ```calendar-nav
 %color:#fff;bg:#333;radius:20px;size:14px;accent:#5f99e1
-schedule:Расписание
-tasks:Задачи
+schedule:Schedule
+tasks:Tasks
 ```
 ````
-Параметры стиля: `color` (текст), `bg` (фон), `radius` (скругление), `size` (размер шрифта), `accent` (цвет при наведении).
+Style parameters: `color` (text), `bg` (background), `radius` (border radius), `size` (font size), `accent` (hover color).
 
 </details>
 
 ---
 
 <div align="center">
-  <sub>Разработано с вниманием к деталям для сообщества Obsidian</sub><br>
-  <sub>Автор: <a href="https://github.com/AtinsS">@AtinsS</a></sub><br>
-  <sub>Лицензия: <a href="https://opensource.org/licenses/MIT">MIT</a></sub>
+  <sub>Developed with attention to detail for the Obsidian community</sub><br>
+  <sub>Author: <a href="https://github.com/AtinsS">@AtinsS</a></sub><br>
+  <sub>License: <a href="https://opensource.org/licenses/MIT">MIT</a></sub>
 </div>
-
-
