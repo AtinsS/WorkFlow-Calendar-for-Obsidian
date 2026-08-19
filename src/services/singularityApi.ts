@@ -53,6 +53,7 @@ export interface SingularityTask {
   tags?: string[];
   isNote?: boolean;
   parent?: string; // parent task ID for subtasks
+  externalId?: string; // external system identifier (e.g. local task UUID)
   modificatedDate?: string; // last modification timestamp
   recurrence?: SingularityRecurrence; // recurrence config (only on generator/template tasks)
   recurrenceGeneratorId?: string; // links instance to generator (non-empty = this is a recurring instance)

@@ -12,6 +12,11 @@ import { tRaw } from "../i18n";
 // --- Constants ---
 
 export const STATUS_TAG_PREFIX = "#sin-status:";
+/** SingularityApp tag IDs start with "A-". Text-based tags are NOT accepted by the API. */
+export const SINGULARITY_TAG_ID_PATTERN = /^(?:A)-/;
+/** Global reverse cache: tag ID (A-...) → tag title (e.g. "#sin-status:todo"). 
+ *  Populated by SingularitySyncService during tag resolution. */
+export const tagNameById: Record<string, string> = {};
 
 // --- Emoji conversion ---
 
@@ -133,12 +138,15 @@ export function statusFromRemote(task: SingularityTask): { status: TaskStatus; c
     return { status: "done", completed: true };
   }
 
-  // Status tags (custom tags used to persist progress/paused states)
+  // Status tags — the API returns tag IDs (A-...), not text names.
+  // Use tagNameById cache to resolve IDs to names like "#sin-status:progress".
   if (task.tags) {
     for (const tag of task.tags) {
-      if (tag === `${STATUS_TAG_PREFIX}done`) return { status: "done", completed: true };
-      if (tag === `${STATUS_TAG_PREFIX}progress`) return { status: "progress", completed: false };
-      if (tag === `${STATUS_TAG_PREFIX}paused`) return { status: "paused", completed: false };
+      // Resolve tag ID to name if it's an A-... ID
+      const tagName = tagNameById[tag] || tag;
+      if (tagName === `${STATUS_TAG_PREFIX}done`) return { status: "done", completed: true };
+      if (tagName === `${STATUS_TAG_PREFIX}progress`) return { status: "progress", completed: false };
+      if (tagName === `${STATUS_TAG_PREFIX}paused`) return { status: "paused", completed: false };
     }
   }
 
@@ -215,7 +223,8 @@ export function recurrenceToSingularity(rec: RecurrenceConfig): Record<string, u
 
 // --- Body builders ---
 
-/** Builds the API body for creating a task remotely */
+/** Builds the API body for creating a task remotely.
+ *  @param statusTagIds - resolved SingularityApp tag IDs (A-... format). Text names are NOT accepted. */
 export function buildCreateTaskBody(task: {
   id: string;
   title: string;
@@ -229,7 +238,7 @@ export function buildCreateTaskBody(task: {
   deadlineTime?: string;
   status: TaskStatus;
   recurrence?: RecurrenceConfig;
-}, projectMap: Record<string, string>): Record<string, unknown> {
+}, projectMap: Record<string, string>, statusTagIds?: string[]): Record<string, unknown> {
   const body: Record<string, unknown> = { title: task.title };
 
   // SingularityApp requires full ISO-8601 datetime for start
@@ -263,24 +272,26 @@ export function buildCreateTaskBody(task: {
   // External ID for reliable matching on subsequent syncs
   body.externalId = task.id;
 
-  // Tags: always include status tag
-  const tags: string[] = [`${STATUS_TAG_PREFIX}${task.status}`];
-  body.tags = tags;
+  // Tags: only include resolved SingularityApp tag IDs (A-... format).
+  // The API rejects text-based tag names with 400 "Must start with one of: A-".
+  if (statusTagIds && statusTagIds.length > 0) {
+    body.tags = statusTagIds;
+  }
 
   // If task is already done, set journalDate to archive immediately
   if (task.status === "done") {
     body.journalDate = new Date().toISOString();
   }
 
-  // Recurrence (best-effort — API may not support creation of recurring tasks)
-  if (task.recurrence) {
-    body.recurrence = recurrenceToSingularity(task.recurrence);
-  }
+  // NOTE: recurrence is excluded from POST /task — SingularityApp API rejects it
+  // with 400 ("property recurrence should not exist"). Recurring instances are
+  // synced as independent tasks via pull.
 
   return body;
 }
 
-/** Builds the API body for updating a task remotely */
+/** Builds the API body for updating a task remotely.
+ *  @param statusTagIds - resolved SingularityApp tag IDs (A-... format). Text names are NOT accepted. */
 export function buildUpdateTaskBody(task: {
   id: string;
   title: string;
@@ -294,7 +305,7 @@ export function buildUpdateTaskBody(task: {
   deadline?: string;
   deadlineTime?: string;
   recurrence?: RecurrenceConfig;
-}, projectMap: Record<string, string>): Record<string, unknown> {
+}, projectMap: Record<string, string>, statusTagIds?: string[]): Record<string, unknown> {
   const body: Record<string, unknown> = {};
   body.title = task.title;
   if (task.description !== undefined) body.note = task.description || "";
@@ -326,10 +337,13 @@ export function buildUpdateTaskBody(task: {
     body.projectId = projectMap[task.projectId];
   }
 
-  // Include status tag in the update body (replaces separate pushStatusTag call)
-  body.tags = [`${STATUS_TAG_PREFIX}${task.status}`];
+  // Tags: only include resolved SingularityApp tag IDs (A-... format).
+  // The API rejects text-based tag names with 400 "Must start with one of: A-".
+  if (statusTagIds && statusTagIds.length > 0) {
+    body.tags = statusTagIds;
+  }
 
-  // Recurrence (best-effort — API may not support setting recurrence via PATCH)
+  // Recurrence (PATCH may accept it even if POST doesn't)
   if (task.recurrence) {
     body.recurrence = recurrenceToSingularity(task.recurrence);
   }

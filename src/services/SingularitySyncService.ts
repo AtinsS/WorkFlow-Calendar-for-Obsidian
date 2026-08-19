@@ -30,6 +30,8 @@ import {
   createChecklistItem as apiCreateChecklistItem,
   updateChecklistItem as apiUpdateChecklistItem,
   deleteChecklistItem as apiDeleteChecklistItem,
+  getTags as apiGetTags,
+  createTag as apiCreateTag,
 } from "./singularityApi";
 import {
   parseRemoteUpdatedAt,
@@ -45,6 +47,8 @@ import {
   buildUpdateHabitBody,
   buildReverseHabitMap,
   singularityColorToHex,
+  STATUS_TAG_PREFIX,
+  tagNameById,
 } from "./singularityMapper";
 
 // --- Constants ---
@@ -107,6 +111,7 @@ let syncCycleActive = false; // suppresses all store-triggered pushes during doS
 let lastSyncEndAt = 0; // timestamp of last doSync completion — used to suppress store-triggered re-push
 let skipNextProjectPush = false; // flag to prevent re-push after addProject from pull
 const skipPushTaskIds = new Set<string>(); // per-task skip flags to prevent missed pushes
+let statusTagCache: Record<string, string> | null = null; // cached status tag IDs (status name → A-... ID)
 
 function createEmptySyncMap(): SingularitySyncMap {
   return { tasks: {}, projects: {}, projectMap: {}, habits: {}, habitMap: {}, habitDoneSnapshot: {}, checklistMap: {}, lastFullPullAt: 0, version: 1 };
@@ -124,6 +129,66 @@ function isDryRun(): boolean {
 
 function dryLog(action: string, detail: string): void {
   console.log(`[SingularitySync][DRY RUN] ${action}: ${detail}`);
+}
+
+/** Resolve status tag names to SingularityApp tag IDs (A-... format).
+ *  Creates missing tags on the remote side. Caches results. */
+async function resolveStatusTagIds(token: string, statuses: string[]): Promise<string[]> {
+  if (statuses.length === 0) return [];
+
+  // Build or reuse cache
+  if (!statusTagCache) {
+    statusTagCache = {};
+    try {
+      const remoteTags = await apiGetTags(token, { maxCount: 200, includeRemoved: false });
+      for (const tag of remoteTags) {
+        if (tag.title && tag.id) {
+          statusTagCache[tag.title] = tag.id;
+          // Also populate reverse cache for statusFromRemote (tag ID → tag name)
+          tagNameById[tag.id] = tag.title;
+        }
+      }
+      console.log(`[SingularitySync] Tag cache loaded: ${Object.keys(statusTagCache).length} tags`);
+    } catch (e) {
+      console.warn("[SingularitySync] Failed to load tags for cache:", e);
+      return [];
+    }
+  }
+
+  const ids: string[] = [];
+  for (const status of statuses) {
+    const tagName = `${STATUS_TAG_PREFIX}${status}`;
+    let tagId = statusTagCache[tagName];
+
+    if (!tagId) {
+      // Create the tag remotely
+      try {
+        if (isDryRun()) {
+          dryLog("CREATE tag", tagName);
+        } else {
+          const created = await apiCreateTag(token, { title: tagName });
+          if (created?.id) {
+            tagId = created.id;
+            statusTagCache[tagName] = tagId;
+            tagNameById[tagId] = tagName;
+            console.log(`[SingularitySync] Created status tag "${tagName}" → ${tagId}`);
+            await delay(API_CALL_DELAY_MS);
+          }
+        }
+      } catch (e) {
+        console.warn(`[SingularitySync] Failed to create tag "${tagName}":`, e);
+      }
+    }
+
+    if (tagId) ids.push(tagId);
+  }
+
+  return ids;
+}
+
+/** Invalidate the tag cache (e.g., after reset or on error) */
+function invalidateTagCache(): void {
+  statusTagCache = null;
 }
 
 // --- Sync Map Persistence ---
@@ -258,6 +323,11 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
   const excludeTagsRaw = get(settings).singularitySyncExcludeTags || "";
   const excludeTags = excludeTagsRaw.split(",").map(t => t.trim().toLowerCase()).filter(Boolean);
 
+  // Pre-resolve status tag IDs (A-... format) — the API rejects text-based tag names
+  const statusesInUse = [...new Set(localTasks.map(t => t.status))];
+  const statusTagIds = await resolveStatusTagIds(token, statusesInUse);
+  console.log(`[SingularitySync] Resolved ${statusTagIds.length} status tag IDs for statuses: ${statusesInUse.join(", ")}`);
+
   for (const task of localTasks) {
     // Skip tasks with excluded tags
     if (excludeTags.length > 0 && task.tags?.some(t => excludeTags.includes(t.toLowerCase()))) {
@@ -277,8 +347,8 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
         // Task already synced — check if local is newer
         if (task.updatedAt <= syncEntry.lastPushedAt) continue;
 
-        // UPDATE: build body via mapper (now includes status tags)
-        const body = buildUpdateTaskBody(task, projectMap);
+        // UPDATE: build body via mapper (now includes status tags as A-... IDs)
+        const body = buildUpdateTaskBody(task, projectMap, statusTagIds);
         if (isDryRun()) {
           dryLog("UPDATE task", `${task.title} (${syncEntry.singularityId}) body=${JSON.stringify(body)}`);
         } else {
@@ -306,8 +376,8 @@ async function pushLocalChanges(projectMap: Record<string, string>): Promise<{ p
         };
         pushed++;
       } else {
-        // CREATE: build body via mapper (now includes externalId, tags, deadline)
-        const body = buildCreateTaskBody(task, projectMap);
+        // CREATE: build body via mapper (now includes externalId, tags as A-... IDs, deadline)
+        const body = buildCreateTaskBody(task, projectMap, statusTagIds);
         if (isDryRun()) {
           dryLog("CREATE task", `${task.title} body=${JSON.stringify(body)}`);
           pushed++;
@@ -472,6 +542,27 @@ async function pullRemoteChanges(projectMap: Record<string, string>): Promise<{ 
           }
         } else {
           // READ (create new): remote task doesn't exist locally
+          // DEDUP: check if remote.externalId matches an existing local task ID
+          // (this happens when push created the remote task but sync map was lost/corrupted)
+          if (remote.externalId) {
+            const existingLocal = localTasks.find(t => t.id === remote.externalId);
+            if (existingLocal) {
+              console.log(`[SingularitySync] Pull dedup: remote ${remote.id}(${remote.title}) matched local ${existingLocal.id} via externalId`);
+              skipPushTaskIds.add(existingLocal.id);
+              syncMap.tasks[existingLocal.id] = {
+                singularityId: remote.id,
+                lastPushedAt: Date.now(),
+                lastPulledAt: Date.now(),
+              };
+              // Also update local task's singularityId if missing
+              if (!existingLocal.singularityId) {
+                const { updateTask: updateTaskForDedup } = await import("src/task-tracker/stores");
+                updateTaskForDedup(existingLocal.id, { singularityId: remote.id });
+              }
+              continue;
+            }
+          }
+
           const remoteData = buildLocalTaskFromRemote(remote, reverseProjectMap);
           if (isDryRun()) {
             dryLog("CREATE local task", `${remote.title} (${remote.id}) dateUID=${remoteData.dateUID}`);
@@ -846,6 +937,7 @@ export function cleanupSingularitySync(): void {
   }
 
   pluginInstance = null;
+  invalidateTagCache();
   loaded = false;
   syncing = false;
 }
@@ -867,6 +959,7 @@ export async function testConnection(
 
 export async function resetSyncMap(): Promise<void> {
   syncMap = createEmptySyncMap();
+  invalidateTagCache();
   await saveSyncMap();
 
   // Clear singularityId from all local tasks
