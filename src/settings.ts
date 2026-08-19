@@ -465,7 +465,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // Dashboard tab
     const dashboard = tabContainers["dashboard"];
-    dashboard.createEl("h3", { text: tRaw("settings.dashboard.sectionWidgets") });
+    new Setting(dashboard).setName(tRaw("settings.dashboard.sectionWidgets")).setHeading();
     new Setting(dashboard)
       .setName(tRaw("settings.dashboard.showTasks"))
       .setDesc(tRaw("settings.dashboard.showTasksDesc"))
@@ -493,12 +493,12 @@ export class CalendarSettingsTab extends PluginSettingTab {
           await this.plugin.writeOptions({ dashboardShowGoals: value });
         });
       });
-    dashboard.createEl("h3", { text: tRaw("settings.dashboard.sectionHello") });
+    new Setting(dashboard).setName(tRaw("settings.dashboard.sectionHello")).setHeading();
     this.addHelloButtonSettings(dashboard);
 
     // Schedule tab
     const schedule = tabContainers["schedule"];
-    schedule.createEl("h3", { text: tRaw("settings.schedule.sectionDisplay") });
+    new Setting(schedule).setName(tRaw("settings.schedule.sectionDisplay")).setHeading();
     this.addScheduleDisplaySettings(schedule);
 
     // Weather tab
@@ -507,18 +507,18 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // Appearance tab
     const appearance = tabContainers["appearance"];
-    appearance.createEl("h3", { text: tRaw("settings.appearance.sectionColors") });
+    new Setting(appearance).setName(tRaw("settings.appearance.sectionColors")).setHeading();
     this.addAccentColorSetting(appearance);
     this.addGlassBgColorSetting(appearance);
     this.addColorSettings(appearance);
-    appearance.createEl("h3", { text: tRaw("settings.appearance.sectionNav") });
+    new Setting(appearance).setName(tRaw("settings.appearance.sectionNav")).setHeading();
     this.addNavPanelInstructions(appearance);
-    appearance.createEl("h3", { text: tRaw("settings.appearance.sectionNavStyle") });
+    new Setting(appearance).setName(tRaw("settings.appearance.sectionNavStyle")).setHeading();
     this.addNavBtnStyleSettings(appearance);
 
     // Sync tab
     const sync = tabContainers["sync"];
-    sync.createEl("h3", { text: tRaw("settings.sync.sectionTaskNote") });
+    new Setting(sync).setName(tRaw("settings.sync.sectionTaskNote")).setHeading();
     this.addTaskNoteSyncSettings(sync);
     this.addGitHubGistSettings(sync);
     this.addSingularitySettings(sync);
@@ -603,7 +603,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
     // Instructions for adding hello block
     const helloInstructions = container.createDiv({ cls: "settings-banner" });
-    helloInstructions.createEl("h4", { text: tRaw("settings.general.helloBlockTitle") });
+    new Setting(helloInstructions).setName(tRaw("settings.general.helloBlockTitle")).setHeading();
     helloInstructions.createEl("p", {
       text: tRaw("settings.general.helloBlockDesc"),
     });
@@ -1026,10 +1026,10 @@ export class CalendarSettingsTab extends PluginSettingTab {
   }
 
   addColorSettings(container: HTMLElement): void {
-    container.createEl("h3", { text: tRaw("settings.appearance.sectionInterfaceColors") });
+    new Setting(container).setName(tRaw("settings.appearance.sectionInterfaceColors")).setHeading();
 
     // Main colors
-    container.createEl("h4", { text: tRaw("settings.appearance.sectionMainColors") });
+    new Setting(container).setName(tRaw("settings.appearance.sectionMainColors")).setHeading();
 
     this.addColorPickerSetting(
       container,
@@ -1064,7 +1064,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     );
 
     // Semantic colors
-    container.createEl("h4", { text: tRaw("settings.appearance.sectionSemanticColors") });
+    new Setting(container).setName(tRaw("settings.appearance.sectionSemanticColors")).setHeading();
 
     this.addColorPickerSetting(
       container,
@@ -1099,7 +1099,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     );
 
     // Text colors
-    container.createEl("h4", { text: tRaw("settings.appearance.sectionTextColors") });
+    new Setting(container).setName(tRaw("settings.appearance.sectionTextColors")).setHeading();
 
     this.addColorPickerSetting(
       container,
@@ -1126,7 +1126,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     );
 
     // Glass panel colors
-    container.createEl("h4", { text: tRaw("settings.appearance.sectionGlass") });
+    new Setting(container).setName(tRaw("settings.appearance.sectionGlass")).setHeading();
 
     this.addColorPickerSetting(
       container,
@@ -1262,7 +1262,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
               }
             }
 
-            alert(tRaw("settings.general.createdNotes", { count: created }));
+            new Notice(tRaw("settings.general.createdNotes", { count: created }));
           }),
       );
 
@@ -1512,7 +1512,7 @@ priority: medium
                 source: "settings-test",
                 error: "ntfy.sh topic is empty",
               });
-              alert(tRaw("settings.notifications.ntfyTopicEmpty"));
+              new Notice(tRaw("settings.notifications.ntfyTopicEmpty"));
               return;
             }
             try {
@@ -1532,7 +1532,7 @@ priority: medium
                 source: "settings-test",
                 topic,
               });
-              alert(tRaw("settings.notifications.ntfyTestSent", { topic }));
+              new Notice(tRaw("settings.notifications.ntfyTestSent", { topic }));
             } catch (e) {
               await recordNotificationEvent(this.app, {
                 channel: "ntfy",
@@ -1543,14 +1543,12 @@ priority: medium
                 topic,
                 error: e instanceof Error ? e.message : String(e),
               });
-              alert(tRaw("settings.notifications.ntfyTestError", { error: String(e) }));
+              new Notice(tRaw("settings.notifications.ntfyTestError", { error: String(e) }));
             }
           }),
       );
 
-    container.createEl("h4", {
-      text: tRaw("settings.notifications.sectionGithubActions"),
-    });
+    new Setting(container).setName(tRaw("settings.notifications.sectionGithubActions")).setHeading();
 
     const ghDesc = document.createElement("div");
     ghDesc.addClass("setting-item-description", "mcp-format-info");
@@ -1594,7 +1592,7 @@ priority: medium
   }
 
   private addNotificationDiagnostics(container: HTMLElement): void {
-    container.createEl("h4", { text: tRaw("settings.notifications.sectionDiagnostics") });
+    new Setting(container).setName(tRaw("settings.notifications.sectionDiagnostics")).setHeading();
 
     const panel = container.createDiv({ cls: "notification-diagnostics-panel" });
     panel.style.cssText =
@@ -1807,9 +1805,7 @@ priority: medium
   }
 
   addGitHubGistSettings(container: HTMLElement): void {
-    container.createEl("h3", {
-      text: tRaw("settings.sync.sectionGithubGist"),
-    });
+    new Setting(container).setName(tRaw("settings.sync.sectionGithubGist")).setHeading();
 
     const desc = document.createElement("div");
     desc.addClass("setting-item-description", "mcp-format-info");
@@ -1863,18 +1859,18 @@ priority: medium
             const token = this.plugin.options.githubToken;
 
             if (!token) {
-              alert(tRaw("settings.sync.gistTokenRequired"));
+              new Notice(tRaw("settings.sync.gistTokenRequired"));
               return;
             }
 
             // Check token permissions first
             const connectResult = await connectGist(token);
             if (connectResult.warning) {
-              alert(connectResult.warning);
+              new Notice(connectResult.warning);
               return;
             }
             if (!connectResult.success) {
-              alert(tRaw("settings.general.errorPrefix", { error: connectResult.error }));
+              new Notice(tRaw("settings.general.errorPrefix", { error: connectResult.error }));
               return;
             }
 
@@ -1883,11 +1879,11 @@ priority: medium
               const status = get(gistSyncStatus);
               // Re-render settings to show the URL field
               this.display();
-              alert(
+              new Notice(
                 tRaw("settings.sync.gistSyncComplete", { url: status.rawUrl }),
               );
             } else {
-              alert(tRaw("settings.general.errorPrefix", { error: result.error }));
+              new Notice(tRaw("settings.general.errorPrefix", { error: result.error }));
             }
           }),
       );
@@ -1936,7 +1932,7 @@ priority: medium
   }
 
   addSingularitySettings(container: HTMLElement): void {
-    container.createEl("h3", { text: tRaw("settings.sync.sectionSingularity") });
+    new Setting(container).setName(tRaw("settings.sync.sectionSingularity")).setHeading();
 
     const desc = document.createElement("div");
     desc.addClass("setting-item-description", "mcp-format-info");
@@ -1989,15 +1985,15 @@ priority: medium
           .onClick(async () => {
             const token = this.plugin.options.singularityToken;
             if (!token) {
-              alert(tRaw("settings.sync.singularityCheckTokenFirst"));
+              new Notice(tRaw("settings.sync.singularityCheckTokenFirst"));
               return;
             }
             const { testConnection } = await import("./services/SingularitySyncService");
             const result = await testConnection(token);
             if (result.success) {
-              alert(tRaw("settings.sync.singularityCheckOk"));
+              new Notice(tRaw("settings.sync.singularityCheckOk"));
             } else {
-              alert(tRaw("settings.general.errorPrefix", { error: result.error }));
+              new Notice(tRaw("settings.general.errorPrefix", { error: result.error }));
             }
           }),
       );
@@ -2089,7 +2085,7 @@ priority: medium
           .onClick(async () => {
             const token = this.plugin.options.singularityToken;
             if (!token) {
-              alert(tRaw("settings.sync.singularityCheckTokenFirst"));
+              new Notice(tRaw("settings.sync.singularityCheckTokenFirst"));
               return;
             }
             btn.setButtonText(tRaw("settings.sync.singularitySyncing"));
@@ -2097,10 +2093,10 @@ priority: medium
             try {
               const { fullSync } = await import("./services/SingularitySyncService");
               await fullSync();
-              alert(tRaw("settings.sync.singularitySyncComplete"));
+              new Notice(tRaw("settings.sync.singularitySyncComplete"));
               this.display(); // refresh last sync time
             } catch (e) {
-              alert(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
+              new Notice(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
             } finally {
               btn.setButtonText(tRaw("settings.sync.singularitySync"));
               btn.setDisabled(false);
@@ -2117,7 +2113,7 @@ priority: medium
           .onClick(async () => {
             const token = this.plugin.options.singularityToken;
             if (!token) {
-              alert(tRaw("settings.sync.singularityCheckTokenFirst"));
+              new Notice(tRaw("settings.sync.singularityCheckTokenFirst"));
               return;
             }
             btn.setButtonText(tRaw("settings.sync.singularitySyncing"));
@@ -2125,7 +2121,7 @@ priority: medium
             try {
               const { syncProjects } = await import("./services/SingularitySyncService");
               const result = await syncProjects();
-              alert(
+              new Notice(
                 tRaw("settings.sync.singularityProjectsResult", {
                   created: result.created,
                   mapped: result.mapped,
@@ -2134,7 +2130,7 @@ priority: medium
               );
               this.display();
             } catch (e) {
-              alert(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
+              new Notice(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
             } finally {
               btn.setButtonText(tRaw("settings.sync.singularitySync"));
               btn.setDisabled(false);
@@ -2156,9 +2152,9 @@ priority: medium
             try {
               const { resetSyncMap } = await import("./services/SingularitySyncService");
               await resetSyncMap();
-              alert(tRaw("settings.sync.singularityResetDone"));
+              new Notice(tRaw("settings.sync.singularityResetDone"));
             } catch (e) {
-              alert(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
+              new Notice(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
             }
           }),
       );

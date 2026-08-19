@@ -7813,6 +7813,12 @@ svg.dot.filled {
   border: none;
 }
 
+.pm-btn-danger {
+  background: var(--color-red);
+  color: var(--text-on-accent);
+  border: none;
+}
+
 .mcp-code-block {
   background: var(--background-secondary);
   padding: 8px 12px;

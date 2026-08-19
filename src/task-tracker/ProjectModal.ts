@@ -16,23 +16,24 @@ import {
 const RECENT_ICONS_KEY = "calendar-recent-icons";
 const MAX_RECENT = 10;
 
-function getRecentIcons(): string[] {
+function getRecentIcons(app: App): string[] {
   try {
-    const raw = localStorage.getItem(RECENT_ICONS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const raw = app.loadLocalStorage(RECENT_ICONS_KEY);
+    return typeof raw === "string" ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-function addRecentIcon(emoji: string): void {
-  const recent = getRecentIcons().filter((e) => e !== emoji);
+function addRecentIcon(app: App, emoji: string): void {
+  const recent = getRecentIcons(app).filter((e) => e !== emoji);
   recent.unshift(emoji);
   if (recent.length > MAX_RECENT) recent.length = MAX_RECENT;
-  localStorage.setItem(RECENT_ICONS_KEY, JSON.stringify(recent));
+  app.saveLocalStorage(RECENT_ICONS_KEY, JSON.stringify(recent));
 }
 
 function renderIconPicker(
+  app: App,
   container: HTMLElement,
   currentIcon: string,
   onSelect: (emoji: string) => void,
@@ -53,7 +54,7 @@ function renderIconPicker(
     const val = input.value.trim();
     if (val) {
       onSelect(val);
-      addRecentIcon(val);
+      addRecentIcon(app, val);
       renderRecentSection();
     }
   }
@@ -73,7 +74,7 @@ function renderIconPicker(
 
   function renderRecentSection() {
     recentGrid.empty();
-    const recent = getRecentIcons();
+    const recent = getRecentIcons(app);
     if (recent.length === 0) {
       recentSection.style.display = "none";
       return;
@@ -167,7 +168,7 @@ export class ProjectModal extends CustomModal {
 
     // Icon picker
     const iconSection = row.createDiv("pm-icon-section");
-    renderIconPicker(iconSection, newIcon, (emoji) => {
+    renderIconPicker(this.app, iconSection, newIcon, (emoji) => {
       newIcon = emoji;
       updatePreview();
     });
@@ -204,7 +205,7 @@ export class ProjectModal extends CustomModal {
         setTimeout(() => nameInput.classList.remove("pm-input-error"), 1500);
         return;
       }
-      addRecentIcon(newIcon);
+      addRecentIcon(this.app, newIcon);
       addProject({
         name: newName.trim(),
         color: newColor,
@@ -260,19 +261,17 @@ export class ProjectModal extends CustomModal {
 
       const actions = item.createDiv("pm-project-actions");
 
-      const editBtn = actions.createEl("button", { cls: "pm-action-btn pm-edit-btn" });
-      editBtn.innerHTML = "&#9998;";
+      const editBtn = actions.createEl("button", { cls: "pm-action-btn pm-edit-btn", text: "✎" });
       editBtn.title = tRaw("common.edit");
       editBtn.addEventListener("click", () => this.openEditProject(project));
 
-      const deleteBtn = actions.createEl("button", { cls: "pm-action-btn pm-delete-btn" });
-      deleteBtn.innerHTML = "&#10005;";
+      const deleteBtn = actions.createEl("button", { cls: "pm-action-btn pm-delete-btn", text: "✕" });
       deleteBtn.title = tRaw("common.delete");
       deleteBtn.addEventListener("click", () => {
-        if (confirm(tRaw("tasks.project.deleteConfirm", {name: project.name}))) {
+        new DeleteConfirmModal(this.app, project.name, () => {
           removeProject(project.id);
           this.rerender();
-        }
+        }).open();
       });
     });
 
@@ -343,7 +342,7 @@ class EditProjectModal extends CustomModal {
 
     // Icon
     const iconSection = this.contentEl.createDiv("pm-icon-section");
-    renderIconPicker(iconSection, icon, (emoji) => {
+    renderIconPicker(this.app, iconSection, icon, (emoji) => {
       icon = emoji;
     });
 
@@ -361,7 +360,7 @@ class EditProjectModal extends CustomModal {
         setTimeout(() => nameInput.classList.remove("pm-input-error"), 1500);
         return;
       }
-      addRecentIcon(icon);
+      addRecentIcon(this.app, icon);
       updateProject(this.project.id, {
         name: name.trim(),
         color,
@@ -375,4 +374,29 @@ class EditProjectModal extends CustomModal {
   onClose(): void {
     this.onClosed();
   }
+}
+
+class DeleteConfirmModal extends CustomModal {
+  private name: string;
+  private onConfirm: () => void;
+
+  constructor(app: App, name: string, onConfirm: () => void) {
+    super(app);
+    this.name = name;
+    this.onConfirm = onConfirm;
+  }
+
+  onOpen(): void {
+    const { contentEl } = this;
+    contentEl.createEl("p", { text: tRaw("tasks.project.deleteConfirm", { name: this.name }) });
+    const btnRow = contentEl.createDiv({ cls: "pm-modal-buttons" });
+    btnRow.createEl("button", { text: tRaw("common.cancel"), cls: "pm-btn" }).addEventListener("click", () => this.close());
+    btnRow.createEl("button", { text: tRaw("common.delete"), cls: "pm-btn pm-btn-danger" }).addEventListener("click", () => {
+      this.onConfirm();
+      this.close();
+    });
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- required by CustomModal
+  onClose(): void {}
 }
