@@ -13,7 +13,7 @@ export abstract class CustomModal {
   }
 
   abstract onOpen(): void;
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
+  // eslint-disable-next-line @typescript-eslint/no-empty-function -- default no-op lifecycle hook
   onClose(): void {}
 
   open(): void {

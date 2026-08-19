@@ -107,74 +107,33 @@ export class QuickAddModal extends Modal {
 
     // Modal container with glassmorphism
     contentEl.addClass("quick-add-modal");
-    contentEl.style.padding = "0";
-    contentEl.style.overflow = "hidden";
-    contentEl.style.borderRadius = "12px";
 
     // Header with date
     const header = contentEl.createDiv({ cls: "quick-add-header" });
-    header.style.padding = "12px 16px";
-    header.style.background = "var(--background-secondary)";
-    header.style.borderBottom = "1px solid var(--background-modifier-border)";
-    header.style.display = "flex";
-    header.style.alignItems = "center";
-    header.style.gap = "8px";
 
-    const dateIcon = header.createSpan({ text: "📅" });
-    dateIcon.style.fontSize = "16px";
+    header.createSpan({ text: "📅", cls: "date-icon" });
 
-    const dateLabel = header.createSpan({
+    header.createSpan({
       text: this.date.format("dddd, D MMMM"),
+      cls: "date-label",
     });
-    dateLabel.style.fontSize = "13px";
-    dateLabel.style.fontWeight = "600";
-    dateLabel.style.color = "var(--text-normal)";
-    dateLabel.style.textTransform = "capitalize";
 
     // Input area
     const inputArea = contentEl.createDiv({ cls: "quick-add-input-area" });
-    inputArea.style.padding = "12px 16px";
 
     const input = inputArea.createEl("input", {
       type: "text",
       placeholder: tRaw("tasks.quickAdd.placeholder"),
     });
-    input.style.width = "100%";
-    input.style.padding = "10px 12px";
-    input.style.fontSize = "14px";
-    input.style.border = "2px solid var(--background-modifier-border)";
-    input.style.borderRadius = "8px";
-    input.style.background = "var(--background-primary)";
-    input.style.color = "var(--text-normal)";
-    input.style.outline = "none";
-    input.style.boxSizing = "border-box";
-    input.style.fontFamily = "inherit";
-    input.style.transition = "border-color 0.15s ease";
 
     // Preview line
     const preview = inputArea.createDiv({ cls: "quick-add-preview" });
-    preview.style.fontSize = "12px";
-    preview.style.padding = "6px 0 0";
-    preview.style.minHeight = "20px";
-    preview.style.display = "none";
-    preview.style.alignItems = "center";
-    preview.style.gap = "6px";
 
     // Bottom bar with hints and shortcuts
     const bottomBar = contentEl.createDiv({ cls: "quick-add-bottom" });
-    bottomBar.style.padding = "8px 16px";
-    bottomBar.style.background = "var(--background-secondary)";
-    bottomBar.style.borderTop = "1px solid var(--background-modifier-border)";
-    bottomBar.style.display = "flex";
-    bottomBar.style.justifyContent = "space-between";
-    bottomBar.style.alignItems = "center";
-    bottomBar.style.fontSize = "11px";
-    bottomBar.style.color = "var(--text-faint)";
 
     // Hints (left side)
     const hints = bottomBar.createDiv({ cls: "quick-add-hints" });
-    hints.style.display = "flex";
-    hints.style.gap = "12px";
 
     const hint1 = hints.createSpan();
     hint1.createEl("kbd", { text: "14:00" });
@@ -190,8 +149,6 @@ export class QuickAddModal extends Modal {
 
     // Shortcuts (right side)
     const shortcuts = bottomBar.createDiv({ cls: "quick-add-shortcuts" });
-    shortcuts.style.display = "flex";
-    shortcuts.style.gap = "8px";
 
     const sc1 = shortcuts.createSpan();
     sc1.createEl("kbd", { text: "Enter" });
@@ -200,17 +157,6 @@ export class QuickAddModal extends Modal {
     const sc2 = shortcuts.createSpan();
     sc2.createEl("kbd", { text: "⇧Enter" });
     sc2.createSpan({ text: ` ${tRaw("common.edit")}` });
-
-    // KBD styling
-    contentEl.querySelectorAll("kbd").forEach((kbd) => {
-      kbd.style.display = "inline-block";
-      kbd.style.padding = "1px 5px";
-      kbd.style.fontSize = "10px";
-      kbd.style.fontFamily = "monospace";
-      kbd.style.background = "var(--background-modifier-border)";
-      kbd.style.borderRadius = "3px";
-      kbd.style.color = "var(--text-muted)";
-    });
 
     // Live preview with color validation
     input.addEventListener("input", () => {
@@ -225,21 +171,7 @@ export class QuickAddModal extends Modal {
       // Time badge
       if (parsed.scheduledTime) {
         const timeBadge = document.createElement("span");
-        timeBadge.style.display = "inline-flex";
-        timeBadge.style.alignItems = "center";
-        timeBadge.style.gap = "3px";
-        timeBadge.style.padding = "2px 6px";
-        timeBadge.style.borderRadius = "4px";
-        timeBadge.style.fontSize = "11px";
-        timeBadge.style.fontWeight = "600";
-
-        if (parsed.timeValid) {
-          timeBadge.style.background = "rgba(61, 214, 140, 0.15)";
-          timeBadge.style.color = "var(--text-success, #3dd68c)";
-        } else {
-          timeBadge.style.background = "rgba(240, 101, 101, 0.15)";
-          timeBadge.style.color = "var(--text-error, #f06565)";
-        }
+        timeBadge.className = `qa-badge ${parsed.timeValid ? "qa-badge-valid" : "qa-badge-invalid"}`;
 
         timeBadge.textContent = `🕐 ${formatTime(parsed.scheduledTime)}`;
         preview.appendChild(timeBadge);
@@ -249,22 +181,11 @@ export class QuickAddModal extends Modal {
       if (parsed.endTime) {
         const arrow = document.createElement("span");
         arrow.textContent = "→";
-        arrow.style.color = "var(--text-muted)";
+        arrow.className = "qa-arrow";
         preview.appendChild(arrow);
 
         const endBadge = document.createElement("span");
-        endBadge.style.padding = "2px 6px";
-        endBadge.style.borderRadius = "4px";
-        endBadge.style.fontSize = "11px";
-        endBadge.style.fontWeight = "600";
-
-        if (parsed.endValid) {
-          endBadge.style.background = "rgba(61, 214, 140, 0.15)";
-          endBadge.style.color = "var(--text-success, #3dd68c)";
-        } else {
-          endBadge.style.background = "rgba(240, 101, 101, 0.15)";
-          endBadge.style.color = "var(--text-error, #f06565)";
-        }
+        endBadge.className = `qa-badge ${parsed.endValid ? "qa-badge-valid" : "qa-badge-invalid"}`;
 
         endBadge.textContent = formatTime(parsed.endTime);
         preview.appendChild(endBadge);
@@ -273,23 +194,17 @@ export class QuickAddModal extends Modal {
       // Priority
       if (parsed.priority) {
         const prioBadge = document.createElement("span");
-        prioBadge.style.padding = "2px 6px";
-        prioBadge.style.borderRadius = "4px";
-        prioBadge.style.fontSize = "11px";
-        prioBadge.style.fontWeight = "600";
+        prioBadge.className = "qa-badge";
 
         if (parsed.priority === "high") {
           prioBadge.textContent = "!! high";
-          prioBadge.style.background = "rgba(240, 101, 101, 0.15)";
-          prioBadge.style.color = "var(--text-error, #f06565)";
+          prioBadge.classList.add("qa-badge-invalid");
         } else if (parsed.priority === "medium") {
           prioBadge.textContent = "~ medium";
-          prioBadge.style.background = "rgba(245, 166, 35, 0.15)";
-          prioBadge.style.color = "var(--text-warning, #f5a623)";
+          prioBadge.classList.add("qa-badge-warning");
         } else {
           prioBadge.textContent = "- low";
-          prioBadge.style.background = "rgba(79, 146, 255, 0.15)";
-          prioBadge.style.color = "var(--text-accent, #4d96ff)";
+          prioBadge.classList.add("qa-badge-info");
         }
 
         preview.appendChild(prioBadge);
@@ -299,8 +214,7 @@ export class QuickAddModal extends Modal {
       if (parsed.title) {
         const titleSpan = document.createElement("span");
         titleSpan.textContent = parsed.title;
-        titleSpan.style.color = "var(--text-normal)";
-        titleSpan.style.marginLeft = "4px";
+        titleSpan.className = "qa-title";
         preview.appendChild(titleSpan);
       }
     });
@@ -316,16 +230,6 @@ export class QuickAddModal extends Modal {
       } else if (e.key === "Escape") {
         this.close();
       }
-    });
-
-    // Focus styles
-    input.addEventListener("focus", () => {
-      input.style.borderColor = "var(--interactive-accent)";
-      input.style.boxShadow = "0 0 0 2px rgba(var(--interactive-accent-rgb, 95, 153, 225), 0.2)";
-    });
-    input.addEventListener("blur", () => {
-      input.style.borderColor = "var(--background-modifier-border)";
-      input.style.boxShadow = "none";
     });
 
     input.focus();

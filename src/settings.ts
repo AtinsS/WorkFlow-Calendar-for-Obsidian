@@ -556,7 +556,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
           .onChange(async (value) => {
             await this.plugin.writeOptions({ userName: value });
           });
-        text.inputEl.style.maxWidth = "250px";
+        text.inputEl.addClass("mcp-input-lg");
       });
   }
 
@@ -609,7 +609,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     });
     const codeBlock = helloInstructions.createEl("pre");
     codeBlock.createEl("code", { text: "```hello\n```" });
-    codeBlock.style.cssText = "background: var(--background-secondary); padding: 8px 12px; border-radius: 6px; font-size: 13px; margin: 8px 0;";
+    codeBlock.addClass("mcp-code-block");
     helloInstructions.createEl("p", {
       text: tRaw("settings.general.helloBlockHint"),
     });
@@ -759,14 +759,14 @@ export class CalendarSettingsTab extends PluginSettingTab {
     const attribution = getWeatherAttribution(provider);
     if (attribution) {
       const attrEl = container.createDiv();
-      attrEl.style.cssText = "font-size:11px;color:var(--text-faint);margin:-8px 0 8px 0;padding:0 16px;";
+      attrEl.addClass("mcp-weather-attr");
       attrEl.textContent = attribution;
     }
 
     // WeatherAPI disclaimer (required by their TOS)
     if (provider === "weatherapi") {
       const disclaimerEl = container.createDiv();
-      disclaimerEl.style.cssText = "font-size:10px;color:var(--text-faint);margin:-4px 0 8px 0;padding:4px 16px;opacity:0.7;line-height:1.4;";
+      disclaimerEl.addClass("mcp-weather-disclaimer");
       disclaimerEl.textContent = tRaw("settings.weather.disclaimer");
     }
 
@@ -787,7 +787,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
               await this.plugin.writeOptions({ weatherApiKey: value });
             });
           text.inputEl.type = "password";
-          text.inputEl.style.maxWidth = "280px";
+          text.inputEl.addClass("mcp-input-xl");
         });
     }
 
@@ -808,7 +808,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.min = "-90";
         text.inputEl.max = "90";
         text.inputEl.step = "0.01";
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
 
     new Setting(container)
@@ -828,19 +828,19 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.min = "-180";
         text.inputEl.max = "180";
         text.inputEl.step = "0.01";
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
 
     // Test & confirm buttons
     const btnRow = container.createDiv();
-    btnRow.style.cssText = "display:flex;gap:8px;margin:8px 0;";
+    btnRow.addClass("mcp-btn-row");
 
     const testBtn = btnRow.createEl("button", { text: tRaw("settings.weather.checkConnection") });
-    testBtn.style.cssText = "padding:4px 12px;border-radius:6px;cursor:pointer;font-size:13px;";
+    testBtn.addClass("mcp-btn");
     testBtn.addEventListener("click", async () => {
       testBtn.disabled = true;
       testBtn.textContent = tRaw("settings.weather.checking");
-      testBtn.style.color = "";
+      testBtn.removeClass("mcp-color-success", "mcp-color-danger");
       const current = this.plugin.options;
       const lat = current.weatherLatitude ?? 55.75;
       const lon = current.weatherLongitude ?? 37.62;
@@ -851,24 +851,24 @@ export class CalendarSettingsTab extends PluginSettingTab {
         const days = await fetchWeekWeather(lat, lon, today, today, prov, key, { skipCache: true, throwOnError: true });
         if (days.length > 0) {
           testBtn.textContent = `✓ ${days[0].icon} ${days[0].tempMin}..${days[0].tempMax}° ${days[0].label}`;
-          testBtn.style.color = "var(--color-green)";
+          testBtn.addClass("mcp-color-success");
         } else {
           testBtn.textContent = tRaw("settings.weather.noData");
-          testBtn.style.color = "var(--color-red)";
+          testBtn.addClass("mcp-color-danger");
         }
       } catch (e: any) {
         testBtn.textContent = `✗ ${e?.message || tRaw("settings.weather.connectionError")}`;
-        testBtn.style.color = "var(--color-red)";
+        testBtn.addClass("mcp-color-danger");
       }
       setTimeout(() => {
         testBtn.disabled = false;
-        testBtn.style.color = "";
+        testBtn.removeClass("mcp-color-success", "mcp-color-danger");
         testBtn.textContent = tRaw("settings.weather.checkConnection");
       }, 5000);
     });
 
     const confirmBtn = btnRow.createEl("button", { text: tRaw("settings.weather.applyProvider") });
-    confirmBtn.style.cssText = "padding:4px 12px;border-radius:6px;cursor:pointer;font-size:13px;background:var(--interactive-accent);color:var(--text-on-accent);border:none;";
+    confirmBtn.addClass("mcp-btn", "mcp-btn-primary");
     confirmBtn.addEventListener("click", async () => {
       await this.plugin.writeOptions({ weatherProvider: provider });
       confirmBtn.textContent = tRaw("settings.weather.applied");
@@ -881,50 +881,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
 
   private addWeatherPreviews(container: HTMLElement): void {
     const wrapper = container.createDiv({ cls: "weather-previews" });
-    wrapper.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;";
-
-    const styles = document.createElement("style");
-    styles.textContent = `
-      .wp-card {
-        position:relative;overflow:hidden;border-radius:10px;
-        width:110px;height:100px;display:flex;flex-direction:column;
-        align-items:center;justify-content:center;gap:4px;
-        border:1px solid var(--background-modifier-border);
-      }
-      .wp-label { font-size:10px;color:var(--text-muted);font-weight:600;z-index:1; }
-      .wp-emoji { font-size:28px;z-index:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3)); }
-
-      /* Sun */
-      .wp-sun { background:linear-gradient(180deg,rgba(255,183,77,0.08) 0%,transparent 100%); }
-      .wp-sun-obj { position:absolute;top:6px;right:6px;width:50px;height:50px;animation:wp-sun-p 3s ease-in-out infinite; }
-      .wp-sun-core { position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:radial-gradient(circle,rgba(255,214,0,0.3) 0%,rgba(255,183,77,0.1) 60%,transparent 100%);box-shadow:0 0 20px rgba(255,214,0,0.15); }
-      .wp-sun-ray { position:absolute;top:50%;left:50%;width:1px;height:18px;background:linear-gradient(180deg,rgba(255,214,0,0.2),transparent);transform-origin:center top;border-radius:1px; }
-      @keyframes wp-sun-p { 0%,100%{transform:scale(1);opacity:.7}50%{transform:scale(1.08);opacity:1} }
-
-      /* Clouds */
-      .wp-clouds { background:linear-gradient(180deg,rgba(100,130,180,0.06) 0%,transparent 100%); }
-      .wp-cloud { position:absolute;left:-80px;width:80px;height:28px;background:radial-gradient(ellipse at center,rgba(200,210,220,0.25) 0%,transparent 70%);border-radius:50%;animation:wp-cd 12s linear infinite; }
-      @keyframes wp-cd { 0%{transform:translateX(-80px)}100%{transform:translateX(200px)} }
-
-      /* Gloom */
-      .wp-gloom { background:linear-gradient(180deg,rgba(40,40,55,0.15) 0%,rgba(50,50,60,0.08) 100%); }
-
-      /* Fog */
-      .wp-fog { background:linear-gradient(180deg,rgba(160,170,180,0.08) 0%,transparent 100%); }
-      .wp-fog-layer { position:absolute;left:-80px;width:80px;height:30px;background:radial-gradient(ellipse at center,rgba(180,190,200,0.3) 0%,rgba(180,190,200,0.08) 50%,transparent 80%);border-radius:50%;animation:wp-fog-d linear infinite;filter:blur(4px); }
-      @keyframes wp-fog-d { 0%{transform:translateX(-80px)}100%{transform:translateX(200px)} }
-
-      /* Rain */
-      .wp-rain { background:linear-gradient(180deg,rgba(60,80,120,0.08) 0%,transparent 100%); }
-      .wp-drop { position:absolute;top:-10px;width:1.5px;height:10px;background:linear-gradient(180deg,transparent,rgba(120,180,255,0.35));border-radius:0 0 2px 2px;animation:wp-rf linear infinite; }
-      @keyframes wp-rf { 0%{transform:translateY(-10px);opacity:0}10%{opacity:1}90%{opacity:1}100%{transform:translateY(120px);opacity:0} }
-
-      /* Storm */
-      .wp-storm { background:linear-gradient(180deg,rgba(30,30,50,0.12) 0%,transparent 100%);animation:wp-sf 3s ease-in-out infinite; }
-      .wp-drop.h { width:2px;height:14px;background:linear-gradient(180deg,transparent,rgba(120,180,255,0.5)); }
-      @keyframes wp-sf { 0%,93%,100%{opacity:1}94%{opacity:.8} }
-    `;
-    wrapper.appendChild(styles);
 
     const cards = [
       { cls: "wp-sun", emoji: "☀️", label: tRaw("weather.preview.sunny"), code: "0,1", anim: "sun" },
@@ -1355,7 +1311,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.type = "number";
         text.inputEl.min = "10";
         text.inputEl.max = "10000";
-        text.inputEl.style.maxWidth = "100px";
+        text.inputEl.addClass("mcp-input-sm");
       });
 
     new Setting(container)
@@ -1376,18 +1332,24 @@ export class CalendarSettingsTab extends PluginSettingTab {
         text.inputEl.type = "number";
         text.inputEl.min = "10";
         text.inputEl.max = "10000";
-        text.inputEl.style.maxWidth = "100px";
+        text.inputEl.addClass("mcp-input-sm");
       });
 
     // Информация о формате
     const formatInfo = document.createElement("div");
-    formatInfo.addClass("setting-item-description");
-    formatInfo.style.marginTop = "8px";
-    formatInfo.innerHTML = `
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.general.formatNote")}</b>
-      </p>
-      <pre style="background: var(--background-secondary); padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto; margin: 4px 0;"><code>---
+    formatInfo.addClass("setting-item-description", "mcp-format-info");
+
+    const p1 = document.createElement("p");
+    p1.addClass("mcp-format-label");
+    const b1 = document.createElement("b");
+    b1.textContent = tRaw("settings.general.formatNote");
+    p1.appendChild(b1);
+    formatInfo.appendChild(p1);
+
+    const pre = document.createElement("pre");
+    pre.addClass("mcp-format-code");
+    const code = document.createElement("code");
+    code.textContent = `---
 task_id: abc123
 title: ${tRaw("settings.general.exampleTaskTitle")}
 status: todo
@@ -1395,17 +1357,31 @@ date: day-2024-10-25
 priority: medium
 ---
 
-- [ ] ${tRaw("settings.general.exampleTaskTitle")} 📅 2024-10-25 🛫 14:30 ⏫</code></pre>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.general.formatStatuses")}</b>
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.general.formatEmoji")}</b>
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.general.formatCleanup")}</b>
-      </p>
-    `;
+- [ ] ${tRaw("settings.general.exampleTaskTitle")} 📅 2024-10-25 🛫 14:30 ⏫`;
+    pre.appendChild(code);
+    formatInfo.appendChild(pre);
+
+    const p2 = document.createElement("p");
+    p2.addClass("mcp-format-label");
+    const b2 = document.createElement("b");
+    b2.textContent = tRaw("settings.general.formatStatuses");
+    p2.appendChild(b2);
+    formatInfo.appendChild(p2);
+
+    const p3 = document.createElement("p");
+    p3.addClass("mcp-format-label");
+    const b3 = document.createElement("b");
+    b3.textContent = tRaw("settings.general.formatEmoji");
+    p3.appendChild(b3);
+    formatInfo.appendChild(p3);
+
+    const p4 = document.createElement("p");
+    p4.addClass("mcp-format-label");
+    const b4 = document.createElement("b");
+    b4.textContent = tRaw("settings.general.formatCleanup");
+    p4.appendChild(b4);
+    formatInfo.appendChild(p4);
+
     container.appendChild(formatInfo);
   }
 
@@ -1514,7 +1490,7 @@ priority: medium
             await this.plugin.writeOptions({ ntfyTopic: value });
             await this.syncNotificationSettingsToVault({ ntfyTopic: value });
           });
-        text.inputEl.style.maxWidth = "250px";
+        text.inputEl.addClass("mcp-input-lg");
       });
 
     new Setting(container)
@@ -1577,20 +1553,28 @@ priority: medium
     });
 
     const ghDesc = document.createElement("div");
-    ghDesc.addClass("setting-item-description");
-    ghDesc.style.marginBottom = "8px";
-    ghDesc.innerHTML = `
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        ${tRaw("settings.notifications.githubActionsDesc")}
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.notifications.githubActionsRequirements")}</b><br>
-        1. ${tRaw("settings.notifications.githubActionsReq1")}<br>
-        2. ${tRaw("settings.notifications.githubActionsReq2")}<br>
-        3. ${tRaw("settings.notifications.githubActionsReq3")}<br>
-        4. ${tRaw("settings.notifications.githubActionsReq4")}
-      </p>
-    `;
+    ghDesc.addClass("setting-item-description", "mcp-format-info");
+
+    const ghP1 = document.createElement("p");
+    ghP1.addClass("mcp-format-label");
+    ghP1.textContent = tRaw("settings.notifications.githubActionsDesc");
+    ghDesc.appendChild(ghP1);
+
+    const ghP2 = document.createElement("p");
+    ghP2.addClass("mcp-format-label");
+    const ghB = document.createElement("b");
+    ghB.textContent = tRaw("settings.notifications.githubActionsRequirements");
+    ghP2.appendChild(ghB);
+    ghP2.appendChild(document.createElement("br"));
+    ghP2.appendChild(document.createTextNode(`1. ${tRaw("settings.notifications.githubActionsReq1")}`));
+    ghP2.appendChild(document.createElement("br"));
+    ghP2.appendChild(document.createTextNode(`2. ${tRaw("settings.notifications.githubActionsReq2")}`));
+    ghP2.appendChild(document.createElement("br"));
+    ghP2.appendChild(document.createTextNode(`3. ${tRaw("settings.notifications.githubActionsReq3")}`));
+    ghP2.appendChild(document.createElement("br"));
+    ghP2.appendChild(document.createTextNode(`4. ${tRaw("settings.notifications.githubActionsReq4")}`));
+    ghDesc.appendChild(ghP2);
+
     container.appendChild(ghDesc);
 
     new Setting(container)
@@ -1818,7 +1802,7 @@ priority: medium
           });
         text.inputEl.type = "number";
         text.inputEl.min = "0";
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
   }
 
@@ -1828,21 +1812,28 @@ priority: medium
     });
 
     const desc = document.createElement("div");
-    desc.addClass("setting-item-description");
-    desc.style.marginBottom = "8px";
-    desc.innerHTML = `
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        ${tRaw("settings.sync.gistDesc1")}
-        ${tRaw("settings.sync.gistDesc2")}
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.sync.gistHowTo")}</b><br>
-        1. GitHub → Settings → Credentials<br>
-        2. Personal access tokens → Tokens (classic)<br>
-        3. ${tRaw("settings.sync.gistHowToStep1")}<br>
-        4. ${tRaw("settings.sync.gistHowToStep2")}
-      </p>
-    `;
+    desc.addClass("setting-item-description", "mcp-format-info");
+
+    const gistP1 = document.createElement("p");
+    gistP1.addClass("mcp-format-label");
+    gistP1.textContent = `${tRaw("settings.sync.gistDesc1")} ${tRaw("settings.sync.gistDesc2")}`;
+    desc.appendChild(gistP1);
+
+    const gistP2 = document.createElement("p");
+    gistP2.addClass("mcp-format-label");
+    const gistB = document.createElement("b");
+    gistB.textContent = tRaw("settings.sync.gistHowTo");
+    gistP2.appendChild(gistB);
+    gistP2.appendChild(document.createElement("br"));
+    gistP2.appendChild(document.createTextNode("1. GitHub → Settings → Credentials"));
+    gistP2.appendChild(document.createElement("br"));
+    gistP2.appendChild(document.createTextNode("2. Personal access tokens → Tokens (classic)"));
+    gistP2.appendChild(document.createElement("br"));
+    gistP2.appendChild(document.createTextNode(`3. ${tRaw("settings.sync.gistHowToStep1")}`));
+    gistP2.appendChild(document.createElement("br"));
+    gistP2.appendChild(document.createTextNode(`4. ${tRaw("settings.sync.gistHowToStep2")}`));
+    desc.appendChild(gistP2);
+
     container.appendChild(desc);
 
     new Setting(container)
@@ -1856,7 +1847,7 @@ priority: medium
             await this.plugin.writeOptions({ githubToken: value });
           });
         text.inputEl.type = "password";
-        text.inputEl.style.maxWidth = "300px";
+        text.inputEl.addClass("mcp-input-xl");
       });
 
     new Setting(container)
@@ -1939,7 +1930,7 @@ priority: medium
         .setDesc(tRaw("settings.sync.gistCalendarUrlDesc"))
         .addText((text) => {
           text.setValue(this.plugin.options.gistRawUrl || "").setDisabled(true);
-          text.inputEl.style.maxWidth = "500px";
+          text.inputEl.addClass("mcp-input-full");
         });
     }
   }
@@ -1948,20 +1939,34 @@ priority: medium
     container.createEl("h3", { text: tRaw("settings.sync.sectionSingularity") });
 
     const desc = document.createElement("div");
-    desc.addClass("setting-item-description");
-    desc.style.marginBottom = "8px";
-    desc.innerHTML = `
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        ${tRaw("settings.sync.singularityDesc")}
-      </p>
-      <p style="margin: 4px 0; font-size: 12px; color: var(--text-faint);">
-        <b>${tRaw("settings.sync.singularityHowTo")}</b><br>
-        1. <a href="https://me.singularity-app.com" target="_blank" rel="noopener">${tRaw("settings.general.singularityDashboard")}</a><br>
-        2. ${tRaw("settings.sync.singularityHowToStep1")}<br>
-        3. ${tRaw("settings.sync.singularityHowToStep2")}<br>
-        4. ${tRaw("settings.sync.singularityHowToStep3")}
-      </p>
-    `;
+    desc.addClass("setting-item-description", "mcp-format-info");
+
+    const sigP1 = document.createElement("p");
+    sigP1.addClass("mcp-format-label");
+    sigP1.textContent = tRaw("settings.sync.singularityDesc");
+    desc.appendChild(sigP1);
+
+    const sigP2 = document.createElement("p");
+    sigP2.addClass("mcp-format-label");
+    const sigB = document.createElement("b");
+    sigB.textContent = tRaw("settings.sync.singularityHowTo");
+    sigP2.appendChild(sigB);
+    sigP2.appendChild(document.createElement("br"));
+    sigP2.appendChild(document.createTextNode("1. "));
+    const sigLink = document.createElement("a");
+    sigLink.href = "https://me.singularity-app.com";
+    sigLink.target = "_blank";
+    sigLink.rel = "noopener";
+    sigLink.textContent = tRaw("settings.general.singularityDashboard");
+    sigP2.appendChild(sigLink);
+    sigP2.appendChild(document.createElement("br"));
+    sigP2.appendChild(document.createTextNode(`2. ${tRaw("settings.sync.singularityHowToStep1")}`));
+    sigP2.appendChild(document.createElement("br"));
+    sigP2.appendChild(document.createTextNode(`3. ${tRaw("settings.sync.singularityHowToStep2")}`));
+    sigP2.appendChild(document.createElement("br"));
+    sigP2.appendChild(document.createTextNode(`4. ${tRaw("settings.sync.singularityHowToStep3")}`));
+    desc.appendChild(sigP2);
+
     container.appendChild(desc);
 
     // Token field
@@ -1976,7 +1981,7 @@ priority: medium
             await this.plugin.writeOptions({ singularityToken: value });
           });
         text.inputEl.type = "password";
-        text.inputEl.style.maxWidth = "300px";
+        text.inputEl.addClass("mcp-input-xl");
       })
       .addButton((btn) =>
         btn
@@ -2061,7 +2066,7 @@ priority: medium
           .onChange(async (value) => {
             await this.plugin.writeOptions({ singularitySyncExcludeTags: value });
           });
-        text.inputEl.style.maxWidth = "300px";
+        text.inputEl.addClass("mcp-input-xl");
       });
 
     // Last sync info
@@ -2213,7 +2218,7 @@ priority: medium
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnColor: value });
           });
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
 
     new Setting(container)
@@ -2226,7 +2231,7 @@ priority: medium
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnBg: value });
           });
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
 
     new Setting(container)
@@ -2239,7 +2244,7 @@ priority: medium
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnRadius: value });
           });
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
 
     new Setting(container)
@@ -2252,7 +2257,7 @@ priority: medium
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navBtnSize: value });
           });
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
 
     new Setting(container)
@@ -2265,7 +2270,7 @@ priority: medium
           .onChange(async (value) => {
             await this.plugin.writeOptions({ navAccentColor: value });
           });
-        text.inputEl.style.maxWidth = "120px";
+        text.inputEl.addClass("mcp-input-md");
       });
   }
 }

@@ -547,7 +547,20 @@
           if (!weather) return;
           const tooltip = document.createElement("div");
           tooltip.className = "sch-weather-tooltip";
-          tooltip.innerHTML = `<span>${weather.icon}</span> <span>${weather.tempMin}°..${weather.tempMax}°</span> ${weather.label ? `<span style="opacity:0.7">${weather.label}</span>` : ""}`;
+          const iconSpan = document.createElement("span");
+          iconSpan.textContent = weather.icon;
+          tooltip.appendChild(iconSpan);
+          tooltip.appendChild(document.createTextNode(" "));
+          const tempSpan = document.createElement("span");
+          tempSpan.textContent = `${weather.tempMin}°..${weather.tempMax}°`;
+          tooltip.appendChild(tempSpan);
+          if (weather.label) {
+            tooltip.appendChild(document.createTextNode(" "));
+            const labelSpan = document.createElement("span");
+            labelSpan.style.opacity = "0.7";
+            labelSpan.textContent = weather.label;
+            tooltip.appendChild(labelSpan);
+          }
           document.body.appendChild(tooltip);
           const rect = el.getBoundingClientRect();
           tooltip.style.left = `${rect.left + rect.width / 2}px`;
@@ -873,13 +886,24 @@
           tooltip.className = "sch-checklist-tooltip";
 
           const done = checklistItems.filter((c) => c.checked).length;
-          let html = `<div class="sch-checklist-tooltip-title">${tRaw("schedule.checklist")} (${done}/${checklistItems.length}):</div>`;
+          const titleDiv = document.createElement("div");
+          titleDiv.className = "sch-checklist-tooltip-title";
+          titleDiv.textContent = `${tRaw("schedule.checklist")} (${done}/${checklistItems.length}):`;
+          tooltip.appendChild(titleDiv);
+
           for (const item of checklistItems) {
-            const icon = item.checked ? "✅" : "⬜";
-            const strikeStyle = item.checked ? ' style="text-decoration:line-through;opacity:0.6"' : "";
-            html += `<div class="sch-checklist-tooltip-item"${strikeStyle}><span>${icon}</span> ${item.title}</div>`;
+            const itemDiv = document.createElement("div");
+            itemDiv.className = "sch-checklist-tooltip-item";
+            if (item.checked) {
+              itemDiv.style.textDecoration = "line-through";
+              itemDiv.style.opacity = "0.6";
+            }
+            const iconSpan = document.createElement("span");
+            iconSpan.textContent = item.checked ? "✅" : "⬜";
+            itemDiv.appendChild(iconSpan);
+            itemDiv.appendChild(document.createTextNode(` ${item.title}`));
+            tooltip.appendChild(itemDiv);
           }
-          tooltip.innerHTML = html;
 
           document.body.appendChild(tooltip);
           const rect = badge.getBoundingClientRect();

@@ -45,14 +45,27 @@
     const tooltip = document.createElement("div");
     tooltip.className = "dtw-tooltip";
 
-    let html = `<div class="dtw-tooltip-title">${title}</div>`;
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "dtw-tooltip-title";
+    titleDiv.textContent = title;
+    tooltip.appendChild(titleDiv);
+
     for (const r of rows) {
       const statusClass = r.status === "done" ? " done" : r.status === "progress" ? " progress" : "";
       const nameClass = r.status === "done" ? " done-name" : "";
       const icon = r.status === "done" ? "✓" : r.status === "progress" ? "▶" : "○";
-      html += `<div class="dtw-tooltip-row"><span class="dtw-tooltip-status${statusClass}">${icon}</span><span class="dtw-tooltip-name${nameClass}">${r.name}</span></div>`;
+      const rowDiv = document.createElement("div");
+      rowDiv.className = `dtw-tooltip-row${statusClass}`;
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `dtw-tooltip-status${statusClass}`;
+      statusSpan.textContent = icon;
+      rowDiv.appendChild(statusSpan);
+      const nameSpan = document.createElement("span");
+      nameSpan.className = `dtw-tooltip-name${nameClass}`;
+      nameSpan.textContent = r.name;
+      rowDiv.appendChild(nameSpan);
+      tooltip.appendChild(rowDiv);
     }
-    tooltip.innerHTML = html;
 
     document.body.appendChild(tooltip);
     const tooltipWidth = tooltip.offsetWidth || 260;
@@ -84,18 +97,33 @@
     const tooltip = document.createElement("div");
     tooltip.className = "dtw-tooltip dtw-habit-tooltip";
 
-    let html = `<div class="dtw-tooltip-title">${$t("dtw.habitsToday")}</div>`;
+    const titleDiv = document.createElement("div");
+    titleDiv.className = "dtw-tooltip-title";
+    titleDiv.textContent = $t("dtw.habitsToday");
+    tooltip.appendChild(titleDiv);
+
     for (const h of todayHabitList) {
       const statusClass = h.completed ? " done" : h.partial ? " progress" : "";
       const nameClass = h.completed ? " done-name" : "";
       const icon = h.completed ? "✓" : h.partial ? "◆" : "○";
-      html += `<div class="dtw-tooltip-row dtw-habit-row" data-habit-id="${h.id}" data-target="${h.targetCount}">
-        <span class="dtw-tooltip-status${statusClass}">${icon}</span>
-        <span class="dtw-habit-item-icon">${h.icon}</span>
-        <span class="dtw-tooltip-name${nameClass}">${h.title}</span>
-      </div>`;
+      const rowDiv = document.createElement("div");
+      rowDiv.className = "dtw-tooltip-row dtw-habit-row";
+      rowDiv.setAttribute("data-habit-id", h.id);
+      rowDiv.setAttribute("data-target", String(h.targetCount));
+      const statusSpan = document.createElement("span");
+      statusSpan.className = `dtw-tooltip-status${statusClass}`;
+      statusSpan.textContent = icon;
+      rowDiv.appendChild(statusSpan);
+      const habitIconSpan = document.createElement("span");
+      habitIconSpan.className = "dtw-habit-item-icon";
+      habitIconSpan.textContent = h.icon;
+      rowDiv.appendChild(habitIconSpan);
+      const nameSpan = document.createElement("span");
+      nameSpan.className = `dtw-tooltip-name${nameClass}`;
+      nameSpan.textContent = h.title;
+      rowDiv.appendChild(nameSpan);
+      tooltip.appendChild(rowDiv);
     }
-    tooltip.innerHTML = html;
 
     // Add click handlers
     tooltip.querySelectorAll(".dtw-habit-row").forEach((row) => {
