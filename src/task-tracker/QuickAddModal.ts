@@ -162,10 +162,10 @@ export class QuickAddModal extends Modal {
     input.addEventListener("input", () => {
       const parsed = parseQuickInput(input.value);
       if (!input.value.trim()) {
-        preview.style.display = "none";
+        preview.addClass("mcp-hidden");
         return;
       }
-      preview.style.display = "flex";
+      preview.removeClass("mcp-hidden");
       preview.innerHTML = "";
 
       // Time badge

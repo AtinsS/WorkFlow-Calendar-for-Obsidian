@@ -255,11 +255,15 @@ export class TaskModal extends CustomModal {
     advToggle.createEl("span", { text: "▾", cls: "tm-adv-chevron" });
     advToggle.createEl("span", { text: tRaw("tasks.modal.extra"), cls: "tm-adv-label" });
     this.advancedBody = advWrap.createDiv({ cls: "tm-adv-body" });
-    this.advancedBody.style.display = "none";
+    this.advancedBody.addClass("mcp-hidden");
 
     advToggle.addEventListener("click", () => {
-      const show = this.advancedBody!.style.display === "none";
-      this.advancedBody!.style.display = show ? "" : "none";
+      const show = this.advancedBody!.classList.contains("mcp-hidden");
+      if (show) {
+        this.advancedBody!.removeClass("mcp-hidden");
+      } else {
+        this.advancedBody!.addClass("mcp-hidden");
+      }
       advToggle.querySelector(".tm-adv-chevron")!.textContent = show ? "▾" : "▸";
     });
 

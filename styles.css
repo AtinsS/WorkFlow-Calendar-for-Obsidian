@@ -2659,6 +2659,11 @@ svg.dot.filled {
   border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+/* Utility: hidden state for dynamic display toggles */
+.mcp-hidden {
+  display: none !important;
+}
+
 .tm-adv-row {
   display: flex;
   align-items: center;

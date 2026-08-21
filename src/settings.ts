@@ -331,10 +331,9 @@ export class CalendarSettingsTab extends PluginSettingTab {
     const coffeeBanner = this.containerEl.createDiv({
       cls: "settings-coffee-banner",
     });
-    const coffeeTitle = coffeeBanner.createEl("h3", {
-      cls: "settings-coffee-title",
-    });
-    coffeeTitle.textContent = tRaw("settings.general.supportTitle");
+    new Setting(coffeeBanner)
+      .setName(tRaw("settings.general.supportTitle"))
+      .setHeading();
     const coffeeDesc = coffeeBanner.createEl("p", {
       cls: "settings-coffee-desc",
     });
@@ -348,14 +347,13 @@ export class CalendarSettingsTab extends PluginSettingTab {
     coffeeBtn.setAttribute("rel", "noopener");
 
     if (!appHasDailyNotesPluginLoaded()) {
-      this.containerEl.createDiv("settings-banner", (banner) => {
-        banner.createEl("h3", {
-          text: tRaw("settings.general.dailyNotesWarning"),
-        });
-        banner.createEl("p", {
-          cls: "setting-item-description",
-          text: tRaw("settings.general.dailyNotesWarningDesc"),
-        });
+      const banner = this.containerEl.createDiv({ cls: "settings-banner" });
+      new Setting(banner)
+        .setName(tRaw("settings.general.dailyNotesWarning"))
+        .setHeading();
+      banner.createEl("p", {
+        cls: "setting-item-description",
+        text: tRaw("settings.general.dailyNotesWarningDesc"),
       });
     }
 

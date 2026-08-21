@@ -76,10 +76,10 @@ function renderIconPicker(
     recentGrid.empty();
     const recent = getRecentIcons(app);
     if (recent.length === 0) {
-      recentSection.style.display = "none";
+      recentSection.addClass("mcp-hidden");
       return;
     }
-    recentSection.style.display = "";
+    recentSection.removeClass("mcp-hidden");
     recent.forEach((emoji) => {
       const btn = recentGrid.createDiv("pm-icon-btn");
       btn.textContent = emoji;
