@@ -145,7 +145,7 @@ export function toggleHabitCompletion(
   const existing = logsByHabitDate.get(key);
 
   if (targetCount <= 1) {
-    // SingularityApp model: 3-state cycle — 0 → 100% → 50% → 0
+    // 3-state cycle: 0 → 100% → 50% → 0
     if (!existing) {
       // 0 → 100%
       const log: IHabitLog = {

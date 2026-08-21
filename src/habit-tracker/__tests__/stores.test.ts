@@ -100,7 +100,7 @@ describe("removeHabit", () => {
 });
 
 describe("toggleHabitCompletion", () => {
-  it("should create log entry at 100% on first toggle (SingularityApp model)", () => {
+  it("should create log entry at 100% on first toggle (3-state cycle model)", () => {
     const habit = addHabit({
       title: "Exercise",
       icon: "\uD83C\uDFC3",

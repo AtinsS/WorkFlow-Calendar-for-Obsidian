@@ -1,5 +1,4 @@
-import { App, PluginSettingTab, Setting, TFolder, TextComponent, requestUrl, Notice } from "obsidian";
-import { generateId } from "./utils/id";
+import { App, PluginSettingTab, Setting, TFolder, Notice } from "obsidian";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 import type { ILocaleOverride } from "obsidian-calendar-ui";
 import { get } from "svelte/store";
@@ -9,7 +8,6 @@ import { FolderSuggestModal } from "./modals/FolderSuggestModal";
 import {
   clearNotificationHistory,
   loadNotificationDiagnostics,
-  recordNotificationEvent,
 } from "./services/notificationTelemetry";
 
 import type CalendarPlugin from "./main";
@@ -74,16 +72,9 @@ export interface ISettings {
   ntfyEnabled: boolean;
   ntfyTopic: string;
 
-  // GitHub Actions notification settings
-  overdueCheckEnabled: boolean;
-
   // Work task settings
   defaultPaymentType: "hour" | "day";
   defaultRate: number;
-
-  // GitHub Actions test settings
-  vaultRepo?: string;
-  workflowToken?: string;
 
   // GitHub Gist sync settings
   githubToken?: string;
@@ -134,16 +125,6 @@ export interface ISettings {
   // Status bar
   showStatusBar: boolean;
   dtwShowOnAllPages: boolean;
-
-  // SingularityApp sync settings
-  singularityToken?: string;
-  singularityAutoSync?: boolean;
-  singularitySyncInterval?: number; // minutes, default 5
-  singularitySyncDirection?: "both" | "push" | "pull";
-  singularitySyncDryRun?: boolean; // log actions without making API calls
-  singularitySyncExcludeTags?: string; // comma-separated tags to exclude from sync
-  singularityLastSync?: number; // epoch ms
-  singularityProjectMap?: Record<string, string>; // localProjectId -> singularityProjectId
 
   // Nav panel button style
   navBtnColor?: string;
@@ -202,8 +183,6 @@ export const defaultSettings = Object.freeze({
   ntfyEnabled: false,
   ntfyTopic: "",
 
-  overdueCheckEnabled: false,
-
   defaultPaymentType: "hour" as "hour" | "day",
   defaultRate: 0,
 
@@ -243,13 +222,6 @@ export const defaultSettings = Object.freeze({
 
   showStatusBar: true,
   dtwShowOnAllPages: false,
-
-  singularityAutoSync: false,
-  singularitySyncInterval: 5,
-  singularitySyncDirection: "both" as "both" | "push" | "pull",
-  singularitySyncDryRun: false,
-  singularitySyncExcludeTags: "",
-  singularityProjectMap: {},
 
   navBtnColor: "",
   navBtnBg: "",
@@ -345,7 +317,7 @@ export function appHasPeriodicNotesPluginLoaded(): boolean {
 export class CalendarSettingsTab extends PluginSettingTab {
   private plugin: CalendarPlugin;
   private activeTab = "general";
-  private ntfyTopicText: TextComponent | null = null;
+  private ntfyTopicText: any = null;
 
   constructor(app: App, plugin: CalendarPlugin) {
     super(app, plugin);
@@ -521,7 +493,6 @@ export class CalendarSettingsTab extends PluginSettingTab {
     new Setting(sync).setName(tRaw("settings.sync.sectionTaskNote")).setHeading();
     this.addTaskNoteSyncSettings(sync);
     this.addGitHubGistSettings(sync);
-    this.addSingularitySettings(sync);
 
     // Notifications tab
     const notif = tabContainers["notifications"];
@@ -888,6 +859,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
       { cls: "wp-gloom", emoji: "☁️", label: tRaw("weather.preview.overcast"), code: "3", anim: "gloom" },
       { cls: "wp-fog", emoji: "🌫️", label: tRaw("weather.preview.fog"), code: "45,48", anim: "fog" },
       { cls: "wp-rain", emoji: "🌧️", label: tRaw("weather.preview.rain"), code: "51–67", anim: "rain" },
+      { cls: "wp-snow", emoji: "🌨️", label: tRaw("weather.preview.snow"), code: "71–77,85", anim: "snow" },
       { cls: "wp-storm", emoji: "⛈️", label: tRaw("weather.preview.storm"), code: "95–99", anim: "storm" },
     ];
 
@@ -936,6 +908,17 @@ export class CalendarSettingsTab extends PluginSettingTab {
           d.style.left = `${Math.random() * 100}%`;
           d.style.animationDelay = `${Math.random() * 1.5}s`;
           d.style.animationDuration = `${0.3 + Math.random() * 0.3}s`;
+        }
+      }
+      if (c.anim === "snow") {
+        for (let i = 0; i < 25; i++) {
+          const s = card.createDiv({ cls: "wp-snowflake" });
+          s.textContent = "*";
+          s.style.left = `${Math.random() * 100}%`;
+          s.style.animationDelay = `${Math.random() * 4}s`;
+          s.style.animationDuration = `${2 + Math.random() * 3}s`;
+          s.style.fontSize = `${8 + Math.random() * 8}px`;
+          s.style.opacity = String(0.4 + Math.random() * 0.4);
         }
       }
 
@@ -1385,394 +1368,6 @@ priority: medium
     container.appendChild(formatInfo);
   }
 
-  addNotificationSettings(container: HTMLElement): void {
-    new Setting(container)
-      .setName(tRaw("settings.notifications.enabled"))
-      .setDesc(tRaw("settings.notifications.enabledDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.notificationsEnabled);
-        toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ notificationsEnabled: value });
-          this.plugin.notificationService?.restart();
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.reminderMinutes"))
-      .setDesc(
-        tRaw("settings.notifications.reminderMinutesDesc"),
-      )
-      .addDropdown((dropdown) => {
-        dropdown.addOption("1", tRaw("settings.sync.intervalMinutes", { n: 1 }));
-        dropdown.addOption("5", tRaw("settings.sync.intervalMinutes", { n: 5 }));
-        dropdown.addOption("10", tRaw("settings.sync.intervalMinutes", { n: 10 }));
-        dropdown.addOption("15", tRaw("settings.sync.intervalMinutes", { n: 15 }));
-        dropdown.addOption("30", tRaw("settings.sync.intervalMinutes", { n: 30 }));
-        dropdown.addOption("60", tRaw("settings.sync.intervalHour"));
-        dropdown.setValue(String(this.plugin.options.reminderMinutesBefore));
-        dropdown.onChange(async (value) => {
-          this.plugin.writeOptions({ reminderMinutesBefore: parseInt(value) });
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.typesTitle"))
-      .setDesc(tRaw("settings.notifications.typesDesc"));
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.notifyReminders"))
-      .setDesc(tRaw("settings.notifications.notifyRemindersDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.notifyReminders);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ notifyReminders: value });
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.notifyOverdue"))
-      .setDesc(tRaw("settings.notifications.notifyOverdueDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.notifyOverdue);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ notifyOverdue: value });
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.notifyEstimateExceeded"))
-      .setDesc(tRaw("settings.notifications.notifyEstimateExceededDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.notifyEstimateExceeded);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ notifyEstimateExceeded: value });
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.notifyDeadlines"))
-      .setDesc(tRaw("settings.notifications.notifyDeadlinesDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.notifyDeadlines);
-        toggle.onChange(async (value) => {
-          this.plugin.writeOptions({ notifyDeadlines: value });
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.ntfyEnabled"))
-      .setDesc(tRaw("settings.notifications.ntfyEnabledDesc"))
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.ntfyEnabled);
-        toggle.onChange(async (value) => {
-          // Auto-generate UUID topic on first enable if empty
-          if (value && !this.plugin.options.ntfyTopic) {
-            const uuid = generateId();
-            await this.plugin.writeOptions({ ntfyEnabled: value, ntfyTopic: uuid });
-            this.ntfyTopicText?.setValue(uuid);
-          } else {
-            await this.plugin.writeOptions({ ntfyEnabled: value });
-          }
-          this.syncNotificationSettingsToVault();
-          this.plugin.notificationService?.restart();
-        });
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.ntfyTopic"))
-      .setDesc(tRaw("settings.notifications.ntfyTopicDesc"))
-      .addText((text) => {
-        this.ntfyTopicText = text;
-        text
-          .setPlaceholder("a7f9b2c4-8e1d-4f3a-9c5b-2d6e8f0a1b3c")
-          .setValue(this.plugin.options.ntfyTopic)
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ ntfyTopic: value });
-            await this.syncNotificationSettingsToVault({ ntfyTopic: value });
-          });
-        text.inputEl.addClass("mcp-input-lg");
-      });
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.ntfyTest"))
-      .setDesc(tRaw("settings.notifications.ntfyTestDesc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(tRaw("settings.notifications.ntfyTest"))
-          .setWarning()
-          .onClick(async () => {
-            const topic = this.plugin.options.ntfyTopic;
-            const body = tRaw("settings.notifications.ntfyTestBody");
-            if (!topic) {
-              await recordNotificationEvent(this.app, {
-                channel: "ntfy",
-                status: "failed",
-                title: tRaw("settings.notifications.ntfyTest"),
-                body,
-                source: "settings-test",
-                error: "ntfy.sh topic is empty",
-              });
-              new Notice(tRaw("settings.notifications.ntfyTopicEmpty"));
-              return;
-            }
-            try {
-              const response = await requestUrl({
-                url: `https://ntfy.sh/${encodeURIComponent(topic)}`,
-                method: "POST",
-                body,
-              });
-              if (response.status < 200 || response.status >= 300) {
-                throw new Error(`HTTP ${response.status}`);
-              }
-              await recordNotificationEvent(this.app, {
-                channel: "ntfy",
-                status: "sent",
-                title: tRaw("settings.notifications.ntfyTest"),
-                body,
-                source: "settings-test",
-                topic,
-              });
-              new Notice(tRaw("settings.notifications.ntfyTestSent", { topic }));
-            } catch (e) {
-              await recordNotificationEvent(this.app, {
-                channel: "ntfy",
-                status: "failed",
-                title: tRaw("settings.notifications.ntfyTest"),
-                body,
-                source: "settings-test",
-                topic,
-                error: e instanceof Error ? e.message : String(e),
-              });
-              new Notice(tRaw("settings.notifications.ntfyTestError", { error: String(e) }));
-            }
-          }),
-      );
-
-    new Setting(container).setName(tRaw("settings.notifications.sectionGithubActions")).setHeading();
-
-    const ghDesc = document.createElement("div");
-    ghDesc.addClass("setting-item-description", "mcp-format-info");
-
-    const ghP1 = document.createElement("p");
-    ghP1.addClass("mcp-format-label");
-    ghP1.textContent = tRaw("settings.notifications.githubActionsDesc");
-    ghDesc.appendChild(ghP1);
-
-    const ghP2 = document.createElement("p");
-    ghP2.addClass("mcp-format-label");
-    const ghB = document.createElement("b");
-    ghB.textContent = tRaw("settings.notifications.githubActionsRequirements");
-    ghP2.appendChild(ghB);
-    ghP2.appendChild(document.createElement("br"));
-    ghP2.appendChild(document.createTextNode(`1. ${tRaw("settings.notifications.githubActionsReq1")}`));
-    ghP2.appendChild(document.createElement("br"));
-    ghP2.appendChild(document.createTextNode(`2. ${tRaw("settings.notifications.githubActionsReq2")}`));
-    ghP2.appendChild(document.createElement("br"));
-    ghP2.appendChild(document.createTextNode(`3. ${tRaw("settings.notifications.githubActionsReq3")}`));
-    ghP2.appendChild(document.createElement("br"));
-    ghP2.appendChild(document.createTextNode(`4. ${tRaw("settings.notifications.githubActionsReq4")}`));
-    ghDesc.appendChild(ghP2);
-
-    container.appendChild(ghDesc);
-
-    new Setting(container)
-      .setName(tRaw("settings.notifications.overdueCheckEnabled"))
-      .setDesc(
-        tRaw("settings.notifications.overdueCheckEnabledDesc"),
-      )
-      .addToggle((toggle) => {
-        toggle.setValue(this.plugin.options.overdueCheckEnabled);
-        toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ overdueCheckEnabled: value });
-          await this.syncNotificationSettingsToVault({ overdueCheckEnabled: value });
-        });
-      });
-
-    this.addNotificationDiagnostics(container);
-  }
-
-  private addNotificationDiagnostics(container: HTMLElement): void {
-    new Setting(container).setName(tRaw("settings.notifications.sectionDiagnostics")).setHeading();
-
-    const panel = container.createDiv({ cls: "notification-diagnostics-panel" });
-    panel.style.cssText =
-      "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 12px; margin: 8px 0 18px; background: var(--background-secondary);";
-
-    const render = async () => {
-      panel.empty();
-      const diagnostics = await loadNotificationDiagnostics(this.app);
-      const permission = "Notification" in window
-        ? Notification.permission
-        : "unavailable";
-
-      const toolbar = panel.createDiv();
-      toolbar.style.cssText =
-        "display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;";
-      toolbar.createEl("div", {
-        text: tRaw("settings.notifications.diagnosticsChannels"),
-        cls: "setting-item-name",
-      });
-      const actions = toolbar.createDiv();
-      actions.style.cssText = "display: flex; gap: 6px; flex-wrap: wrap;";
-      const refreshBtn = actions.createEl("button", { text: tRaw("settings.notifications.diagnosticsRefresh") });
-      refreshBtn.addClass("mod-cta");
-      refreshBtn.addEventListener("click", () => void render());
-      const clearBtn = actions.createEl("button", { text: tRaw("settings.notifications.diagnosticsClear") });
-      clearBtn.addEventListener("click", async () => {
-        await clearNotificationHistory(this.app);
-        await render();
-      });
-
-      const grid = panel.createDiv();
-      grid.style.cssText =
-        "display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-bottom: 14px;";
-
-      const addMetric = (label: string, value: string, tone: "ok" | "warn" | "bad" | "muted") => {
-        const item = grid.createDiv();
-        item.style.cssText =
-          "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px; background: var(--background-primary); min-height: 70px;";
-        item.createDiv({
-          text: label,
-          cls: "setting-item-description",
-        }).style.cssText = "font-size: 11px; margin-bottom: 6px;";
-        const valueEl = item.createDiv({ text: value });
-        const color =
-          tone === "ok"
-            ? "var(--text-success, #3dd68c)"
-            : tone === "bad"
-              ? "var(--text-error, #f06565)"
-              : tone === "warn"
-                ? "var(--text-warning, #f5a623)"
-                : "var(--text-muted)";
-        valueEl.style.cssText = `font-size: 13px; font-weight: 600; color: ${color}; word-break: break-word;`;
-      };
-
-      addMetric(
-        tRaw("settings.notifications.diagnosticsLocal"),
-        `${this.plugin.options.notificationsEnabled ? tRaw("common.enabled") : tRaw("common.disabled")} · ${this.formatNotificationPermission(permission)}`,
-        this.plugin.options.notificationsEnabled && permission === "granted" ? "ok" : "warn"
-      );
-      addMetric(
-        tRaw("settings.notifications.sectionNtfy"),
-        this.plugin.options.ntfyEnabled
-          ? this.plugin.options.ntfyTopic || diagnostics.ntfyTopic
-            ? tRaw("settings.notifications.diagnosticsNtfyEnabled", { topic: this.plugin.options.ntfyTopic || diagnostics.ntfyTopic })
-            : tRaw("settings.notifications.diagnosticsNtfyEmptyTopic")
-          : tRaw("common.disabled"),
-        this.plugin.options.ntfyEnabled
-          ? (this.plugin.options.ntfyTopic || diagnostics.ntfyTopic ? "ok" : "bad")
-          : "muted"
-      );
-      addMetric(
-        tRaw("settings.notifications.diagnosticsGithubActions"),
-        this.plugin.options.overdueCheckEnabled
-          ? diagnostics.lastGithubActionStatus || tRaw("settings.notifications.diagnosticsGithubActionsPending")
-          : tRaw("common.disabled"),
-        this.plugin.options.overdueCheckEnabled
-          ? diagnostics.lastGithubActionStatus === "failed" ? "bad" : "ok"
-          : "muted"
-      );
-      addMetric(
-        tRaw("settings.notifications.diagnosticsLastCheck"),
-        this.formatTelemetryDate(diagnostics.lastGithubActionCheck || diagnostics.lastOverdueCheck),
-        diagnostics.lastGithubActionCheck || diagnostics.lastOverdueCheck ? "ok" : "muted"
-      );
-
-      const details = panel.createDiv();
-      details.style.cssText =
-        "display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-bottom: 14px;";
-      const addDetail = (label: string, value: string) => {
-        const row = details.createDiv();
-        row.style.cssText =
-          "display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border-radius: 8px; background: var(--background-primary); border: 1px solid var(--background-modifier-border);";
-        row.createDiv({ text: label }).style.cssText =
-          "font-size: 11px; color: var(--text-muted);";
-        row.createDiv({ text: value }).style.cssText =
-          "font-size: 12px; color: var(--text-normal); word-break: break-word;";
-      };
-
-      addDetail(tRaw("settings.notifications.diagnosticsLastNtfy"), `${this.formatTelemetryDate(diagnostics.lastNtfyAt)} · ${diagnostics.lastNtfyStatus || "—"}`);
-      addDetail(tRaw("settings.notifications.diagnosticsNtfyError"), diagnostics.lastNtfyError || "—");
-      addDetail(tRaw("settings.notifications.diagnosticsGithubMessage"), diagnostics.lastGithubActionMessage || "—");
-      addDetail(tRaw("settings.notifications.diagnosticsGithubError"), diagnostics.lastGithubActionError || "—");
-
-      panel.createEl("div", {
-        text: tRaw("settings.notifications.diagnosticsHistory"),
-        cls: "setting-item-name",
-      }).style.cssText = "margin: 8px 0;";
-
-      const historyWrap = panel.createDiv();
-      historyWrap.style.cssText =
-        "display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto;";
-
-      if (diagnostics.history.length === 0) {
-        historyWrap.createDiv({
-          text: tRaw("settings.notifications.diagnosticsEmpty"),
-          cls: "setting-item-description",
-        }).style.cssText = "padding: 8px 2px;";
-        return;
-      }
-
-      for (const entry of diagnostics.history.slice(0, 12)) {
-        const row = historyWrap.createDiv();
-        row.style.cssText =
-          "display: grid; grid-template-columns: minmax(90px, 120px) 1fr auto; gap: 8px; align-items: start; border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 8px 10px; background: var(--background-primary);";
-        row.createDiv({
-          text: this.formatTelemetryDate(entry.createdAt),
-        }).style.cssText = "font-size: 11px; color: var(--text-muted);";
-
-        const content = row.createDiv();
-        content.createDiv({ text: entry.title }).style.cssText =
-          "font-size: 12px; font-weight: 600; color: var(--text-normal); margin-bottom: 2px;";
-        content.createDiv({ text: entry.body }).style.cssText =
-          "font-size: 12px; color: var(--text-muted); white-space: pre-wrap; word-break: break-word;";
-        if (entry.error) {
-          content.createDiv({ text: entry.error }).style.cssText =
-            "font-size: 11px; color: var(--text-error, #f06565); margin-top: 3px;";
-        }
-
-        const badge = row.createDiv({ text: `${entry.channel} · ${entry.status}` });
-        const badgeColor = entry.status === "sent"
-          ? "var(--text-success, #3dd68c)"
-          : entry.status === "failed"
-            ? "var(--text-error, #f06565)"
-            : "var(--text-muted)";
-        badge.style.cssText =
-          `font-size: 11px; color: ${badgeColor}; white-space: nowrap;`;
-      }
-    };
-
-    void render();
-  }
-
-  private formatNotificationPermission(permission: string): string {
-    if (permission === "granted") return tRaw("settings.notifications.permissionAllowed");
-    if (permission === "denied") return tRaw("settings.notifications.permissionDenied");
-    if (permission === "default") return tRaw("settings.notifications.permissionNeeded");
-    return tRaw("settings.notifications.permissionUnavailable");
-  }
-
-  private formatTelemetryDate(value?: string): string {
-    if (!value) return "—";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
-    return date.toLocaleString("ru-RU", {
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  private async syncNotificationSettingsToVault(overrides?: { overdueCheckEnabled?: boolean; ntfyTopic?: string }): Promise<void> {
-    const { saveNotificationSyncSettings } = await import("./io/vaultStorage");
-    const payload = {
-      overdueCheckEnabled: overrides?.overdueCheckEnabled ?? this.plugin.options.overdueCheckEnabled,
-      ntfyTopic: overrides?.ntfyTopic ?? this.plugin.options.ntfyTopic,
-    };
-    await saveNotificationSyncSettings(this.app, payload);
-  }
-
   addWorkTaskSettings(container: HTMLElement): void {
     new Setting(container)
       .setName(tRaw("settings.general.defaultPaymentType"))
@@ -1931,233 +1526,240 @@ priority: medium
     }
   }
 
-  addSingularitySettings(container: HTMLElement): void {
-    new Setting(container).setName(tRaw("settings.sync.sectionSingularity")).setHeading();
-
-    const desc = document.createElement("div");
-    desc.addClass("setting-item-description", "mcp-format-info");
-
-    const sigP1 = document.createElement("p");
-    sigP1.addClass("mcp-format-label");
-    sigP1.textContent = tRaw("settings.sync.singularityDesc");
-    desc.appendChild(sigP1);
-
-    const sigP2 = document.createElement("p");
-    sigP2.addClass("mcp-format-label");
-    const sigB = document.createElement("b");
-    sigB.textContent = tRaw("settings.sync.singularityHowTo");
-    sigP2.appendChild(sigB);
-    sigP2.appendChild(document.createElement("br"));
-    sigP2.appendChild(document.createTextNode("1. "));
-    const sigLink = document.createElement("a");
-    sigLink.href = "https://me.singularity-app.com";
-    sigLink.target = "_blank";
-    sigLink.rel = "noopener";
-    sigLink.textContent = tRaw("settings.general.singularityDashboard");
-    sigP2.appendChild(sigLink);
-    sigP2.appendChild(document.createElement("br"));
-    sigP2.appendChild(document.createTextNode(`2. ${tRaw("settings.sync.singularityHowToStep1")}`));
-    sigP2.appendChild(document.createElement("br"));
-    sigP2.appendChild(document.createTextNode(`3. ${tRaw("settings.sync.singularityHowToStep2")}`));
-    sigP2.appendChild(document.createElement("br"));
-    sigP2.appendChild(document.createTextNode(`4. ${tRaw("settings.sync.singularityHowToStep3")}`));
-    desc.appendChild(sigP2);
-
-    container.appendChild(desc);
-
-    // Token field
+  addNotificationSettings(container: HTMLElement): void {
     new Setting(container)
-      .setName(tRaw("settings.sync.singularityToken"))
-      .setDesc(tRaw("settings.sync.singularityTokenDesc"))
-      .addText((text) => {
-        text
-          .setPlaceholder(tRaw("settings.sync.singularityTokenPlaceholder"))
-          .setValue(this.plugin.options.singularityToken || "")
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ singularityToken: value });
-          });
-        text.inputEl.type = "password";
-        text.inputEl.addClass("mcp-input-xl");
-      })
-      .addButton((btn) =>
-        btn
-          .setButtonText(tRaw("settings.sync.singularityCheck"))
-          .onClick(async () => {
-            const token = this.plugin.options.singularityToken;
-            if (!token) {
-              new Notice(tRaw("settings.sync.singularityCheckTokenFirst"));
-              return;
-            }
-            const { testConnection } = await import("./services/SingularitySyncService");
-            const result = await testConnection(token);
-            if (result.success) {
-              new Notice(tRaw("settings.sync.singularityCheckOk"));
-            } else {
-              new Notice(tRaw("settings.general.errorPrefix", { error: result.error }));
-            }
-          }),
-      );
-
-    // Auto-sync toggle
-    new Setting(container)
-      .setName(tRaw("settings.sync.singularityAutoSync"))
-      .setDesc(tRaw("settings.sync.singularityAutoSyncDesc"))
+      .setName(tRaw("settings.notifications.enabled"))
+      .setDesc(tRaw("settings.notifications.enabledDesc"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.options.singularityAutoSync);
+        toggle.setValue(this.plugin.options.notificationsEnabled);
         toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ singularityAutoSync: value });
+          await this.plugin.writeOptions({ notificationsEnabled: value });
+          this.plugin.notificationService?.restart();
         });
       });
 
-    // Sync interval
     new Setting(container)
-      .setName(tRaw("settings.sync.singularityInterval"))
-      .setDesc(tRaw("settings.sync.singularityIntervalDesc"))
+      .setName(tRaw("settings.notifications.reminderMinutes"))
+      .setDesc(tRaw("settings.notifications.reminderMinutesDesc"))
       .addDropdown((dropdown) => {
         dropdown.addOption("1", tRaw("settings.sync.intervalMinutes", { n: 1 }));
-        dropdown.addOption("2", tRaw("settings.sync.intervalMinutes2", { n: 2 }));
         dropdown.addOption("5", tRaw("settings.sync.intervalMinutes", { n: 5 }));
         dropdown.addOption("10", tRaw("settings.sync.intervalMinutes", { n: 10 }));
         dropdown.addOption("15", tRaw("settings.sync.intervalMinutes", { n: 15 }));
         dropdown.addOption("30", tRaw("settings.sync.intervalMinutes", { n: 30 }));
-        dropdown.setValue(String(this.plugin.options.singularitySyncInterval || 5));
+        dropdown.addOption("60", tRaw("settings.sync.intervalHour"));
+        dropdown.setValue(String(this.plugin.options.reminderMinutesBefore));
         dropdown.onChange(async (value) => {
-          await this.plugin.writeOptions({ singularitySyncInterval: parseInt(value) });
-        });
-      });
-
-    // Sync direction
-    new Setting(container)
-      .setName(tRaw("settings.sync.singularityDirection"))
-      .setDesc(tRaw("settings.sync.singularityDirectionDesc"))
-      .addDropdown((dropdown) => {
-        dropdown.addOption("both", tRaw("settings.sync.directionBoth"));
-        dropdown.addOption("push", tRaw("settings.sync.directionPush"));
-        dropdown.addOption("pull", tRaw("settings.sync.directionPull"));
-        dropdown.setValue(this.plugin.options.singularitySyncDirection || "both");
-        dropdown.onChange(async (value) => {
-          await this.plugin.writeOptions({
-            singularitySyncDirection: value as "both" | "push" | "pull",
-          });
+          this.plugin.writeOptions({ reminderMinutesBefore: parseInt(value) });
         });
       });
 
     new Setting(container)
-      .setName(tRaw("settings.sync.singularityDryRun"))
-      .setDesc(tRaw("settings.sync.singularityDryRunDesc"))
+      .setName(tRaw("settings.notifications.typesTitle"))
+      .setDesc(tRaw("settings.notifications.typesDesc"));
+
+    new Setting(container)
+      .setName(tRaw("settings.notifications.notifyReminders"))
+      .setDesc(tRaw("settings.notifications.notifyRemindersDesc"))
       .addToggle((toggle) => {
-        toggle.setValue(!!this.plugin.options.singularitySyncDryRun);
+        toggle.setValue(this.plugin.options.notifyReminders);
         toggle.onChange(async (value) => {
-          await this.plugin.writeOptions({ singularitySyncDryRun: value });
+          this.plugin.writeOptions({ notifyReminders: value });
         });
       });
 
     new Setting(container)
-      .setName(tRaw("settings.sync.singularityExcludeTags"))
-      .setDesc(tRaw("settings.sync.singularityExcludeTagsDesc"))
-      .addText((text) => {
-        text
-          .setPlaceholder("GC,nd")
-          .setValue(this.plugin.options.singularitySyncExcludeTags || "")
-          .onChange(async (value) => {
-            await this.plugin.writeOptions({ singularitySyncExcludeTags: value });
-          });
-        text.inputEl.addClass("mcp-input-xl");
+      .setName(tRaw("settings.notifications.notifyOverdue"))
+      .setDesc(tRaw("settings.notifications.notifyOverdueDesc"))
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.notifyOverdue);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions({ notifyOverdue: value });
+        });
       });
 
-    // Last sync info
-    const lastSync = this.plugin.options.singularityLastSync
-      ? new Date(this.plugin.options.singularityLastSync).toLocaleString("ru-RU")
-      : "—";
     new Setting(container)
-      .setName(tRaw("settings.sync.singularityLastSync"))
-      .setDesc(lastSync)
-      .setDisabled(true);
-
-    // Action buttons
-    new Setting(container)
-      .setName(tRaw("settings.sync.singularitySyncNow"))
-      .setDesc(tRaw("settings.sync.singularitySyncNowDesc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(tRaw("settings.sync.singularitySync"))
-          .setCta()
-          .onClick(async () => {
-            const token = this.plugin.options.singularityToken;
-            if (!token) {
-              new Notice(tRaw("settings.sync.singularityCheckTokenFirst"));
-              return;
-            }
-            btn.setButtonText(tRaw("settings.sync.singularitySyncing"));
-            btn.setDisabled(true);
-            try {
-              const { fullSync } = await import("./services/SingularitySyncService");
-              await fullSync();
-              new Notice(tRaw("settings.sync.singularitySyncComplete"));
-              this.display(); // refresh last sync time
-            } catch (e) {
-              new Notice(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
-            } finally {
-              btn.setButtonText(tRaw("settings.sync.singularitySync"));
-              btn.setDisabled(false);
-            }
-          }),
-      );
+      .setName(tRaw("settings.notifications.notifyEstimateExceeded"))
+      .setDesc(tRaw("settings.notifications.notifyEstimateExceededDesc"))
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.notifyEstimateExceeded);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions({ notifyEstimateExceeded: value });
+        });
+      });
 
     new Setting(container)
-      .setName(tRaw("settings.sync.singularitySyncProjects"))
-      .setDesc(tRaw("settings.sync.singularitySyncProjectsDesc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(tRaw("settings.sync.singularitySync"))
-          .onClick(async () => {
-            const token = this.plugin.options.singularityToken;
-            if (!token) {
-              new Notice(tRaw("settings.sync.singularityCheckTokenFirst"));
-              return;
-            }
-            btn.setButtonText(tRaw("settings.sync.singularitySyncing"));
-            btn.setDisabled(true);
-            try {
-              const { syncProjects } = await import("./services/SingularitySyncService");
-              const result = await syncProjects();
-              new Notice(
-                tRaw("settings.sync.singularityProjectsResult", {
-                  created: result.created,
-                  mapped: result.mapped,
-                  pulled: result.pulled,
-                })
-              );
-              this.display();
-            } catch (e) {
-              new Notice(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
-            } finally {
-              btn.setButtonText(tRaw("settings.sync.singularitySync"));
-              btn.setDisabled(false);
-            }
-          }),
-      );
+      .setName(tRaw("settings.notifications.notifyDeadlines"))
+      .setDesc(tRaw("settings.notifications.notifyDeadlinesDesc"))
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.notifyDeadlines);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions({ notifyDeadlines: value });
+        });
+      });
 
     new Setting(container)
-      .setName(tRaw("settings.sync.singularityReset"))
-      .setDesc(tRaw("settings.sync.singularityResetDesc"))
-      .addButton((btn) =>
-        btn
-          .setButtonText(tRaw("common.reset"))
-          .setWarning()
-          .onClick(async () => {
-            if (!confirm(tRaw("settings.sync.singularityResetConfirm"))) {
-              return;
-            }
-            try {
-              const { resetSyncMap } = await import("./services/SingularitySyncService");
-              await resetSyncMap();
-              new Notice(tRaw("settings.sync.singularityResetDone"));
-            } catch (e) {
-              new Notice(tRaw("settings.general.errorPrefix", { error: e instanceof Error ? e.message : e }));
-            }
-          }),
+      .setName(tRaw("settings.notifications.ntfyEnabled"))
+      .setDesc(tRaw("settings.notifications.ntfyEnabledDesc"))
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.ntfyEnabled);
+        toggle.onChange(async (value) => {
+          if (value && !this.plugin.options.ntfyTopic) {
+            const uuid = crypto.randomUUID();
+            await this.plugin.writeOptions({ ntfyEnabled: value, ntfyTopic: uuid });
+            this.ntfyTopicText?.setValue(uuid);
+          } else {
+            await this.plugin.writeOptions({ ntfyEnabled: value });
+          }
+          this.plugin.notificationService?.restart();
+        });
+      });
+
+    new Setting(container)
+      .setName(tRaw("settings.notifications.ntfyTopic"))
+      .setDesc(tRaw("settings.notifications.ntfyTopicDesc"))
+      .addText((text) => {
+        this.ntfyTopicText = text;
+        text
+          .setPlaceholder("a7f9b2c4-8e1d-4f3a-9c5b-2d6e8f0a1b3c")
+          .setValue(this.plugin.options.ntfyTopic)
+          .onChange(async (value) => {
+            await this.plugin.writeOptions({ ntfyTopic: value });
+          });
+        text.inputEl.addClass("mcp-input-lg");
+      });
+
+    this.addNotificationDiagnostics(container);
+  }
+
+  private addNotificationDiagnostics(container: HTMLElement): void {
+    new Setting(container).setName(tRaw("settings.notifications.sectionDiagnostics")).setHeading();
+
+    const panel = container.createDiv({ cls: "notification-diagnostics-panel" });
+    panel.style.cssText =
+      "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 12px; margin: 8px 0 18px; background: var(--background-secondary);";
+
+    const render = async () => {
+      panel.empty();
+      const diagnostics = await loadNotificationDiagnostics(this.app);
+      const permission = "Notification" in window
+        ? (Notification as any).permission
+        : "unavailable";
+
+      const toolbar = panel.createDiv();
+      toolbar.style.cssText =
+        "display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;";
+      toolbar.createEl("div", {
+        text: tRaw("settings.notifications.diagnosticsChannels"),
+        cls: "setting-item-name",
+      });
+      const actions = toolbar.createDiv();
+      actions.style.cssText = "display: flex; gap: 6px; flex-wrap: wrap;";
+      const refreshBtn = actions.createEl("button", { text: tRaw("settings.notifications.diagnosticsRefresh") });
+      refreshBtn.addClass("mod-cta");
+      refreshBtn.addEventListener("click", () => void render());
+      const clearBtn = actions.createEl("button", { text: tRaw("settings.notifications.diagnosticsClear") });
+      clearBtn.addEventListener("click", async () => {
+        await clearNotificationHistory(this.app);
+        await render();
+      });
+
+      const grid = panel.createDiv();
+      grid.style.cssText =
+        "display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-bottom: 14px;";
+
+      const addMetric = (label: string, value: string, tone: "ok" | "warn" | "bad" | "muted") => {
+        const item = grid.createDiv();
+        item.style.cssText =
+          "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px; background: var(--background-primary); min-height: 70px;";
+        item.createDiv({
+          text: label,
+          cls: "setting-item-description",
+        }).style.cssText = "font-size: 11px; margin-bottom: 6px;";
+        const valueEl = item.createDiv({ text: value });
+        const color =
+          tone === "ok"
+            ? "var(--text-success, #3dd68c)"
+            : tone === "bad"
+              ? "var(--text-error, #f06565)"
+              : tone === "warn"
+                ? "var(--text-warning, #f5a623)"
+                : "var(--text-muted)";
+        valueEl.style.cssText = `font-size: 13px; font-weight: 600; color: ${color}; word-break: break-word;`;
+      };
+
+      addMetric(
+        tRaw("settings.notifications.diagnosticsLocal"),
+        `${this.plugin.options.notificationsEnabled ? tRaw("common.enabled") : tRaw("common.disabled")} · ${this.formatNotificationPermission(permission)}`,
+        this.plugin.options.notificationsEnabled && permission === "granted" ? "ok" : "warn"
       );
+
+      panel.createEl("div", {
+        text: tRaw("settings.notifications.diagnosticsHistory"),
+        cls: "setting-item-name",
+      }).style.cssText = "margin: 8px 0;";
+
+      const historyWrap = panel.createDiv();
+      historyWrap.style.cssText =
+        "display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto;";
+
+      if (diagnostics.history.length === 0) {
+        historyWrap.createDiv({
+          text: tRaw("settings.notifications.diagnosticsEmpty"),
+          cls: "setting-item-description",
+        }).style.cssText = "padding: 8px 2px;";
+        return;
+      }
+
+      for (const entry of diagnostics.history.slice(0, 12)) {
+        const row = historyWrap.createDiv();
+        row.style.cssText =
+          "display: grid; grid-template-columns: minmax(90px, 120px) 1fr auto; gap: 8px; align-items: start; border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 8px 10px; background: var(--background-primary);";
+        row.createDiv({
+          text: this.formatTelemetryDate(entry.createdAt),
+        }).style.cssText = "font-size: 11px; color: var(--text-muted);";
+
+        const content = row.createDiv();
+        content.createDiv({ text: entry.title }).style.cssText =
+          "font-size: 12px; font-weight: 600; color: var(--text-normal); margin-bottom: 2px;";
+        content.createDiv({ text: entry.body }).style.cssText =
+          "font-size: 12px; color: var(--text-muted); white-space: pre-wrap; word-break: break-word;";
+        if (entry.error) {
+          content.createDiv({ text: entry.error }).style.cssText =
+            "font-size: 11px; color: var(--text-error, #f06565); margin-top: 3px;";
+        }
+
+        const badge = row.createDiv({ text: `${entry.channel} · ${entry.status}` });
+        const badgeColor = entry.status === "sent"
+          ? "var(--text-success, #3dd68c)"
+          : entry.status === "failed"
+            ? "var(--text-error, #f06565)"
+            : "var(--text-muted)";
+        badge.style.cssText =
+          `font-size: 11px; color: ${badgeColor}; white-space: nowrap;`;
+      }
+    };
+
+    void render();
+  }
+
+  private formatNotificationPermission(permission: string): string {
+    if (permission === "granted") return tRaw("settings.notifications.permissionAllowed");
+    if (permission === "denied") return tRaw("settings.notifications.permissionDenied");
+    if (permission === "default") return tRaw("settings.notifications.permissionNeeded");
+    return tRaw("settings.notifications.permissionUnavailable");
+  }
+
+  private formatTelemetryDate(value?: string): string {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   addNavPanelInstructions(container: HTMLElement): void {

@@ -8,7 +8,6 @@
   import { financeData } from "../finance/storage";
   import { getMonthGoals } from "../finance/storage";
   import { fetchWeekWeather, type DayWeather, getWeatherAttribution } from "../services/weatherService";
-  import { singularitySyncStatus, triggerManualSync } from "../services/SingularitySyncService";
   import { getDateUID } from "obsidian-daily-notes-interface";
   import moment from "moment";
 
@@ -361,20 +360,6 @@
       {/if}
     </span>
   {/if}
-  {#if $settings.singularityToken && $singularitySyncStatus.connected}
-    <span class="dtw-sep"></span>
-    <span
-      class="dtw-item dtw-hoverable dtw-sync"
-      class:syncing={$singularitySyncStatus.syncing}
-      on:click={() => triggerManualSync()}
-      title={$singularitySyncStatus.syncing ? $t("dtw.syncing") : $singularitySyncStatus.lastSync ? $t("dtw.synced", { time: $singularitySyncStatus.lastSync }) : $t("dtw.sync")}
-    >
-      <svg class="dtw-sync-icon" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
-        <path d="M1.5 8a6.5 6.5 0 0 1 11.1-4.6M14.5 8a6.5 6.5 0 0 1-11.1 4.6" />
-        <path d="M12.5 1v2.5H10M3.5 15v-2.5H6" />
-      </svg>
-    </span>
-  {/if}
 </div>
 
 <style>
@@ -457,20 +442,5 @@
     padding: 0 4px;
     color: var(--text-muted);
     transition: color 0.2s;
-  }
-  .dtw-sync:hover {
-    color: var(--text-normal);
-  }
-  .dtw-sync-icon {
-    display: inline-block;
-    transition: transform 0.3s ease;
-  }
-  .dtw-sync.syncing .dtw-sync-icon {
-    animation: dtw-spin 0.8s linear infinite;
-    color: var(--text-accent, var(--mcp-accent));
-  }
-  @keyframes dtw-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 </style>

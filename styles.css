@@ -7435,6 +7435,28 @@ svg.dot.filled {
   94% { opacity: 0.8; }
 }
 
+/* Snow */
+.wp-snow {
+  background: linear-gradient(180deg, rgba(180, 200, 230, 0.06) 0%, transparent 100%);
+}
+
+.wp-snowflake {
+  position: absolute;
+  top: -10px;
+  color: rgba(255, 255, 255, 0.6);
+  font-family: serif;
+  pointer-events: none;
+  text-shadow: 0 0 2px rgba(200, 220, 255, 0.3);
+  animation: wp-snow-f linear infinite;
+}
+
+@keyframes wp-snow-f {
+  0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 0.7; }
+  100% { transform: translateY(120px) rotate(360deg); opacity: 0; }
+}
+
 /* ============================================
    TASK VIEW — tasks + projects tab
    ============================================ */

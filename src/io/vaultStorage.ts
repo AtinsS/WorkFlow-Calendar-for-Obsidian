@@ -23,7 +23,6 @@ export interface VaultData {
   habitTracker?: Record<string, unknown>;
   finance?: Record<string, unknown>;
   financialAnalytics?: Record<string, unknown>;
-  notificationSync?: Record<string, unknown>;
   [key: string]: unknown;
 }
 
@@ -31,11 +30,6 @@ export interface ModuleMeta {
   schemaVersion: number;
   checksums: Record<string, string>;
   lastUpdated: string;
-}
-
-export interface NotificationSyncSettings {
-  overdueCheckEnabled: boolean;
-  ntfyTopic: string;
 }
 
 // --- Helpers ---
@@ -282,7 +276,6 @@ export async function migrateFromSingleFile(app: App): Promise<void> {
       habitTracker: "habitTracker",
       finance: "finance",
       financialAnalytics: "financialAnalytics",
-      notificationSync: "notifications",
     };
 
     for (const [key, moduleName] of Object.entries(keyMap)) {
@@ -400,17 +393,6 @@ export async function saveVaultKey(
 
 // --- Notification settings ---
 
-export async function saveNotificationSyncSettings(
-  app: App,
-  settings: NotificationSyncSettings
-): Promise<void> {
-  await enqueueModuleWrite("notifications", async () => {
-    const existing = await loadModuleData(app, "notifications");
-    const merged = { ...existing, ...settings };
-    await saveModuleData(app, "notifications", merged);
-  });
-}
-
 export async function updateNotificationModuleData(
   app: App,
   updater: (existing: Record<string, unknown>) => Record<string, unknown>
@@ -422,21 +404,4 @@ export async function updateNotificationModuleData(
     await saveModuleData(app, "notifications", updated);
   });
   return updated;
-}
-
-/**
- * Sync notification settings to vault on plugin load.
- * This ensures the latest settings are always available
- * for GitHub Actions workflows.
- */
-export async function syncNotificationSettingsOnLoad(app: App, options: {
-  syncToVault: boolean;
-  overdueCheckEnabled: boolean;
-  ntfyTopic: string;
-}): Promise<void> {
-  if (!options.syncToVault) return;
-  await saveNotificationSyncSettings(app, {
-    overdueCheckEnabled: options.overdueCheckEnabled,
-    ntfyTopic: options.ntfyTopic,
-  });
 }

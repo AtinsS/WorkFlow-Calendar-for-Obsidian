@@ -35,7 +35,7 @@ Many workflows share the same problem: tasks live in one place, the calendar in 
 - **Freelancers and developers** who need to calculate work costs based on hourly rates.
 - **Designers and consultants** managing multiple projects simultaneously.
 - **Students and researchers** who need to link deadlines, habits, and productivity.
-- **Automation enthusiasts** who want the system to work for them (notifications, sync, reports).
+- **Automation enthusiasts** who want the system to work for them (notifications, reports).
 
 ---
 
@@ -161,37 +161,19 @@ priority: medium
 ```
 *(Supported statuses: `- [ ]` todo, `- [/]` progress, `- [-]` paused, `- [x]` done)*
 
-### SingularityApp Integration
-
-> [!IMPORTANT]
-> Two-way sync of tasks, checklists, projects, and habits. Available with Premium or Elite status in SingularityApp. Recurring tasks are not synced.
-
-1. Create an API token in your account on the [SingularityApp](https://singularity-app.com) website.
-2. Paste the token into the plugin settings — it will be verified automatically.
-3. Click the sync button in the panel (the button appears in the top bar after token verification) or enable **auto-sync** with a customizable interval (from 1 to 30 minutes).
-
-**What is synced:**
-- Tasks (creation, updates, deletion, statuses, deadlines, time)
-- Projects (names, colors, emojis)
-- Checklists (items, completion marks)
-- Habits (names, colors, progress for the last 30 days)
-
-**Direction:** two-way by default (both directions), can be switched to send-only or receive-only. After syncing, tasks are available in both the plugin and the SingularityApp mobile app.
-
 </details>
 
 <details>
-<summary><h3>🔔 Notifications and Automation (click to expand)</h3></summary>
+<summary><h3>🔔 Notifications (click to expand)</h3></summary>
 
-The plugin offers a multi-tiered notification system so you don't miss important events, even if your computer is turned off.
+The plugin has a built-in notification system so you don't miss important events.
 
 | Type | When it triggers |
 | :--- | :--- |
-| **Local** | N minutes before start, when overdue, when time limit is exceeded, on the deadline day. |
+| **Local (browser)** | N minutes before start, when overdue, when time limit is exceeded, on the deadline day. |
 | **To smartphone (ntfy.sh)** | Duplicate notifications to your phone. Works even when Obsidian is closed. |
-| **When PC is off (GitHub Actions)** | Alerts via GitHub Actions if a task is overdue and the computer is off. |
 
-### Setting up ntfy.sh (Recommended)
+### Setting up ntfy.sh
 
 A simple way to get notifications on your phone:
 1. Install the [ntfy.sh](https://ntfy.sh/) app on your phone.
@@ -200,19 +182,6 @@ A simple way to get notifications on your phone:
 
 > [!CAUTION] Security
 > Use a unique topic (e.g., a generated UUID like `a7f9b2c4-8e1d-4f3a-9c5b-2d6e8f0a1b3c`) so no one else can subscribe to your notifications. The plugin only sends triggers ("Overdue: Task Name"), not financial data or full texts.
-
-### Setting up GitHub Actions (Advanced)
-
-If you need notifications when your computer is off:
-1. Enable **"Sync to vault root"** in the plugin settings.
-2. Copy the `examples` folder from the plugin repository to the root of your vault and rename it to `.github`.
-3. Enable checking for overdue tasks via GitHub Actions in the plugin settings.
-4. Add the ntfy.sh topic as a secret `NTFY_TOPIC` in your GitHub repository settings (Settings → Secrets → Actions). If the secret is not set, the workflow will take the topic from `calendar-data/notifications.json`.
-5. Ensure the files `calendar-data/taskTracker.json` and `calendar-data/notifications.json` are committed to the repository.
-6. Set up automatic `git push` (e.g., via the Obsidian Git plugin).
-
-> [!NOTE]
-> No separate GitHub Personal Access Token is needed for this workflow. The Action reads tasks from the `calendar-data/taskTracker.json` file in the current repository and sends notifications to `https://ntfy.sh/<topic>`.
 
 </details>
 

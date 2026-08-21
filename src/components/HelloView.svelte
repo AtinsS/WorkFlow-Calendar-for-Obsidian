@@ -65,6 +65,8 @@
     const code = weather.weatherCode;
     // Clear / mostly clear: 0, 1
     if (code === 0 || code === 1) return "weather-sun";
+    // Snow: 71-77, 85-86
+    if ((code >= 71 && code <= 77) || code === 85 || code === 86) return "weather-snow";
     // Rain: 51-67, 80-82
     if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return "weather-rain";
     // Cloudy: 2
@@ -101,6 +103,10 @@
       {:else if weatherAnim === "weather-storm"}
         {#each Array(60) as _, i}
           <div class="raindrop heavy" style="left: {Math.random() * 100}%; animation-delay: {Math.random() * 1.5}s; animation-duration: {0.3 + Math.random() * 0.4}s"></div>
+        {/each}
+      {:else if weatherAnim === "weather-snow"}
+        {#each Array(50) as _, i}
+          <div class="snowflake" style="left: {Math.random() * 100}%; animation-delay: {Math.random() * 5}s; animation-duration: {3 + Math.random() * 4}s; font-size: {8 + Math.random() * 10}px; opacity: {0.4 + Math.random() * 0.4}">*</div>
         {/each}
       {:else if weatherAnim === "weather-sun"}
         <div class="sun">
@@ -261,6 +267,28 @@
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(180deg, rgba(40, 40, 50, 0.1) 0%, rgba(50, 50, 60, 0.06) 100%);
+  }
+
+  /* Snow */
+  .snowflake {
+    position: absolute;
+    top: -20px;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: serif;
+    animation: snow-fall linear infinite;
+    pointer-events: none;
+    text-shadow: 0 0 3px rgba(200, 220, 255, 0.3);
+  }
+
+  @keyframes snow-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 0.8; }
+    100% { transform: translateY(calc(100vh + 20px)) rotate(360deg); opacity: 0; }
+  }
+
+  .weather-snow {
+    background: linear-gradient(180deg, rgba(180, 200, 230, 0.04) 0%, rgba(200, 215, 240, 0.02) 100%);
   }
 
   /* Storm = heavy rain + slight flicker */

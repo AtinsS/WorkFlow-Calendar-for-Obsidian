@@ -55,8 +55,7 @@ import Dashboard from "./dashboard/Dashboard.svelte";
 import HelloView from "./components/HelloView.svelte";
 import { NotificationService } from "./services/NotificationService";
 import { initGistSync } from "./services/GistSyncService";
-import { initSingularitySync, cleanupSingularitySync } from "./services/SingularitySyncService";
-import { syncNotificationSettingsOnLoad, migrateFromSingleFile, migrateRootModuleFiles, VAULT_DATA_DIR } from "./io/vaultStorage";
+import { migrateFromSingleFile, migrateRootModuleFiles, VAULT_DATA_DIR } from "./io/vaultStorage";
 
 declare global {
   interface Window {
@@ -95,7 +94,6 @@ export default class CalendarPlugin extends Plugin {
 
     if (this.syncReloadTimer) clearTimeout(this.syncReloadTimer);
     this.notificationService?.stop();
-    cleanupSingularitySync();
     cleanupTimers();
     this.app.workspace
       .getLeavesOfType(VIEW_TYPE_CALENDAR)
@@ -425,15 +423,6 @@ export default class CalendarPlugin extends Plugin {
     }
     applyAllColors(this.options);
 
-    // Sync notification settings to vault on load so GitHub Actions always has current data.
-    // MUST await before initTaskStores — otherwise this async write reads stale vault
-    // data and overwrites the entire calendar-data.json before stores finish loading.
-    await syncNotificationSettingsOnLoad(this.app, {
-      syncToVault: true,
-      overdueCheckEnabled: !!this.options.overdueCheckEnabled,
-      ntfyTopic: this.options.ntfyTopic,
-    }).catch((e) => console.warn("[Calendar] Failed to sync notification settings to vault:", e));
-
     // Migrate legacy calendar-data.json to per-module files (one-time, idempotent)
     await migrateFromSingleFile(this.app);
 
@@ -457,9 +446,6 @@ export default class CalendarPlugin extends Plugin {
 
     // Initialize GitHub Gist sync
     initGistSync(this);
-
-    // Initialize SingularityApp bidirectional sync (non-blocking — runs in background)
-    initSingularitySync(this);
 
     // Initialize notification service
     this.notificationService = new NotificationService(this);
