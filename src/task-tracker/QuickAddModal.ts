@@ -233,7 +233,7 @@ export class QuickAddModal extends Modal {
     });
 
     input.focus();
-    requestAnimationFrame(() => input.focus());
+    window.requestAnimationFrame(() => input.focus());
   }
 
   private submit(raw: string, openFullModal: boolean): void {

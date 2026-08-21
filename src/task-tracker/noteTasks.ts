@@ -636,12 +636,12 @@ export function setupNoteTaskSync(app: App, plugin: CalendarPlugin): void {
       // Чтение файла и парсинг frontmatter происходят ВНУТРИ таймера,
       // чтобы данные были актуальны на момент применения.
       if (syncDebounceTimers.has(taskId)) {
-        clearTimeout(syncDebounceTimers.get(taskId));
+        window.clearTimeout(syncDebounceTimers.get(taskId));
       }
 
       syncDebounceTimers.set(
         taskId,
-        setTimeout(async () => {
+        window.setTimeout(async () => {
           syncDebounceTimers.delete(taskId);
 
           const allTasks = get(tasks);

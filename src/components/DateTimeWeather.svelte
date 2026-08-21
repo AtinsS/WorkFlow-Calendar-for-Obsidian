@@ -26,7 +26,7 @@
   let todayTaskList: { title: string; status: string }[] = [];
   let inProgressTaskList: { title: string; status: string }[] = [];
 
-  let todayHabitList: { id: string; title: string; icon: string; color: string; completed: boolean; partial: boolean; count: number; targetCount: number }[] = [];
+  let todayHabitList: { id: string; title: string; icon: string; color: string; completed: boolean; count: number; targetCount: number }[] = [];
   let habitDoneCount = 0;
   let habitTotalCount = 0;
 
@@ -102,9 +102,9 @@
     tooltip.appendChild(titleDiv);
 
     for (const h of todayHabitList) {
-      const statusClass = h.completed ? " done" : h.partial ? " progress" : "";
+      const statusClass = h.completed ? " done" : "";
       const nameClass = h.completed ? " done-name" : "";
-      const icon = h.completed ? "✓" : h.partial ? "◆" : "○";
+      const icon = h.completed ? "✓" : "○";
       const rowDiv = document.createElement("div");
       rowDiv.className = "dtw-tooltip-row dtw-habit-row";
       rowDiv.setAttribute("data-habit-id", h.id);
@@ -210,14 +210,12 @@
       const log = allLogs.find((l) => l.habitId === h.id && l.date === dateStr);
       const count = log?.count || 0;
       const completed = log?.completed || false;
-      const partial = count > 0 && !completed;
       return {
         id: h.id,
         title: h.title,
         icon: h.icon,
         color: h.color,
         completed,
-        partial,
         count,
         targetCount: h.targetCount || 1,
       };
@@ -333,7 +331,7 @@
       on:click={() => { const el = document.querySelector('.dtw-habits-trigger'); if (el) showHabitTooltip(el); }}
       on:mouseenter={(e) => {
         if (todayHabitList.length > 0)
-          showTooltip(e.currentTarget, $t("dtw.habits"), todayHabitList.map(h => ({ status: h.completed ? "done" : h.partial ? "progress" : "todo", name: `${h.icon} ${h.title}` })));
+          showTooltip(e.currentTarget, $t("dtw.habits"), todayHabitList.map(h => ({ status: h.completed ? "done" : "todo", name: `${h.icon} ${h.title}` })));
       }}
       on:mouseleave={removeTooltip}
     >

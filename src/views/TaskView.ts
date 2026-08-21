@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf, moment } from "obsidian";
 import { VIEW_TYPE_TASKS, VIEW_TYPE_SCHEDULE, VIEW_TYPE_MOBILE_SCHEDULE } from "../constants";
 import TaskPanel from "../task-tracker/TaskPanel.svelte";
 import HabitPanel from "../habit-tracker/HabitPanel.svelte";
@@ -6,7 +6,6 @@ import { get } from "svelte/store";
 import { tRaw } from "../i18n";
 import { selectedDate, projects, taskFilter } from "../task-tracker/stores";
 import { settings } from "../ui/stores";
-import moment from "moment";
 import { getDateUID } from "obsidian-daily-notes-interface";
 
 export default class TaskView extends ItemView {

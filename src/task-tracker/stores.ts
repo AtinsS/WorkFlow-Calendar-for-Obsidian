@@ -1,5 +1,6 @@
 import { writable, get } from "svelte/store";
-import moment, { type Moment } from "moment";
+import { moment } from "obsidian";
+import type { Moment } from "moment";
 
 import type CalendarPlugin from "src/main";
 import { getDateUID } from "obsidian-daily-notes-interface";
@@ -23,7 +24,7 @@ function notifyStatusChange(taskTitle: string, statusLabel: string): void {
     body: tRaw("taskStore.statusChanged", { title: taskTitle, label: statusLabel }),
   });
   n.onclick = () => { window.focus(); n.close(); };
-  setTimeout(() => n.close(), 5000);
+  window.setTimeout(() => n.close(), 5000);
 }
 
 function autoCleanupCompleted(): void {
@@ -74,9 +75,9 @@ export const checklists = writable<IChecklistItem[]>([]);
 function debouncedSave(): void {
   if (!loaded) return;
   if (saveTimeout) {
-    clearTimeout(saveTimeout);
+    window.clearTimeout(saveTimeout);
   }
-  saveTimeout = setTimeout(() => {
+  saveTimeout = window.setTimeout(() => {
     const data: ITaskTrackerData = {
       tasks: get(tasks),
       projects: get(projects),
@@ -93,7 +94,7 @@ function debouncedSave(): void {
 export function immediateSave(): void {
   if (!loaded || !pluginInstance) return;
   if (saveTimeout) {
-    clearTimeout(saveTimeout);
+    window.clearTimeout(saveTimeout);
     saveTimeout = null;
   }
   const data: ITaskTrackerData = {
@@ -132,13 +133,13 @@ export async function initTaskStores(plugin: CalendarPlugin): Promise<void> {
     }
 
     // Генерируем повторяющиеся задачи до конца месяца
-    setTimeout(() => generateAllMonthlyRecurringTasks(), 100);
+    window.setTimeout(() => generateAllMonthlyRecurringTasks(), 100);
   }
 
   await doLoad();
 
   // Retry after 2s if initial load returned empty (vault cache may not have been ready)
-  setTimeout(() => {
+  window.setTimeout(() => {
     if (get(tasks).length === 0) {
       loaded = false;
       doLoad();
@@ -192,7 +193,7 @@ export function addTask(
   // Если задача с повторением и не является экземпляром — генерируем до конца месяца
   if (task.recurrence && !task.isRecurringInstance) {
     // Даём время на обновление store, затем генерируем
-    setTimeout(() => generateMonthlyRecurringTasks(task.id), 50);
+    window.setTimeout(() => generateMonthlyRecurringTasks(task.id), 50);
   }
 
   return task;

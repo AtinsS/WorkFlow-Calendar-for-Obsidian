@@ -49,8 +49,8 @@ async function loadFinanceDataFromVault(): Promise<void> {
 async function debouncedSave(): Promise<void> {
   if (!loaded) return;
   storeIsDirty = true;
-  if (saveTimeout) clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(async () => {
+  if (saveTimeout) window.clearTimeout(saveTimeout);
+  saveTimeout = window.setTimeout(async () => {
     if (!pluginInstance) return;
     isSaving = true;
     try {
@@ -65,7 +65,7 @@ async function debouncedSave(): Promise<void> {
 export async function immediateFinanceSave(): Promise<void> {
   if (!loaded || !pluginInstance) return;
   if (saveTimeout) {
-    clearTimeout(saveTimeout);
+    window.clearTimeout(saveTimeout);
     saveTimeout = null;
   }
   isSaving = true;

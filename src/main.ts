@@ -1,7 +1,6 @@
-import moment from "moment";
 import "moment/locale/ru";
+import { moment, App, Plugin, WorkspaceLeaf } from "obsidian";
 import type { Moment, WeekSpec } from "moment";
-import { App, Plugin, WorkspaceLeaf } from "obsidian";
 import { get } from "svelte/store";
 
 const registeredMarkdownCodeBlocks = new Set<string>();
@@ -92,7 +91,7 @@ export default class CalendarPlugin extends Plugin {
     immediateFinanceSave();
     immediateAnalyticsSave();
 
-    if (this.syncReloadTimer) clearTimeout(this.syncReloadTimer);
+    if (this.syncReloadTimer) window.clearTimeout(this.syncReloadTimer);
     this.notificationService?.stop();
     cleanupTimers();
     this.app.workspace
@@ -455,8 +454,8 @@ export default class CalendarPlugin extends Plugin {
 
     // Watch for vault sync file changes (modify + create)
     const debouncedSyncReload = () => {
-      if (this.syncReloadTimer) clearTimeout(this.syncReloadTimer);
-      this.syncReloadTimer = setTimeout(async () => {
+      if (this.syncReloadTimer) window.clearTimeout(this.syncReloadTimer);
+      this.syncReloadTimer = window.setTimeout(async () => {
         reloadTaskStores(this);
         reloadHabitStores(this);
         await reloadFinanceStores();

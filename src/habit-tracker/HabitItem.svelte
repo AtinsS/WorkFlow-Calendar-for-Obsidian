@@ -14,7 +14,7 @@
   let streak = 0;
   let currentCount = 0;
   let targetCount = 1;
-  let progressState = 0; // 0=not done, 1=50%, 2=100%
+  let progressState = 0; // 0=not done, 2=100%
 
   $: _logs = $habitLogs;
   $: {
@@ -72,24 +72,21 @@
   <button
     class="habit-check-btn"
     class:checked={isCompleted}
-    class:half={progressState === 1}
     class:partial={isMultiTarget && currentCount > 0 && currentCount < targetCount}
     class:full={isMultiTarget && currentCount >= targetCount}
     style="--habit-color: {habit.color}; --progress: {progress}"
     on:click={toggle}
-    aria-label={isCompleted ? $t("habits.item.undo") : progressState === 1 ? $t("habits.item.toPercent") : $t("habits.item.markDone")}
+    aria-label={isCompleted ? $t("habits.item.undo") : $t("habits.item.markDone")}
   >
     {#if isMultiTarget}
       <span class="habit-check-count">{currentCount}</span>
     {:else if progressState === 2}
       <span class="habit-check-icon">&#10003;</span>
-    {:else if progressState === 1}
-      <span class="habit-check-icon half">&#9674;</span>
     {/if}
   </button>
 
   <span class="habit-icon">{habit.icon}</span>
-  <span class="habit-title" class:completed-text={isCompleted && !isMultiTarget} class:half-text={progressState === 1}>
+  <span class="habit-title" class:completed-text={isCompleted && !isMultiTarget}>
     {habit.title}
   </span>
 
@@ -97,8 +94,6 @@
     <span class="habit-progress-text" class:done={currentCount >= targetCount}>
       {currentCount}/{targetCount}
     </span>
-  {:else if progressState === 1}
-    <span class="habit-progress-text half-label">50%</span>
   {/if}
 
   {#if streak > 0}

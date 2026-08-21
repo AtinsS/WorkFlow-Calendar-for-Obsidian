@@ -831,7 +831,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
         testBtn.textContent = `✗ ${e?.message || tRaw("settings.weather.connectionError")}`;
         testBtn.addClass("mcp-color-danger");
       }
-      setTimeout(() => {
+      window.setTimeout(() => {
         testBtn.disabled = false;
         testBtn.removeClass("mcp-color-success", "mcp-color-danger");
         testBtn.textContent = tRaw("settings.weather.checkConnection");
@@ -843,7 +843,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     confirmBtn.addEventListener("click", async () => {
       await this.plugin.writeOptions({ weatherProvider: provider });
       confirmBtn.textContent = tRaw("settings.weather.applied");
-      setTimeout(() => { confirmBtn.textContent = tRaw("settings.weather.applyProvider"); }, 2000);
+      window.setTimeout(() => { confirmBtn.textContent = tRaw("settings.weather.applyProvider"); }, 2000);
     });
 
     // Weather animation previews
@@ -871,54 +871,54 @@ export class CalendarSettingsTab extends PluginSettingTab {
         sun.createDiv({ cls: "wp-sun-core" });
         for (let i = 0; i < 8; i++) {
           const ray = sun.createDiv({ cls: "wp-sun-ray" });
-          ray.style.transform = `rotate(${i * 45}deg)`;
+          ray.style.setProperty("--wp-rotate", `${i * 45}deg`);
         }
       }
       if (c.anim === "clouds") {
         for (let i = 0; i < 3; i++) {
           const cl = card.createDiv({ cls: "wp-cloud" });
-          cl.style.top = `${15 + i * 25}%`;
-          cl.style.animationDelay = `${i * 3}s`;
-          cl.style.opacity = String(0.15 + Math.random() * 0.15);
+          cl.style.setProperty("--wp-top", `${15 + i * 25}%`);
+          cl.style.setProperty("--wp-delay", `${i * 3}s`);
+          cl.style.setProperty("--wp-opacity", String(0.15 + Math.random() * 0.15));
         }
       }
       if (c.anim === "gloom") {
-        card.createDiv().style.cssText = "position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(180deg,rgba(50,50,60,0.12) 0%,rgba(60,60,70,0.06) 100%);";
+        card.createDiv({ cls: "wp-gloom-overlay" });
       }
       if (c.anim === "fog") {
         for (let i = 0; i < 4; i++) {
           const fl = card.createDiv({ cls: "wp-fog-layer" });
-          fl.style.top = `${10 + i * 20}%`;
-          fl.style.animationDelay = `${i * 2}s`;
-          fl.style.animationDuration = `${10 + i * 3}s`;
-          fl.style.opacity = String(0.15 + i * 0.08);
+          fl.style.setProperty("--wp-top", `${10 + i * 20}%`);
+          fl.style.setProperty("--wp-delay", `${i * 2}s`);
+          fl.style.setProperty("--wp-duration", `${10 + i * 3}s`);
+          fl.style.setProperty("--wp-opacity", String(0.15 + i * 0.08));
         }
       }
       if (c.anim === "rain") {
         for (let i = 0; i < 20; i++) {
           const d = card.createDiv({ cls: "wp-drop" });
-          d.style.left = `${Math.random() * 100}%`;
-          d.style.animationDelay = `${Math.random() * 2}s`;
-          d.style.animationDuration = `${0.4 + Math.random() * 0.4}s`;
+          d.style.setProperty("--wp-left", `${Math.random() * 100}%`);
+          d.style.setProperty("--wp-delay", `${Math.random() * 2}s`);
+          d.style.setProperty("--wp-duration", `${0.4 + Math.random() * 0.4}s`);
         }
       }
       if (c.anim === "storm") {
         for (let i = 0; i < 30; i++) {
           const d = card.createDiv({ cls: "wp-drop h" });
-          d.style.left = `${Math.random() * 100}%`;
-          d.style.animationDelay = `${Math.random() * 1.5}s`;
-          d.style.animationDuration = `${0.3 + Math.random() * 0.3}s`;
+          d.style.setProperty("--wp-left", `${Math.random() * 100}%`);
+          d.style.setProperty("--wp-delay", `${Math.random() * 1.5}s`);
+          d.style.setProperty("--wp-duration", `${0.3 + Math.random() * 0.3}s`);
         }
       }
       if (c.anim === "snow") {
         for (let i = 0; i < 25; i++) {
           const s = card.createDiv({ cls: "wp-snowflake" });
           s.textContent = "*";
-          s.style.left = `${Math.random() * 100}%`;
-          s.style.animationDelay = `${Math.random() * 4}s`;
-          s.style.animationDuration = `${2 + Math.random() * 3}s`;
-          s.style.fontSize = `${8 + Math.random() * 8}px`;
-          s.style.opacity = String(0.4 + Math.random() * 0.4);
+          s.style.setProperty("--wp-left", `${Math.random() * 100}%`);
+          s.style.setProperty("--wp-delay", `${Math.random() * 4}s`);
+          s.style.setProperty("--wp-duration", `${2 + Math.random() * 3}s`);
+          s.style.setProperty("--wp-size", `${8 + Math.random() * 8}px`);
+          s.style.setProperty("--wp-opacity", String(0.4 + Math.random() * 0.4));
         }
       }
 
@@ -1319,20 +1319,14 @@ export class CalendarSettingsTab extends PluginSettingTab {
       });
 
     // Информация о формате
-    const formatInfo = document.createElement("div");
-    formatInfo.addClass("setting-item-description", "mcp-format-info");
+    const formatInfo = container.createDiv({ cls: "setting-item-description mcp-format-info" });
 
-    const p1 = document.createElement("p");
-    p1.addClass("mcp-format-label");
-    const b1 = document.createElement("b");
-    b1.textContent = tRaw("settings.general.formatNote");
-    p1.appendChild(b1);
-    formatInfo.appendChild(p1);
+    const p1 = formatInfo.createEl("p", { cls: "mcp-format-label" });
+    p1.createEl("b", { text: tRaw("settings.general.formatNote") });
 
-    const pre = document.createElement("pre");
-    pre.addClass("mcp-format-code");
-    const code = document.createElement("code");
-    code.textContent = `---
+    const pre = formatInfo.createEl("pre", { cls: "mcp-format-code" });
+    pre.createEl("code", {
+      text: `---
 task_id: abc123
 title: ${tRaw("settings.general.exampleTaskTitle")}
 status: todo
@@ -1340,32 +1334,17 @@ date: day-2024-10-25
 priority: medium
 ---
 
-- [ ] ${tRaw("settings.general.exampleTaskTitle")} 📅 2024-10-25 🛫 14:30 ⏫`;
-    pre.appendChild(code);
-    formatInfo.appendChild(pre);
+- [ ] ${tRaw("settings.general.exampleTaskTitle")} 📅 2024-10-25 🛫 14:30 ⏫`,
+    });
 
-    const p2 = document.createElement("p");
-    p2.addClass("mcp-format-label");
-    const b2 = document.createElement("b");
-    b2.textContent = tRaw("settings.general.formatStatuses");
-    p2.appendChild(b2);
-    formatInfo.appendChild(p2);
+    const p2 = formatInfo.createEl("p", { cls: "mcp-format-label" });
+    p2.createEl("b", { text: tRaw("settings.general.formatStatuses") });
 
-    const p3 = document.createElement("p");
-    p3.addClass("mcp-format-label");
-    const b3 = document.createElement("b");
-    b3.textContent = tRaw("settings.general.formatEmoji");
-    p3.appendChild(b3);
-    formatInfo.appendChild(p3);
+    const p3 = formatInfo.createEl("p", { cls: "mcp-format-label" });
+    p3.createEl("b", { text: tRaw("settings.general.formatEmoji") });
 
-    const p4 = document.createElement("p");
-    p4.addClass("mcp-format-label");
-    const b4 = document.createElement("b");
-    b4.textContent = tRaw("settings.general.formatCleanup");
-    p4.appendChild(b4);
-    formatInfo.appendChild(p4);
-
-    container.appendChild(formatInfo);
+    const p4 = formatInfo.createEl("p", { cls: "mcp-format-label" });
+    p4.createEl("b", { text: tRaw("settings.general.formatCleanup") });
   }
 
   addWorkTaskSettings(container: HTMLElement): void {
@@ -1506,8 +1485,7 @@ priority: medium
     // Auto-sync status indicator
     const statusDesc = document.createElement("div");
     statusDesc.id = "gist-auto-sync-status";
-    statusDesc.style.cssText =
-      "font-size: 11px; color: var(--text-faint); margin-top: 4px; padding: 4px 0;";
+    statusDesc.addClass("mcp-gist-sync-status");
     statusDesc.textContent = this.plugin.options.gistAutoSync
       ? tRaw("settings.sync.gistAutoSyncOn")
       : tRaw("settings.sync.gistAutoSyncOff");
@@ -1635,9 +1613,7 @@ priority: medium
   private addNotificationDiagnostics(container: HTMLElement): void {
     new Setting(container).setName(tRaw("settings.notifications.sectionDiagnostics")).setHeading();
 
-    const panel = container.createDiv({ cls: "notification-diagnostics-panel" });
-    panel.style.cssText =
-      "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 12px; margin: 8px 0 18px; background: var(--background-secondary);";
+    const panel = container.createDiv({ cls: "mcp-notif-panel" });
 
     const render = async () => {
       panel.empty();
@@ -1646,15 +1622,12 @@ priority: medium
         ? (Notification as any).permission
         : "unavailable";
 
-      const toolbar = panel.createDiv();
-      toolbar.style.cssText =
-        "display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;";
+      const toolbar = panel.createDiv({ cls: "mcp-notif-toolbar" });
       toolbar.createEl("div", {
         text: tRaw("settings.notifications.diagnosticsChannels"),
         cls: "setting-item-name",
       });
-      const actions = toolbar.createDiv();
-      actions.style.cssText = "display: flex; gap: 6px; flex-wrap: wrap;";
+      const actions = toolbar.createDiv({ cls: "mcp-notif-actions" });
       const refreshBtn = actions.createEl("button", { text: tRaw("settings.notifications.diagnosticsRefresh") });
       refreshBtn.addClass("mod-cta");
       refreshBtn.addEventListener("click", () => void render());
@@ -1664,28 +1637,16 @@ priority: medium
         await render();
       });
 
-      const grid = panel.createDiv();
-      grid.style.cssText =
-        "display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 8px; margin-bottom: 14px;";
+      const grid = panel.createDiv({ cls: "mcp-notif-grid" });
 
       const addMetric = (label: string, value: string, tone: "ok" | "warn" | "bad" | "muted") => {
-        const item = grid.createDiv();
-        item.style.cssText =
-          "border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 10px; background: var(--background-primary); min-height: 70px;";
+        const item = grid.createDiv({ cls: "mcp-notif-metric" });
         item.createDiv({
           text: label,
-          cls: "setting-item-description",
-        }).style.cssText = "font-size: 11px; margin-bottom: 6px;";
-        const valueEl = item.createDiv({ text: value });
-        const color =
-          tone === "ok"
-            ? "var(--text-success, #3dd68c)"
-            : tone === "bad"
-              ? "var(--text-error, #f06565)"
-              : tone === "warn"
-                ? "var(--text-warning, #f5a623)"
-                : "var(--text-muted)";
-        valueEl.style.cssText = `font-size: 13px; font-weight: 600; color: ${color}; word-break: break-word;`;
+          cls: "setting-item-description mcp-notif-metric-label",
+        });
+        const toneClass = `mcp-notif-metric-${tone}`;
+        item.createDiv({ text: value, cls: `mcp-notif-metric-value ${toneClass}` });
       };
 
       addMetric(
@@ -1696,47 +1657,39 @@ priority: medium
 
       panel.createEl("div", {
         text: tRaw("settings.notifications.diagnosticsHistory"),
-        cls: "setting-item-name",
-      }).style.cssText = "margin: 8px 0;";
+        cls: "setting-item-name mcp-notif-history-heading",
+      });
 
-      const historyWrap = panel.createDiv();
-      historyWrap.style.cssText =
-        "display: flex; flex-direction: column; gap: 6px; max-height: 320px; overflow: auto;";
+      const historyWrap = panel.createDiv({ cls: "mcp-notif-history" });
 
       if (diagnostics.history.length === 0) {
         historyWrap.createDiv({
           text: tRaw("settings.notifications.diagnosticsEmpty"),
-          cls: "setting-item-description",
-        }).style.cssText = "padding: 8px 2px;";
+          cls: "setting-item-description mcp-notif-history-empty",
+        });
         return;
       }
 
       for (const entry of diagnostics.history.slice(0, 12)) {
-        const row = historyWrap.createDiv();
-        row.style.cssText =
-          "display: grid; grid-template-columns: minmax(90px, 120px) 1fr auto; gap: 8px; align-items: start; border: 1px solid var(--background-modifier-border); border-radius: 8px; padding: 8px 10px; background: var(--background-primary);";
+        const row = historyWrap.createDiv({ cls: "mcp-notif-history-row" });
         row.createDiv({
           text: this.formatTelemetryDate(entry.createdAt),
-        }).style.cssText = "font-size: 11px; color: var(--text-muted);";
+          cls: "mcp-notif-history-date",
+        });
 
         const content = row.createDiv();
-        content.createDiv({ text: entry.title }).style.cssText =
-          "font-size: 12px; font-weight: 600; color: var(--text-normal); margin-bottom: 2px;";
-        content.createDiv({ text: entry.body }).style.cssText =
-          "font-size: 12px; color: var(--text-muted); white-space: pre-wrap; word-break: break-word;";
+        content.createDiv({ text: entry.title, cls: "mcp-notif-history-title" });
+        content.createDiv({ text: entry.body, cls: "mcp-notif-history-body" });
         if (entry.error) {
-          content.createDiv({ text: entry.error }).style.cssText =
-            "font-size: 11px; color: var(--text-error, #f06565); margin-top: 3px;";
+          content.createDiv({ text: entry.error, cls: "mcp-notif-history-error" });
         }
 
-        const badge = row.createDiv({ text: `${entry.channel} · ${entry.status}` });
-        const badgeColor = entry.status === "sent"
-          ? "var(--text-success, #3dd68c)"
+        const badgeClass = entry.status === "sent"
+          ? "mcp-notif-badge-sent"
           : entry.status === "failed"
-            ? "var(--text-error, #f06565)"
-            : "var(--text-muted)";
-        badge.style.cssText =
-          `font-size: 11px; color: ${badgeColor}; white-space: nowrap;`;
+            ? "mcp-notif-badge-failed"
+            : "mcp-notif-badge-muted";
+        row.createDiv({ text: `${entry.channel} · ${entry.status}`, cls: `mcp-notif-history-badge ${badgeClass}` });
       }
     };
 
@@ -1763,46 +1716,26 @@ priority: medium
   }
 
   addNavPanelInstructions(container: HTMLElement): void {
-    const desc = document.createDocumentFragment();
+    const wrapper = container.createDiv({ cls: "mcp-nav-instructions" });
 
-    const p1 = document.createElement("p");
-    p1.textContent =
-      tRaw("settings.appearance.navInstructions1");
-    desc.appendChild(p1);
+    wrapper.createEl("p", { text: tRaw("settings.appearance.navInstructions1") });
 
-    const code = document.createElement("pre");
-    code.style.cssText =
-      "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
-    code.textContent =
-      "```calendar-nav\nschedule:" + tRaw("hello.navSchedule") + "\ntasks:" + tRaw("hello.navTasks") + "\nfinance:" + tRaw("hello.navFinance") + "\nanalytics:" + tRaw("hello.navAnalytics") + "\n```";
-    desc.appendChild(code);
+    wrapper.createEl("pre", {
+      text: "```calendar-nav\nschedule:" + tRaw("hello.navSchedule") + "\ntasks:" + tRaw("hello.navTasks") + "\nfinance:" + tRaw("hello.navFinance") + "\nanalytics:" + tRaw("hello.navAnalytics") + "\n```",
+    });
 
-    const p2 = document.createElement("p");
-    p2.style.marginTop = "8px";
-    p2.textContent = tRaw("settings.appearance.navInstructions2");
-    desc.appendChild(p2);
+    wrapper.createEl("p", { text: tRaw("settings.appearance.navInstructions2") });
+    wrapper.createEl("p", { text: tRaw("settings.appearance.navInstructions3") });
 
-    const p3 = document.createElement("p");
-    p3.style.marginTop = "4px";
-    p3.textContent = tRaw("settings.appearance.navInstructions3");
-    desc.appendChild(p3);
+    wrapper.createEl("pre", {
+      text: "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:" + tRaw("hello.navSchedule") + "\n```",
+    });
 
-    const code2 = document.createElement("pre");
-    code2.style.cssText =
-      "background: var(--background-secondary); padding: 12px; border-radius: 8px; font-size: 12px; overflow-x: auto; white-space: pre;";
-    code2.textContent =
-      "```calendar-nav\n%color:#fff;bg:#333;border-radius:20px;size:14px;accent:#5f99e1\nschedule:" + tRaw("hello.navSchedule") + "\n```";
-    desc.appendChild(code2);
-
-    const p4 = document.createElement("p");
-    p4.style.marginTop = "8px";
-    p4.textContent =
-      tRaw("settings.appearance.navInstructions4");
-    desc.appendChild(p4);
+    wrapper.createEl("p", { text: tRaw("settings.appearance.navInstructions4") });
 
     new Setting(container)
       .setName(tRaw("settings.appearance.navInstructionsTitle"))
-      .setDesc(desc);
+      .setDesc(wrapper);
   }
 
   addNavBtnStyleSettings(container: HTMLElement): void {

@@ -1,6 +1,5 @@
 import { get } from "svelte/store";
-import moment from "moment";
-import { requestUrl } from "obsidian";
+import { moment, requestUrl } from "obsidian";
 import type CalendarPlugin from "src/main";
 import { tasks } from "src/task-tracker/stores";
 import type { ITask } from "src/task-tracker/types";
@@ -49,14 +48,14 @@ export class NotificationService {
 
     await this.loadFiredState();
     this.requestPermission();
-    this.timer = setInterval(() => this.check(), this.getSettings().checkIntervalMs);
+    this.timer = window.setInterval(() => this.check(), this.getSettings().checkIntervalMs);
     this.check(); // run immediately
     this.startNtfyListener();
   }
 
   stop(): void {
     if (this.timer) {
-      clearInterval(this.timer);
+      window.clearInterval(this.timer);
       this.timer = null;
     }
     this.stopNtfyListener();
@@ -234,7 +233,7 @@ export class NotificationService {
     };
 
     // Auto-close after 10 seconds
-    setTimeout(() => notification.close(), 10_000);
+    window.setTimeout(() => notification.close(), 10_000);
 
     void recordNotificationEvent(this.plugin.app, {
       channel: "browser",
@@ -304,7 +303,7 @@ export class NotificationService {
     const topic = opts.ntfyTopic;
 
     // Poll ntfy every 30 seconds for new messages
-    this.ntfyPollTimer = setInterval(async () => {
+    this.ntfyPollTimer = window.setInterval(async () => {
       try {
         const sinceParam = this.ntfyLastId ? `&since=${this.ntfyLastId}` : "&since=5m";
         const url = `https://ntfy.sh/${topic}/json?poll=1${sinceParam}`;
@@ -332,7 +331,7 @@ export class NotificationService {
 
   private stopNtfyListener(): void {
     if (this.ntfyPollTimer) {
-      clearInterval(this.ntfyPollTimer);
+      window.clearInterval(this.ntfyPollTimer);
       this.ntfyPollTimer = null;
     }
   }

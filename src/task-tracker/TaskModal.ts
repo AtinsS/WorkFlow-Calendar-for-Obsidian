@@ -48,7 +48,7 @@ export class TaskModal extends CustomModal {
     if (!this.descCounterEl) return;
     const len = (this.descriptionInput || "").length;
     this.descCounterEl.textContent = len > 0 ? tRaw("tasks.modal.maxLength", { current: String(len) }) : "";
-    this.descCounterEl.style.color = len > 100 ? "var(--text-error, #ef4436)" : "";
+    if (len > 100) { this.descCounterEl.addClass("tm-char-counter-error"); } else { this.descCounterEl.removeClass("tm-char-counter-error"); }
   }
 
   constructor(
@@ -168,7 +168,8 @@ export class TaskModal extends CustomModal {
     ];
     for (const p of priDefs) {
       const btn = priRow.createEl("button", { cls: "tm-pri-btn" + (this.priority === p.v ? " active" : "") });
-      btn.createSpan({ cls: "tm-pri-dot" }).style.background = p.c;
+      const priDot = btn.createSpan({ cls: "tm-pri-dot" });
+      priDot.style.setProperty("--pri-dot-color", p.c);
       btn.createSpan({ text: p.l });
       btn.addEventListener("click", () => {
         this.priority = p.v as any;
@@ -233,18 +234,18 @@ export class TaskModal extends CustomModal {
       this.endTime = endTimeInput.value;
       // Validate that endTime >= scheduledTime
       if (this.scheduledTime && this.endTime && this.endTime < this.scheduledTime) {
-        endTimeInput.style.borderColor = "var(--text-error, #ef4436)";
+        endTimeInput.addClass("tm-input-error");
       } else {
-        endTimeInput.style.borderColor = "";
+        endTimeInput.removeClass("tm-input-error");
       }
     });
     endTimeInput.addEventListener("change", () => { 
       this.endTime = endTimeInput.value;
       // Validate that endTime >= scheduledTime
       if (this.scheduledTime && this.endTime && this.endTime < this.scheduledTime) {
-        endTimeInput.style.borderColor = "var(--text-error, #ef4436)";
+        endTimeInput.addClass("tm-input-error");
       } else {
-        endTimeInput.style.borderColor = "";
+        endTimeInput.removeClass("tm-input-error");
       }
     });
 
@@ -302,9 +303,8 @@ export class TaskModal extends CustomModal {
     const intLabel = intRow.createDiv({ cls: "tm-adv-label-item" });
     intLabel.createEl("span", { text: tRaw("tasks.modal.interval") });
     const intInput = intRow.createEl("input", {
-      type: "number", cls: "tm-input tm-adv-input", value: String(this.recurrenceInterval), attr: { min: "1" },
+      type: "number", cls: "tm-input tm-adv-input tm-input-narrow-80", value: String(this.recurrenceInterval), attr: { min: "1" },
     }) as HTMLInputElement;
-    intInput.style.maxWidth = "80px";
     intInput.addEventListener("input", () => { this.recurrenceInterval = Math.max(1, parseInt(intInput.value) || 1); });
 
     // Дни недели
@@ -421,9 +421,8 @@ export class TaskModal extends CustomModal {
     const rateLabel = rateRow.createDiv({ cls: "tm-adv-label-item" });
     rateLabel.createEl("span", { text: tRaw("tasks.modal.rate", { currency: "₽" }) });
     const rateInput = rateRow.createEl("input", {
-      type: "number", cls: "tm-input tm-adv-input", value: this.rate, placeholder: "0", attr: { min: "0" },
+      type: "number", cls: "tm-input tm-adv-input tm-input-narrow-120", value: this.rate, placeholder: "0", attr: { min: "0" },
     }) as HTMLInputElement;
-    rateInput.style.maxWidth = "120px";
     rateInput.addEventListener("input", () => { this.rate = rateInput.value.replace(/[^0-9.,]/g, ""); });
 
     // Переработки с
@@ -431,9 +430,8 @@ export class TaskModal extends CustomModal {
     const otStartLabel = otStartRow.createDiv({ cls: "tm-adv-label-item" });
     otStartLabel.createEl("span", { text: tRaw("tasks.modal.overtimeFrom") });
     const otStartInput = otStartRow.createEl("input", {
-      type: "number", cls: "tm-input tm-adv-input", value: this.overtimeStart, placeholder: "8", attr: { min: "1", max: "24" },
+      type: "number", cls: "tm-input tm-adv-input tm-input-narrow-60", value: this.overtimeStart, placeholder: "8", attr: { min: "1", max: "24" },
     }) as HTMLInputElement;
-    otStartInput.style.maxWidth = "60px";
     otStartInput.addEventListener("input", () => { this.overtimeStart = otStartInput.value.replace(/[^0-9]/g, ""); });
 
     // Множитель
@@ -441,9 +439,8 @@ export class TaskModal extends CustomModal {
     const otMulLabel = otMulRow.createDiv({ cls: "tm-adv-label-item" });
     otMulLabel.createEl("span", { text: tRaw("tasks.modal.multiplier") });
     const otMulInput = otMulRow.createEl("input", {
-      type: "number", cls: "tm-input tm-adv-input", value: this.overtimeMultiplier, placeholder: "1.5", attr: { min: "1", max: "10", step: "0.1" },
+      type: "number", cls: "tm-input tm-adv-input tm-input-narrow-80", value: this.overtimeMultiplier, placeholder: "1.5", attr: { min: "1", max: "10", step: "0.1" },
     }) as HTMLInputElement;
-    otMulInput.style.maxWidth = "80px";
     otMulInput.addEventListener("input", () => { this.overtimeMultiplier = otMulInput.value.replace(/[^0-9.,]/g, ""); });
 
     this.updateRecurrenceSubFields();
@@ -501,17 +498,14 @@ export class TaskModal extends CustomModal {
       const errorEl = this.contentEl.querySelector(".tm-time-error") as HTMLElement;
       if (errorEl) {
         errorEl.textContent = tRaw("tasks.modal.errorEndTime");
-        setTimeout(() => {
+        window.setTimeout(() => {
           errorEl.textContent = "";
         }, 3000);
       } else {
         // Create error element if it doesn't exist
         const msgEl = this.contentEl.createDiv({ cls: "tm-time-error" });
         msgEl.textContent = tRaw("tasks.modal.errorEndTime");
-        msgEl.style.color = "var(--text-error, #ef4436)";
-        msgEl.style.fontSize = "0.9em";
-        msgEl.style.marginBottom = "10px";
-        setTimeout(() => {
+        window.setTimeout(() => {
           msgEl.remove();
         }, 3000);
       }
@@ -521,10 +515,10 @@ export class TaskModal extends CustomModal {
     const desc = (this.descriptionInput || "").trim();
     if (desc.length > 100) {
       if (this.descCounterEl) {
-        this.descCounterEl.style.color = "var(--text-error, #ef4436)";
+        this.descCounterEl.addClass("tm-char-counter-error");
         this.descCounterEl.textContent = `⚠ ${tRaw("tasks.modal.maxLength", { current: String(desc.length) })}`;
-        setTimeout(() => {
-          this.descCounterEl!.style.color = "";
+        window.setTimeout(() => {
+          this.descCounterEl!.removeClass("tm-char-counter-error");
           this.updateDescCounter();
         }, 3000);
       }

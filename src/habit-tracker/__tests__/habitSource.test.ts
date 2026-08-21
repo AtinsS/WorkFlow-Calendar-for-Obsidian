@@ -145,8 +145,7 @@ describe("habitSource", () => {
     );
     expect(meta1.dataAttributes["data-habit-count"]).toBe("🏆");
 
-    // Toggle off (100% → 50% → 0)
-    toggleHabitCompletion(habit.id, "2026-07-05"); // 50%
+    // Toggle off (100% → 0)
     toggleHabitCompletion(habit.id, "2026-07-05"); // 0
     const meta2 = await habitSource.getDailyMetadata(
       window.moment("2026-07-05")

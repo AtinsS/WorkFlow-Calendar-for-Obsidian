@@ -11,7 +11,7 @@ let tickInterval: ReturnType<typeof setInterval> | null = null;
 
 function startTickInterval(): void {
   if (tickInterval) return;
-  tickInterval = setInterval(() => {
+  tickInterval = window.setInterval(() => {
     timerTick.set(Date.now());
   }, 1000);
 }
@@ -19,14 +19,14 @@ function startTickInterval(): void {
 function stopTickInterval(): void {
   const timers = get(activeTimers);
   if (timers.size === 0 && tickInterval) {
-    clearInterval(tickInterval);
+    window.clearInterval(tickInterval);
     tickInterval = null;
   }
 }
 
 export function cleanupTimers(): void {
   if (tickInterval) {
-    clearInterval(tickInterval);
+    window.clearInterval(tickInterval);
     tickInterval = null;
   }
   activeTimers.set(new Map());

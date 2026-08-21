@@ -1,4 +1,4 @@
-import moment from "moment";
+import { moment } from "obsidian";
 import type { Moment } from "moment";
 import {
   getDailyNote,

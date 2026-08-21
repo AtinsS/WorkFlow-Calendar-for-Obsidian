@@ -156,7 +156,7 @@ export class ProjectModal extends CustomModal {
 
     DEFAULT_PROJECT_COLORS.forEach((color) => {
       const swatch = colorGrid.createDiv("pm-color-swatch");
-      swatch.style.backgroundColor = color;
+      swatch.style.setProperty("--swatch-color", color);
       if (color === newColor) swatch.addClass("active");
       swatch.addEventListener("click", () => {
         colorGrid.querySelectorAll(".pm-color-swatch").forEach((s) => s.removeClass("active"));
@@ -179,14 +179,14 @@ export class ProjectModal extends CustomModal {
     const previewCard = preview.createDiv("pm-preview-card");
 
     const previewDot = previewCard.createDiv("pm-preview-dot");
-    previewDot.style.backgroundColor = newColor;
+    previewDot.style.setProperty("--dot-color", newColor);
     const previewIcon = previewCard.createSpan("pm-preview-icon");
     previewIcon.textContent = newIcon;
     const previewName = previewCard.createSpan("pm-preview-name");
     previewName.textContent = tRaw("tasks.project.name");
 
     function updatePreview() {
-      previewDot.style.backgroundColor = newColor;
+      previewDot.style.setProperty("--dot-color", newColor);
       previewIcon.textContent = newIcon;
       previewName.textContent = newName || tRaw("tasks.project.name");
     }
@@ -202,7 +202,7 @@ export class ProjectModal extends CustomModal {
       if (!newName.trim()) {
         nameInput.focus();
         nameInput.classList.add("pm-input-error");
-        setTimeout(() => nameInput.classList.remove("pm-input-error"), 1500);
+        window.setTimeout(() => nameInput.classList.remove("pm-input-error"), 1500);
         return;
       }
       addRecentIcon(this.app, newIcon);
@@ -246,7 +246,7 @@ export class ProjectModal extends CustomModal {
 
       const left = item.createDiv("pm-project-left");
       const dot = left.createDiv("pm-project-dot");
-      dot.style.backgroundColor = project.color;
+      dot.style.setProperty("--dot-color", project.color);
       left.createEl("span", { text: project.icon, cls: "pm-project-icon" });
       const info = left.createDiv("pm-project-info");
       info.createEl("span", { text: project.name, cls: "pm-project-name" });
@@ -331,7 +331,7 @@ class EditProjectModal extends CustomModal {
 
     DEFAULT_PROJECT_COLORS.forEach((c) => {
       const swatch = colorGrid.createDiv("pm-color-swatch");
-      swatch.style.backgroundColor = c;
+      swatch.style.setProperty("--swatch-color", c);
       if (c === color) swatch.addClass("active");
       swatch.addEventListener("click", () => {
         colorGrid.querySelectorAll(".pm-color-swatch").forEach((s) => s.removeClass("active"));
@@ -357,7 +357,7 @@ class EditProjectModal extends CustomModal {
       if (!name.trim()) {
         nameInput.focus();
         nameInput.classList.add("pm-input-error");
-        setTimeout(() => nameInput.classList.remove("pm-input-error"), 1500);
+        window.setTimeout(() => nameInput.classList.remove("pm-input-error"), 1500);
         return;
       }
       addRecentIcon(this.app, icon);

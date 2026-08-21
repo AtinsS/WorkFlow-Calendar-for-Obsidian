@@ -106,7 +106,7 @@ export async function exampleChangeStatusFromFrontmatter(
   await app.vault.modify(file, updatedLines.join("\n"));
 
   // Через 300ms (debounce) задача должна обновиться
-  setTimeout(() => {
+  window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
     console.log("Статус задачи:", updatedTask?.status);
     console.log("Завершена:", updatedTask?.completed);
@@ -147,7 +147,7 @@ export async function exampleChangeDateFromFrontmatter(
 
   await app.vault.modify(file, updatedLines.join("\n"));
 
-  setTimeout(() => {
+  window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
     console.log("DateUID задачи:", updatedTask?.dateUID);
   }, 500);
@@ -178,7 +178,7 @@ export async function exampleChangePriorityFromFrontmatter(
 
   await app.vault.modify(file, updatedLines.join("\n"));
 
-  setTimeout(() => {
+  window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
     console.log("Приоритет задачи:", updatedTask?.priority);
   }, 500);
@@ -301,7 +301,7 @@ export async function exampleDebounceTest(
   }
 
   // Ждём debounce (300ms) + запас
-  setTimeout(() => {
+  window.setTimeout(() => {
     console.log("Debounce test completed");
   }, 500);
 }
@@ -342,7 +342,7 @@ export async function exampleInvalidFrontmatter(
   await app.vault.modify(file, updatedLines.join("\n"));
 
   // Проверяем, что задача не обновилась
-  setTimeout(() => {
+  window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
     console.log("Приоритет остался прежним:", updatedTask?.priority);
   }, 500);
@@ -476,7 +476,7 @@ export async function test2_ChangeStatusFromFrontmatter(
   await app.vault.modify(file, updatedLines.join("\n"));
 
   // Ждём debounce
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => window.setTimeout(resolve, 500));
 
   const updatedTask = get(tasks).find((t) => t.id === task.id);
   if (updatedTask?.status !== "done" || !updatedTask?.completed) {
@@ -523,7 +523,7 @@ export async function test3_InvalidFrontmatter(app: App): Promise<boolean> {
   await app.vault.modify(file, updatedLines.join("\n"));
 
   // Ждём debounce
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => window.setTimeout(resolve, 500));
 
   const updatedTask = get(tasks).find((t) => t.id === task.id);
   if (updatedTask?.priority !== "medium") {
@@ -563,7 +563,7 @@ export async function test4_DeleteNote(app: App): Promise<boolean> {
   await deleteNoteTask(file.path, app);
 
   // Ждём обработки события
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => window.setTimeout(resolve, 500));
 
   const updatedTask = get(tasks).find((t) => t.id === task.id);
   if (updatedTask?.notePath !== null) {
@@ -612,7 +612,7 @@ export async function test5_RenameNote(app: App): Promise<boolean> {
   await app.vault.rename(file, newPath);
 
   // Ждём обработки события
-  await new Promise((resolve) => setTimeout(resolve, 500));
+  await new Promise((resolve) => window.setTimeout(resolve, 500));
 
   const updatedTask = get(tasks).find((t) => t.id === task.id);
   if (updatedTask?.notePath !== newPath) {

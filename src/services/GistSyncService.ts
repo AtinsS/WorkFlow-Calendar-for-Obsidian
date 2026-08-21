@@ -39,8 +39,8 @@ let autoSyncEnabled = false;
 function scheduleAutoSync(): void {
   if (!autoSyncEnabled) return;
 
-  if (autoSyncTimeout) clearTimeout(autoSyncTimeout);
-  autoSyncTimeout = setTimeout(async () => {
+  if (autoSyncTimeout) window.clearTimeout(autoSyncTimeout);
+  autoSyncTimeout = window.setTimeout(async () => {
     if (!autoSyncEnabled) return;
     console.log("[GistSync] Auto-sync triggered, syncing...");
     gistSyncStatus.update((s) => ({ ...s, lastAutoSync: new Date().toLocaleTimeString("ru-RU") }));
@@ -83,7 +83,7 @@ export function setAutoSync(enabled: boolean): void {
   console.log("[GistSync] setAutoSync called with", enabled);
 
   if (!enabled && autoSyncTimeout) {
-    clearTimeout(autoSyncTimeout);
+    window.clearTimeout(autoSyncTimeout);
     autoSyncTimeout = null;
   }
 }

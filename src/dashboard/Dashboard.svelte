@@ -275,9 +275,8 @@
           <div class="dash-widget__dropdown">
             {#each todayHabits as habit (habit.id)}
               <button class="dash-habit" class:done={habit.progress === 2} style="--hc:{habit.color}" on:click|stopPropagation={() => toggleHabitCompletion(habit.id, todayStr, habit.targetCount || 1)}>
-                <span class="dash-habit-check" class:checked={habit.progress === 2} class:half={habit.progress === 1}>
-                  {#if habit.progress === 2}<svg class="dash-check-svg" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-                  {:else if habit.progress === 1}<span style="font-size:10px">½</span>{/if}
+                <span class="dash-habit-check" class:checked={habit.progress === 2}>
+                  {#if habit.progress === 2}<svg class="dash-check-svg" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="currentColor" stroke-width="2" fill="none"/></svg>{/if}
                 </span>
                 <span class="dash-habit-icon">{habit.icon}</span>
                 <span class="dash-habit-name" class:strike={habit.progress === 2}>{habit.title}</span>
@@ -532,7 +531,6 @@
     flex-shrink: 0; transition: all 0.2s ease; color: transparent;
   }
   .dash-habit-check.checked { background: var(--hc, #3DD68C); border-color: var(--hc, #3DD68C); color: #fff; }
-  .dash-habit-check.half { border-color: var(--hc, #F5A623); color: var(--hc, #F5A623); }
   .dash-check-svg { width: 10px; height: 10px; }
   .dash-habit-icon { font-size: 14px; flex-shrink: 0; line-height: 1; }
   .dash-habit-name { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }

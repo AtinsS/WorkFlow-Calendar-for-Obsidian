@@ -1,5 +1,5 @@
 import { writable, get } from "svelte/store";
-import moment from "moment";
+import { moment } from "obsidian";
 
 import type CalendarPlugin from "src/main";
 
@@ -44,9 +44,9 @@ function cleanupOldHabitLogs(): void {
 function debouncedSave(): void {
   if (!loaded) return;
   if (saveTimeout) {
-    clearTimeout(saveTimeout);
+    window.clearTimeout(saveTimeout);
   }
-  saveTimeout = setTimeout(() => {
+  saveTimeout = window.setTimeout(() => {
     const data: IHabitTrackerData = {
       habits: get(habits),
       habitLogs: get(habitLogs),
@@ -61,7 +61,7 @@ function debouncedSave(): void {
 export function immediateSave(): void {
   if (!loaded || !pluginInstance) return;
   if (saveTimeout) {
-    clearTimeout(saveTimeout);
+    window.clearTimeout(saveTimeout);
     saveTimeout = null;
   }
   const data: IHabitTrackerData = {
@@ -89,7 +89,7 @@ export async function initHabitStores(plugin: CalendarPlugin): Promise<void> {
   await doLoad();
 
   // Retry after 2s if initial load returned empty (vault cache may not have been ready)
-  setTimeout(() => {
+  window.setTimeout(() => {
     if (get(habits).length === 0) {
       loaded = false;
       doLoad();
@@ -145,7 +145,7 @@ export function toggleHabitCompletion(
   const existing = logsByHabitDate.get(key);
 
   if (targetCount <= 1) {
-    // 3-state cycle: 0 → 100% → 50% → 0
+    // 2-state cycle: 0 → 100% → 0
     if (!existing) {
       // 0 → 100%
       const log: IHabitLog = {
@@ -158,17 +158,8 @@ export function toggleHabitCompletion(
       };
       habitLogs.update((current) => [...current, log]);
       cleanupOldHabitLogs();
-    } else if (existing.completed) {
-      // 100% → 50% (partial)
-      habitLogs.update((current) =>
-        current.map((l) =>
-          l.id === existing.id
-            ? { ...l, completed: false, count: 1, completedAt: Date.now() }
-            : l
-        )
-      );
     } else {
-      // 50% → 0 (remove)
+      // 100% → 0 (remove)
       habitLogs.update((current) => current.filter((l) => l.id !== existing.id));
     }
   } else {
@@ -203,7 +194,7 @@ export function toggleHabitCompletion(
   debouncedSave();
 }
 
-/** Set habit completion directly (used by sync). progress: 0=clear, 1=50%, 2=100% */
+/** Set habit completion directly (used by sync). progress: 0=clear, 2=100% */
 export function setHabitProgress(
   habitId: string,
   date: string,
@@ -216,28 +207,6 @@ export function setHabitProgress(
     // Clear
     if (existing) {
       habitLogs.update((current) => current.filter((l) => l.id !== existing.id));
-    }
-  } else if (progress === 1) {
-    // 50% — count=1, not completed
-    if (existing) {
-      habitLogs.update((current) =>
-        current.map((l) =>
-          l.id === existing.id
-            ? { ...l, count: 1, completed: false, completedAt: Date.now() }
-            : l
-        )
-      );
-    } else {
-      const log: IHabitLog = {
-        id: generateId(),
-        habitId,
-        date,
-        completed: false,
-        count: 1,
-        completedAt: Date.now(),
-      };
-      habitLogs.update((current) => [...current, log]);
-      cleanupOldHabitLogs();
     }
   } else if (progress === 2) {
     // 100% — completed
@@ -266,12 +235,11 @@ export function setHabitProgress(
   debouncedSave();
 }
 
-/** Get habit progress for a date: 0=not done, 1=50%, 2=100% */
+/** Get habit progress for a date: 0=not done, 2=100% */
 export function getHabitProgressOnDate(habitId: string, date: string): number {
   const log = logsByHabitDate.get(`${habitId}::${date}`);
   if (!log) return 0;
   if (log.completed) return 2;
-  if (log.count >= 1) return 1;
   return 0;
 }
 

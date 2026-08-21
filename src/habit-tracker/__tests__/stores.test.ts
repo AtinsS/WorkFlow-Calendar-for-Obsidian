@@ -100,7 +100,7 @@ describe("removeHabit", () => {
 });
 
 describe("toggleHabitCompletion", () => {
-  it("should create log entry at 100% on first toggle (3-state cycle model)", () => {
+  it("should create log entry at 100% on first toggle (2-state cycle model)", () => {
     const habit = addHabit({
       title: "Exercise",
       icon: "\uD83C\uDFC3",
@@ -119,7 +119,7 @@ describe("toggleHabitCompletion", () => {
     expect(getHabitCountOnDate(habit.id, "2026-07-05")).toBe(2);
   });
 
-  it("should go to 50% on second toggle and reset on third", () => {
+  it("should reset on second toggle", () => {
     const habit = addHabit({
       title: "Exercise",
       icon: "\uD83C\uDFC3",
@@ -132,10 +132,6 @@ describe("toggleHabitCompletion", () => {
 
     toggleHabitCompletion(habit.id, "2026-07-05"); // 100%
     expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(true);
-
-    toggleHabitCompletion(habit.id, "2026-07-05"); // 50%
-    expect(isHabitCompletedOnDate(habit.id, "2026-07-05")).toBe(false);
-    expect(get(habitLogs).length).toBe(1);
 
     toggleHabitCompletion(habit.id, "2026-07-05"); // reset to 0
     expect(get(habitLogs).length).toBe(0);

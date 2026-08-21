@@ -31,9 +31,6 @@ export default class MobileScheduleView extends ItemView {
     const container = this.containerEl.children[1];
     container.empty();
     container.addClass("mobile-schedule-view-container");
-    (container as HTMLElement).style.height = "100%";
-    (container as HTMLElement).style.display = "flex";
-    (container as HTMLElement).style.flexDirection = "column";
 
     this.svelteComponent = new MobileSchedule({
       target: container as HTMLElement,

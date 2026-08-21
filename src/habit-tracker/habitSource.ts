@@ -20,8 +20,8 @@ function getLogsMap(): Map<string, number> {
     cachedLogs = current;
     cachedMap = new Map();
     for (const log of current) {
-      // Count both 100% (completed) and 50% (count >= 1, not completed)
-      if (log.completed || log.count >= 1) {
+      // Count completed habits
+      if (log.completed) {
         cachedMap.set(log.date, (cachedMap.get(log.date) || 0) + 1);
       }
     }

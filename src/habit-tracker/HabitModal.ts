@@ -85,7 +85,6 @@ export class HabitModal extends CustomModal {
       const swatch = colorGrid.createDiv({
         cls: `task-tracker-color-swatch ${color === this.colorInput ? "active" : ""}`,
       });
-      swatch.style.backgroundColor = color;
       swatch.style.setProperty("--swatch-color", color);
       swatch.addEventListener("click", () => {
         this.colorInput = color;
@@ -161,7 +160,7 @@ export class HabitModal extends CustomModal {
         text.inputEl.type = "number";
         text.inputEl.min = "1";
         text.inputEl.max = "31";
-        text.inputEl.style.maxWidth = "60px";
+        text.inputEl.addClass("wf-habit-monthly-day-input");
       });
 
     this.updateFrequencySettingsVisibility();
