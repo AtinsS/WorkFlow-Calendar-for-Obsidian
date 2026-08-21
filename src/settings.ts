@@ -252,7 +252,6 @@ export function applyAccentColor(hex: string): void {
     "--interactive-accent",
     `rgba(${r}, ${g}, ${b}, 0.55)`,
   );
-  root.style.setProperty("--text-on-accent", "#fff");
   root.style.setProperty("--text-accent", `rgba(${r}, ${g}, ${b}, 0.9)`);
 
   // Calendar nav arrows and title

@@ -36,6 +36,7 @@
   --mcp-text: #E8ECF0;
   --mcp-text-muted: ##b7b8bb;
   --mcp-text-faint: #3A3F4B;
+  --text-on-accent: #fff;
 
   /* Radii */
   --mcp-radius: 16px;

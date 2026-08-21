@@ -50,7 +50,6 @@ export class NotificationService {
     this.requestPermission();
     this.timer = window.setInterval(() => this.check(), this.getSettings().checkIntervalMs);
     this.check(); // run immediately
-    this.startNtfyListener();
   }
 
   stop(): void {
@@ -58,7 +57,6 @@ export class NotificationService {
       window.clearInterval(this.timer);
       this.timer = null;
     }
-    this.stopNtfyListener();
     this.firedReminders.clear();
     this.firedOverdue.clear();
     this.firedDeadline.clear();
@@ -289,51 +287,6 @@ export class NotificationService {
         error: e instanceof Error ? e.message : String(e),
       }).catch((historyError) => console.warn("[ntfy] history write failed:", historyError));
     });
-  }
-
-  private ntfyPollTimer: ReturnType<typeof setInterval> | null = null;
-  private ntfyLastId = "";
-
-  private startNtfyListener(): void {
-    const opts = this.plugin.options as ISettings;
-    if (!opts.ntfyEnabled || !opts.ntfyTopic) return;
-
-    this.stopNtfyListener();
-
-    const topic = opts.ntfyTopic;
-
-    // Poll ntfy every 30 seconds for new messages
-    this.ntfyPollTimer = window.setInterval(async () => {
-      try {
-        const sinceParam = this.ntfyLastId ? `&since=${this.ntfyLastId}` : "&since=5m";
-        const url = `https://ntfy.sh/${topic}/json?poll=1${sinceParam}`;
-        const response = await requestUrl({ url });
-        if (response.status !== 200) return;
-
-        const text = response.text;
-        if (!text.trim()) return;
-
-        const lines = text.split("\n").filter((l) => l.trim().startsWith("{"));
-
-        for (const line of lines) {
-          try {
-            const event = JSON.parse(line.trim());
-            if (event.id) this.ntfyLastId = event.id;
-          } catch {
-            // ignore parse errors
-          }
-        }
-      } catch (e) {
-        console.warn("[ntfy] poll error:", e);
-      }
-    }, 30_000);
-  }
-
-  private stopNtfyListener(): void {
-    if (this.ntfyPollTimer) {
-      window.clearInterval(this.ntfyPollTimer);
-      this.ntfyPollTimer = null;
-    }
   }
 
   private cleanupFiredKeys(activeTasks: ITask[]): void {
