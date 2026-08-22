@@ -541,7 +541,7 @@ export class TaskModal extends CustomModal {
 
     let recurrence: RecurrenceConfig | undefined;
     if (this.recurrenceType !== "none") {
-      recurrence = { type: this.recurrenceType as "daily" | "weekly" | "monthly", interval: this.recurrenceInterval };
+      recurrence = { type: this.recurrenceType, interval: this.recurrenceInterval };
       if (this.recurrenceType === "weekly" && this.recurrenceDaysOfWeek.length > 0) recurrence.daysOfWeek = [...this.recurrenceDaysOfWeek];
       if (this.recurrenceUntilDateUID) recurrence.until = this.recurrenceUntilDateUID;
     }

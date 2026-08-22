@@ -262,8 +262,8 @@ export class QuickAddModal extends Modal {
       this.onSubmit();
 
       if (openFullModal && task) {
-        import("./TaskModal").then(({ TaskModal }) => {
-          new TaskModal(this.app, task, () => { /* handled by TaskModal */ }).open();
+        void import("./TaskModal").then(({ TaskModal }) => {
+          new TaskModal(this.app, () => { /* handled by TaskModal */ }, task).open();
         });
       }
     } catch (e) {

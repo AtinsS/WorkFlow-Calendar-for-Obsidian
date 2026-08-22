@@ -86,8 +86,8 @@ export default class CalendarPlugin extends Plugin {
     // Flush pending debounced saves before teardown
     immediateTaskSave();
     immediateHabitSave();
-    immediateFinanceSave();
-    immediateAnalyticsSave();
+    void immediateFinanceSave();
+    void immediateAnalyticsSave();
 
     if (this.syncReloadTimer) window.clearTimeout(this.syncReloadTimer);
     this.notificationService?.stop();
@@ -251,25 +251,25 @@ export default class CalendarPlugin extends Plugin {
 
     if (!this.ribbonIconsRegistered) {
       const tasksIcon = this.addRibbonIcon("checkbox-glyph", tRaw("main.ribbon.tasks"), () => {
-        this.activateTaskView();
+        void this.activateTaskView();
       });
       tasksIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(tasksIcon);
 
       const calendarIcon = this.addRibbonIcon("calendar-with-checkmark", tRaw("main.ribbon.calendar"), () => {
-        this.activateCalendarView();
+        void this.activateCalendarView();
       });
       calendarIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(calendarIcon);
 
       const analyticsIcon = this.addRibbonIcon("bar-chart", tRaw("main.ribbon.analytics"), () => {
-        this.activateHabitAnalyticsView();
+        void this.activateHabitAnalyticsView();
       });
       analyticsIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(analyticsIcon);
 
       const financeIcon = this.addRibbonIcon("coins", tRaw("main.ribbon.finance"), () => {
-        this.activateFinanceView();
+        void this.activateFinanceView();
       });
       financeIcon.dataset.mcpRibbon = "true";
       this.ribbonIcons.push(financeIcon);
@@ -329,7 +329,7 @@ export default class CalendarPlugin extends Plugin {
               analytics: () => this.activateHabitAnalyticsView(),
             };
             const action = viewMap[viewKey];
-            if (action) action();
+            if (action) void action();
           },
         },
       });
@@ -650,7 +650,7 @@ export default class CalendarPlugin extends Plugin {
    * The folder name may differ from manifest.id (e.g. "WorkLife Calendar" vs "calendar-plugin-remastered").
    */
   private async findPluginDir(): Promise<string | null> {
-    const configDir = this.app.vault.configDir || ".obsidian";
+    const configDir = this.app.vault.configDir;
     const pluginsDir = `${configDir}/plugins`;
     try {
       const entries = await this.app.vault.adapter.list(pluginsDir);

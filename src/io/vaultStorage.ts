@@ -112,7 +112,7 @@ async function writeFileContent(app: App, path: string, content: string): Promis
 
   try {
     await app.vault.create(path, content);
-  } catch (e: unknown) {
+  } catch {
     // Race condition or "File already exists" — try vault modify, then adapter fallback
     const existing = app.vault.getAbstractFileByPath(path);
     if (isTFile(existing)) {
@@ -386,7 +386,7 @@ export async function saveVaultKey(
   console.warn(`[vaultStorage] Unknown module key: ${key}, falling back to legacy`);
   await enqueueModuleWrite(key, async () => {
     const vaultData = await loadVaultData(app);
-    vaultData[key] = value as Record<string, unknown>;
+    vaultData[key] = value;
     await saveVaultData(app, vaultData);
   });
 }

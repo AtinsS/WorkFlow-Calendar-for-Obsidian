@@ -4,9 +4,8 @@ import type { Moment } from "moment";
 
 // Obsidian's type defs export moment as `typeof Moment` (the module namespace),
 // but at runtime it's the callable moment function. Cast once here.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
-  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Obsidian types moment as namespace, runtime is callable
+const momentFn = moment as (inp?: unknown, format?: string, strict?: boolean) => Moment;
 
 import type CalendarPlugin from "src/main";
 

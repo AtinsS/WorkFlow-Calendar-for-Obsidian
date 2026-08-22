@@ -112,7 +112,7 @@ export function addManualIncomeSource(source: Omit<ManualIncomeSource, "id" | "c
     ...current,
     manualIncomeSources: [...current.manualIncomeSources, newSource],
   }));
-  debouncedSave();
+  void debouncedSave();
 }
 
 export function updateManualIncomeSource(id: string, changes: Partial<ManualIncomeSource>): void {
@@ -122,7 +122,7 @@ export function updateManualIncomeSource(id: string, changes: Partial<ManualInco
       s.id === id ? { ...s, ...changes } : s
     ),
   }));
-  debouncedSave();
+  void debouncedSave();
 }
 
 export function removeManualIncomeSource(id: string): void {
@@ -130,7 +130,7 @@ export function removeManualIncomeSource(id: string): void {
     ...current,
     manualIncomeSources: current.manualIncomeSources.filter((s) => s.id !== id),
   }));
-  debouncedSave();
+  void debouncedSave();
 }
 
 export function getTotalManualIncome(): number {
