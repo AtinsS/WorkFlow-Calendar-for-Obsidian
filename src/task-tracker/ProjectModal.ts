@@ -19,7 +19,7 @@ const MAX_RECENT = 10;
 function getRecentIcons(app: App): string[] {
   try {
     const raw = app.loadLocalStorage(RECENT_ICONS_KEY);
-    return typeof raw === "string" ? JSON.parse(raw) : [];
+    return typeof raw === "string" ? JSON.parse(raw) as string[] : [];
   } catch {
     return [];
   }

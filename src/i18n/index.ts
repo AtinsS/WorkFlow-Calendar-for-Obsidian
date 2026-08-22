@@ -10,14 +10,14 @@ const translations: Record<Locale, Translations> = { ru, en };
 export const locale = writable<Locale>("ru");
 
 /** Resolve nested key like "tasks.panel.title" from an object */
-function getNestedValue(obj: any, path: string): string | string[] | undefined {
+function getNestedValue(obj: unknown, path: string): string | string[] | undefined {
   const parts = path.split(".");
-  let current = obj;
+  let current: unknown = obj;
   for (const part of parts) {
     if (current == null || typeof current !== "object") return undefined;
-    current = current[part];
+    current = (current as Record<string, unknown>)[part];
   }
-  return current;
+  return current as string | string[] | undefined;
 }
 
 /**
@@ -117,7 +117,7 @@ export function setLocale(newLocale: Locale): void {
  * Detect system locale. Returns "ru" if system language is Russian, else "en".
  */
 export function detectSystemLocale(): Locale {
-  const lang = navigator.language || (navigator as any).userLanguage || "en";
+  const lang = navigator.language || "en";
   return lang.startsWith("ru") ? "ru" : "en";
 }
 

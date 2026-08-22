@@ -21,7 +21,7 @@ export const financialAnalyticsData = writable<IFinancialAnalyticsData>({
   incomeCategories: [],
 });
 
-let pluginInstance: CalendarPlugin = null;
+let pluginInstance: CalendarPlugin | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
 let storeIsDirty = false;
@@ -165,7 +165,7 @@ export function addIncomeCategory(category: string): void {
     return { ...current, incomeCategories: [...cats, trimmed] };
   });
   // Save immediately so categories persist without delay
-  immediateAnalyticsSave();
+  void immediateAnalyticsSave();
 }
 
 export function removeIncomeCategory(category: string): void {
@@ -174,7 +174,7 @@ export function removeIncomeCategory(category: string): void {
     return { ...current, incomeCategories: cats.filter((c) => c !== category) };
   });
   // Save immediately so categories persist without delay
-  immediateAnalyticsSave();
+  void immediateAnalyticsSave();
 }
 
 export function getManualIncomeByCategory(): Map<string, ManualIncomeSource[]> {

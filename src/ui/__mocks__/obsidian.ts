@@ -2,10 +2,10 @@ export class TFile {}
 export class PluginSettingTab {}
 /** Mock of Obsidian's Modal — only used in tests */
 export class Modal {
-  app: any;
-  constructor(app?: any) { this.app = app; }
-  open() { /* noop */ }
-  close() { /* noop */ }
+  app: unknown;
+  constructor(app?: unknown) { this.app = app; }
+  open(): void { /* noop */ }
+  close(): void { /* noop */ }
 }
 export class Notice {}
 export function normalizePath(): string {
@@ -25,26 +25,26 @@ export class TFolder {
 }
 
 export class App {
-  vault: any;
+  vault: unknown;
   constructor() {
     this.vault = {
-      getRoot: () => new TFolder("") as any,
+      getRoot: () => new TFolder(""),
     };
   }
 }
 
 export class SuggestModal<T> {
-  app: any;
-  constructor(app?: any) {
+  app: unknown;
+  constructor(app?: unknown) {
     this.app = app;
   }
-  setPlaceholder(_: string) { /* noop */ }
-  open() { /* noop */ }
-  close() { /* noop */ }
+  setPlaceholder(_: string): void { /* noop */ }
+  open(): void { /* noop */ }
+  close(): void { /* noop */ }
   // Methods expected by subclasses
   getSuggestions(_query: string): T[] {
     return [] as T[];
   }
-  renderSuggestion(_suggestion: T, _el: HTMLElement) { /* noop */ }
-  onChooseSuggestion(_suggestion: T) { /* noop */ }
+  renderSuggestion(_suggestion: T, _el: HTMLElement): void { /* noop */ }
+  onChooseSuggestion(_suggestion: T): void { /* noop */ }
 }

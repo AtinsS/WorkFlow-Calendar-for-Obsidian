@@ -15,25 +15,25 @@ export async function loadTaskData(
   const moduleData = await loadModuleData(plugin.app, "taskTracker");
   if (moduleData && Object.keys(moduleData).length > 0) {
     const data = moduleData as unknown as ITaskTrackerData;
-    console.log(`[Task] vault: ${data.tasks?.length ?? 0} tasks`);
+    console.debug(`[Task] vault: ${data.tasks?.length ?? 0} tasks`);
     if (data.version < TASK_TRACKER_DATA_VERSION) {
       return migrateData(data);
     }
     return data;
   }
-  console.log(`[Task] vault empty, trying data.json...`);
+  console.debug(`[Task] vault empty, trying data.json...`);
 
   // 2. Fallback: try plugin data.json (legacy format)
   const raw = await plugin.loadDataSafe();
   if (raw && raw[TASK_TRACKER_KEY]) {
     const data = raw[TASK_TRACKER_KEY] as ITaskTrackerData;
-    console.log(`[Task] data.json: ${data.tasks?.length ?? 0} tasks`);
+    console.debug(`[Task] data.json: ${data.tasks?.length ?? 0} tasks`);
     if (data.version < TASK_TRACKER_DATA_VERSION) {
       return migrateData(data);
     }
     return data;
   }
-  console.log(`[Task] NO DATA`);
+  console.debug(`[Task] NO DATA`);
   return { tasks: [], projects: [], timeLogs: [], checklists: [], version: TASK_TRACKER_DATA_VERSION };
 }
 

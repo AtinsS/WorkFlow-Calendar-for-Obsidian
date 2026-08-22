@@ -2,6 +2,12 @@ import { writable, get } from "svelte/store";
 import { moment } from "obsidian";
 import type { Moment } from "moment";
 
+// Obsidian's type defs export moment as `typeof Moment` (the module namespace),
+// but at runtime it's the callable moment function. Cast once here.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
+  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
+
 import type CalendarPlugin from "src/main";
 import { getDateUID } from "obsidian-daily-notes-interface";
 
@@ -12,7 +18,7 @@ import { startTimer, resumeTimer, stopTimer, addTimeLog } from "./TimerManager";
 import { settings } from "../ui/stores";
 import { tRaw } from "../i18n";
 
-let pluginInstance: CalendarPlugin = null;
+let pluginInstance: CalendarPlugin | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
 
@@ -61,7 +67,7 @@ function autoCleanupCompleted(): void {
 
 export const tasks = writable<ITask[]>([]);
 export const projects = writable<IProject[]>([]);
-export const selectedDate = writable<DateUID>(null);
+export const selectedDate = writable<DateUID | null>(null);
 export const activeTab = writable<TaskStatus>("all");
 export const taskFilter = writable<{
   projectId: string | null;
@@ -86,7 +92,7 @@ function debouncedSave(): void {
       version: TASK_TRACKER_DATA_VERSION,
     };
     if (pluginInstance) {
-      saveTaskData(pluginInstance, data);
+      void saveTaskData(pluginInstance, data);
     }
   }, 300);
 }
@@ -104,7 +110,7 @@ export function immediateSave(): void {
     checklists: get(checklists),
     version: TASK_TRACKER_DATA_VERSION,
   };
-  saveTaskData(pluginInstance, data);
+  void saveTaskData(pluginInstance, data);
 }
 
 export async function initTaskStores(plugin: CalendarPlugin): Promise<void> {
@@ -142,13 +148,13 @@ export async function initTaskStores(plugin: CalendarPlugin): Promise<void> {
   window.setTimeout(() => {
     if (get(tasks).length === 0) {
       loaded = false;
-      doLoad();
+      void doLoad();
     }
   }, 2000);
 }
 
 export function reloadTaskStores(plugin: CalendarPlugin): void {
-  loadTaskData(plugin).then((data) => {
+  void loadTaskData(plugin).then((data) => {
     tasks.set(data.tasks);
     projects.set(data.projects);
     timeLogs.set(data.timeLogs || []);
@@ -182,9 +188,10 @@ export function addTask(
 
   // Auto-create note for task if syncAllTasksToNotes is enabled
   const currentSettings = get(settings);
-  if (currentSettings.syncAllTasksToNotes && pluginInstance) {
-    import("./noteTasks").then(({ ensureNoteForTask }) => {
-      ensureNoteForTask(task, pluginInstance.app).catch((e) =>
+  const appInstance = pluginInstance?.app;
+  if (currentSettings.syncAllTasksToNotes && appInstance) {
+    void import("./noteTasks").then(({ ensureNoteForTask }) => {
+      void ensureNoteForTask(task, appInstance).catch((e: unknown) =>
         console.error("[Calendar Plugin] Failed to create note for task:", e)
       );
     });
@@ -211,9 +218,10 @@ export function updateTask(id: string, changes: Partial<ITask>): void {
   if (changes.status !== undefined || changes.completed !== undefined || changes.title !== undefined) {
     const allTasks = get(tasks);
     const task = allTasks.find((t) => t.id === id);
-    if (task?.notePath && pluginInstance) {
-      import("./noteTasks").then(({ syncTaskToFrontmatter }) => {
-        syncTaskToFrontmatter(task, pluginInstance.app).catch((e) =>
+    const appForSync = pluginInstance?.app;
+    if (task?.notePath && appForSync) {
+      void import("./noteTasks").then(({ syncTaskToFrontmatter }) => {
+        void syncTaskToFrontmatter(task, appForSync).catch((e: unknown) =>
           console.error("[Calendar Plugin] Failed to sync task to note:", e)
         );
       });
@@ -436,7 +444,7 @@ export function createNextRecurringInstance(taskId: string): void {
   );
   if (!dateMatch) return;
 
-  const currentDate = moment(dateMatch[1], "YYYY-MM-DD");
+  const currentDate = momentFn(dateMatch[1], "YYYY-MM-DD");
   if (!currentDate.isValid()) return;
 
   let nextDate = currentDate.clone();
@@ -478,7 +486,7 @@ export function createNextRecurringInstance(taskId: string): void {
 
   // Проверка: не выходит ли следующая дата за пределы until
   if (task.recurrence.until) {
-    const untilMoment = moment(task.recurrence.until.replace(/^day-/, ""), "YYYY-MM-DD");
+    const untilMoment = momentFn(task.recurrence.until.replace(/^day-/, ""), "YYYY-MM-DD");
     if (untilMoment.isValid() && nextDate.isAfter(untilMoment)) {
       return; // повторение завершено
     }
@@ -531,13 +539,13 @@ export function generateMonthlyRecurringTasks(taskId: string): void {
   const dateMatch = task.dateUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
   if (!dateMatch) return;
 
-  const startDate = moment(dateMatch[1], "YYYY-MM-DD");
+  const startDate = momentFn(dateMatch[1], "YYYY-MM-DD");
   if (!startDate.isValid()) return;
 
   // Конец периода: until если задана, иначе конец текущего месяца
   let endOfPeriod: Moment;
   if (task.recurrence.until) {
-    const untilMoment = moment(task.recurrence.until.replace(/^day-/, ""), "YYYY-MM-DD");
+    const untilMoment = momentFn(task.recurrence.until.replace(/^day-/, ""), "YYYY-MM-DD");
     endOfPeriod = untilMoment.isValid() ? untilMoment : startDate.clone().endOf("month");
   } else {
     endOfPeriod = startDate.clone().endOf("month");

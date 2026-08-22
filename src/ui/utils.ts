@@ -39,7 +39,7 @@ export function partition<T>(
  *
  * @param file
  */
-export function getDateUIDFromFile(file: TFile | null): string {
+export function getDateUIDFromFile(file: TFile | null): string | null {
   if (!file) {
     return null;
   }

@@ -170,31 +170,27 @@ export class QuickAddModal extends Modal {
 
       // Time badge
       if (parsed.scheduledTime) {
-        const timeBadge = document.createElement("span");
-        timeBadge.className = `qa-badge ${parsed.timeValid ? "qa-badge-valid" : "qa-badge-invalid"}`;
-
-        timeBadge.textContent = `🕐 ${formatTime(parsed.scheduledTime)}`;
-        preview.appendChild(timeBadge);
+        const timeBadge = preview.createEl("span", {
+          cls: `qa-badge ${parsed.timeValid ? "qa-badge-valid" : "qa-badge-invalid"}`,
+          text: `🕐 ${formatTime(parsed.scheduledTime)}`,
+        });
+        void timeBadge;
       }
 
       // End time
       if (parsed.endTime) {
-        const arrow = document.createElement("span");
-        arrow.textContent = "→";
-        arrow.className = "qa-arrow";
-        preview.appendChild(arrow);
+        preview.createEl("span", { cls: "qa-arrow", text: "→" });
 
-        const endBadge = document.createElement("span");
-        endBadge.className = `qa-badge ${parsed.endValid ? "qa-badge-valid" : "qa-badge-invalid"}`;
-
-        endBadge.textContent = formatTime(parsed.endTime);
-        preview.appendChild(endBadge);
+        const endBadge = preview.createEl("span", {
+          cls: `qa-badge ${parsed.endValid ? "qa-badge-valid" : "qa-badge-invalid"}`,
+          text: formatTime(parsed.endTime),
+        });
+        void endBadge;
       }
 
       // Priority
       if (parsed.priority) {
-        const prioBadge = document.createElement("span");
-        prioBadge.className = "qa-badge";
+        const prioBadge = preview.createEl("span", { cls: "qa-badge" });
 
         if (parsed.priority === "high") {
           prioBadge.textContent = "!! high";
@@ -206,16 +202,11 @@ export class QuickAddModal extends Modal {
           prioBadge.textContent = "- low";
           prioBadge.classList.add("qa-badge-info");
         }
-
-        preview.appendChild(prioBadge);
       }
 
       // Title
       if (parsed.title) {
-        const titleSpan = document.createElement("span");
-        titleSpan.textContent = parsed.title;
-        titleSpan.className = "qa-title";
-        preview.appendChild(titleSpan);
+        preview.createEl("span", { cls: "qa-title", text: parsed.title });
       }
     });
 

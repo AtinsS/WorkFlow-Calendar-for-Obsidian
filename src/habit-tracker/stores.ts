@@ -1,5 +1,12 @@
 import { writable, get } from "svelte/store";
 import { moment } from "obsidian";
+import type { Moment } from "moment";
+
+// Obsidian's type defs export moment as `typeof Moment` (the module namespace),
+// but at runtime it's the callable moment function. Cast once here.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
+  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
 
 import type CalendarPlugin from "src/main";
 
@@ -9,7 +16,7 @@ import { loadHabitData, saveHabitData, generateId } from "./storage";
 import { settings } from "../ui/stores";
 import { tArrayRaw, locale } from "../i18n";
 
-let pluginInstance: CalendarPlugin = null;
+let pluginInstance: CalendarPlugin | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
 
@@ -53,7 +60,7 @@ function debouncedSave(): void {
       version: HABIT_TRACKER_DATA_VERSION,
     };
     if (pluginInstance) {
-      saveHabitData(pluginInstance, data);
+      void saveHabitData(pluginInstance, data);
     }
   }, 300);
 }
@@ -69,7 +76,7 @@ export function immediateSave(): void {
     habitLogs: get(habitLogs),
     version: HABIT_TRACKER_DATA_VERSION,
   };
-  saveHabitData(pluginInstance, data);
+  void saveHabitData(pluginInstance, data);
 }
 
 export async function initHabitStores(plugin: CalendarPlugin): Promise<void> {
@@ -92,13 +99,13 @@ export async function initHabitStores(plugin: CalendarPlugin): Promise<void> {
   window.setTimeout(() => {
     if (get(habits).length === 0) {
       loaded = false;
-      doLoad();
+      void doLoad();
     }
   }, 2000);
 }
 
 export function reloadHabitStores(plugin: CalendarPlugin): void {
-  loadHabitData(plugin).then((data) => {
+  void loadHabitData(plugin).then((data) => {
     habits.set(data.habits);
     habitLogs.set(data.habitLogs);
     rebuildLogsCache();
@@ -258,10 +265,10 @@ export function calculateStreak(habitId: string): number {
   if (logs.length === 0) return 0;
 
   let streak = 0;
-  let currentDate = moment().startOf("day");
+  let currentDate = momentFn().startOf("day");
 
   for (const log of logs) {
-    const logDate = moment(log.date, "YYYY-MM-DD").startOf("day");
+    const logDate = momentFn(log.date, "YYYY-MM-DD").startOf("day");
     const diffDays = currentDate.diff(logDate, "days");
 
     if (diffDays <= 1) {
@@ -307,7 +314,7 @@ export interface HabitStats {
 }
 
 export function getHeatmapData(habitId?: string): HeatmapCell[] {
-  const today = moment();
+  const today = momentFn();
   const yearAgo = today.clone().subtract(1, "year");
   const logs = habitId
     ? cachedLogs.filter((l) => l.habitId === habitId && l.completed)
@@ -316,7 +323,7 @@ export function getHeatmapData(habitId?: string): HeatmapCell[] {
   // Count completions per date
   const countByDate = new Map<string, number>();
   for (const log of logs) {
-    if (moment(log.date).isBefore(yearAgo)) continue;
+    if (momentFn(log.date).isBefore(yearAgo)) continue;
     countByDate.set(log.date, (countByDate.get(log.date) || 0) + 1);
   }
 
@@ -350,7 +357,7 @@ export function getHeatmapData(habitId?: string): HeatmapCell[] {
 }
 
 export function getWeeklyStats(weeksBack = 12): WeeklyStats[] {
-  const today = moment().startOf("week");
+  const today = momentFn().startOf("week");
   const results: WeeklyStats[] = [];
 
   for (let i = weeksBack - 1; i >= 0; i--) {
@@ -360,8 +367,8 @@ export function getWeeklyStats(weeksBack = 12): WeeklyStats[] {
     for (const log of cachedLogs) {
       if (
         log.completed &&
-        moment(log.date).isSameOrAfter(weekStart) &&
-        moment(log.date).isSameOrBefore(weekEnd)
+        momentFn(log.date).isSameOrAfter(weekStart) &&
+        momentFn(log.date).isSameOrBefore(weekEnd)
       ) {
         total++;
       }
@@ -389,8 +396,8 @@ export function getHabitStats(habitId: string): HabitStats {
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
     for (let i = 1; i < sortedAsc.length; i++) {
-      const prev = moment(sortedAsc[i - 1].date).startOf("day");
-      const curr = moment(sortedAsc[i].date).startOf("day");
+      const prev = momentFn(sortedAsc[i - 1].date).startOf("day");
+      const curr = momentFn(sortedAsc[i].date).startOf("day");
       if (curr.diff(prev, "days") === 1) {
         streak++;
       } else {
@@ -405,9 +412,9 @@ export function getHabitStats(habitId: string): HabitStats {
   const habit = get(habits).find((h) => h.id === habitId);
   let completionRate = 0;
   if (habit) {
-    const today = moment().startOf("day");
+    const today = momentFn().startOf("day");
     const weekAgo = today.clone().subtract(7, "days");
-    const recentLogs = logs.filter(l => moment(l.date).isAfter(weekAgo));
+    const recentLogs = logs.filter(l => momentFn(l.date).isAfter(weekAgo));
     const maxPerWeek = habit.frequency === "weekly" ? 1 : 7;
     completionRate = Math.min(100, Math.round((recentLogs.length / maxPerWeek) * 100));
   }
@@ -447,7 +454,7 @@ function getDayNames(): string[] {
 }
 
 /** Check if a habit is "active" on a given date */
-function isHabitActiveOnDate(habit: IHabit, date: moment.Moment): boolean {
+function isHabitActiveOnDate(habit: IHabit, date: Moment): boolean {
   if (habit.archived) return false;
   const dow = date.day(); // moment convention: 0=Sun, 1=Mon, ..., 6=Sat
   switch (habit.frequency) {
@@ -478,7 +485,7 @@ export function getDayOfWeekProductivity(): DayOfWeekStats[] {
   const statsByDay = new Map<number, { completedSum: number; activeSum: number; count: number }>();
 
   for (const dateStr of sortedDates) {
-    const date = moment(dateStr, "YYYY-MM-DD");
+    const date = momentFn(dateStr, "YYYY-MM-DD");
     if (!date.isValid()) continue;
     const dayOfWeek = date.day(); // moment convention: 0=Sun, 1=Mon, ..., 6=Sat
 

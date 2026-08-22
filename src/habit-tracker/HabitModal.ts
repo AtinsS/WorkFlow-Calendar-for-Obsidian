@@ -38,7 +38,7 @@ export class HabitModal extends CustomModal {
       this.titleInput = this.habit.title;
       this.iconInput = this.habit.icon;
       this.colorInput = this.habit.color;
-      this.frequencyInput = this.habit.frequency as "daily" | "weekly" | "monthly";
+      this.frequencyInput = this.habit.frequency;
       this.customDaysInput = this.habit.customDays || [];
       this.monthlyDayInput = this.habit.monthlyDay || 1;
       this.targetCountInput = this.habit.targetCount || 1;

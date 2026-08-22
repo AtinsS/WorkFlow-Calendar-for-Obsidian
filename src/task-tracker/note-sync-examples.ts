@@ -56,7 +56,7 @@ export async function exampleCreateNoteTask(
   // 3. Обновляем notePath в задаче
   updateTask(task.id, { notePath: file.path });
 
-  console.log(`Создана задача-заметка: ${file.path}`);
+  console.debug(`Создана задача-заметка: ${file.path}`);
 }
 
 // =============================================================================
@@ -108,8 +108,8 @@ export async function exampleChangeStatusFromFrontmatter(
   // Через 300ms (debounce) задача должна обновиться
   window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
-    console.log("Статус задачи:", updatedTask?.status);
-    console.log("Завершена:", updatedTask?.completed);
+    console.debug("Статус задачи:", updatedTask?.status);
+    console.debug("Завершена:", updatedTask?.completed);
   }, 500);
 }
 
@@ -149,7 +149,7 @@ export async function exampleChangeDateFromFrontmatter(
 
   window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
-    console.log("DateUID задачи:", updatedTask?.dateUID);
+    console.debug("DateUID задачи:", updatedTask?.dateUID);
   }, 500);
 }
 
@@ -180,7 +180,7 @@ export async function exampleChangePriorityFromFrontmatter(
 
   window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
-    console.log("Приоритет задачи:", updatedTask?.priority);
+    console.debug("Приоритет задачи:", updatedTask?.priority);
   }, 500);
 }
 
@@ -204,8 +204,8 @@ export async function exampleDeleteNote(app: App, task: ITask): Promise<void> {
 
   // Проверяем результат
   const updatedTask = get(tasks).find((t) => t.id === task.id);
-  console.log("notePath после удаления:", updatedTask?.notePath);
-  console.log("Задача всё ещё в JSON:", updatedTask !== undefined);
+  console.debug("notePath после удаления:", updatedTask?.notePath);
+  console.debug("Задача всё ещё в JSON:", updatedTask !== undefined);
 }
 
 // =============================================================================
@@ -234,7 +234,7 @@ export async function exampleRenameNote(
 
   // Проверяем результат
   const updatedTask = get(tasks).find((t) => t.id === task.id);
-  console.log("notePath после переименования:", updatedTask?.notePath);
+  console.debug("notePath после переименования:", updatedTask?.notePath);
 }
 
 // =============================================================================
@@ -263,7 +263,7 @@ export async function exampleSyncJsonToNote(
   const updatedTask = get(tasks).find((t) => t.id === task.id);
   if (updatedTask) {
     await syncTaskToNote(updatedTask, app);
-    console.log("Заметка обновлена из JSON");
+    console.debug("Заметка обновлена из JSON");
   }
 }
 
@@ -302,7 +302,7 @@ export async function exampleDebounceTest(
 
   // Ждём debounce (300ms) + запас
   window.setTimeout(() => {
-    console.log("Debounce test completed");
+    console.debug("Debounce test completed");
   }, 500);
 }
 
@@ -344,7 +344,7 @@ export async function exampleInvalidFrontmatter(
   // Проверяем, что задача не обновилась
   window.setTimeout(() => {
     const updatedTask = get(tasks).find((t) => t.id === task.id);
-    console.log("Приоритет остался прежним:", updatedTask?.priority);
+    console.debug("Приоритет остался прежним:", updatedTask?.priority);
   }, 500);
 }
 
@@ -374,8 +374,8 @@ export async function exampleNoteWithoutTaskId(app: App): Promise<void> {
   const file = await app.vault.create("test-note.md", content);
 
   // Проверяем, что в консоли нет ошибок
-  console.log("Создана заметка без task_id:", file.path);
-  console.log("Плагин должен её игнорировать");
+  console.debug("Создана заметка без task_id:", file.path);
+  console.debug("Плагин должен её игнорировать");
 }
 
 // =============================================================================
@@ -386,7 +386,7 @@ export async function exampleNoteWithoutTaskId(app: App): Promise<void> {
  * Тест 1: Создание задачи-заметки
  */
 export async function test1_CreateNoteTask(app: App): Promise<boolean> {
-  console.log("=== Тест 1: Создание задачи-заметки ===");
+  console.debug("=== Тест 1: Создание задачи-заметки ===");
 
   const { addTask } = await import("./stores");
 
@@ -434,7 +434,7 @@ export async function test1_CreateNoteTask(app: App): Promise<boolean> {
     return false;
   }
 
-  console.log("✓ Тест 1 пройден");
+  console.debug("✓ Тест 1 пройден");
   return true;
 }
 
@@ -444,7 +444,7 @@ export async function test1_CreateNoteTask(app: App): Promise<boolean> {
 export async function test2_ChangeStatusFromFrontmatter(
   app: App
 ): Promise<boolean> {
-  console.log("=== Тест 2: Изменение статуса через frontmatter ===");
+  console.debug("=== Тест 2: Изменение статуса через frontmatter ===");
 
   const { addTask } = await import("./stores");
 
@@ -484,7 +484,7 @@ export async function test2_ChangeStatusFromFrontmatter(
     return false;
   }
 
-  console.log("✓ Тест 2 пройден");
+  console.debug("✓ Тест 2 пройден");
   return true;
 }
 
@@ -492,7 +492,7 @@ export async function test2_ChangeStatusFromFrontmatter(
  * Тест 3: Обработка невалидного frontmatter
  */
 export async function test3_InvalidFrontmatter(app: App): Promise<boolean> {
-  console.log("=== Тест 3: Невалидный frontmatter ===");
+  console.debug("=== Тест 3: Невалидный frontmatter ===");
 
   const { addTask } = await import("./stores");
 
@@ -531,7 +531,7 @@ export async function test3_InvalidFrontmatter(app: App): Promise<boolean> {
     return false;
   }
 
-  console.log("✓ Тест 3 пройден");
+  console.debug("✓ Тест 3 пройден");
   return true;
 }
 
@@ -539,7 +539,7 @@ export async function test3_InvalidFrontmatter(app: App): Promise<boolean> {
  * Тест 4: Удаление заметки
  */
 export async function test4_DeleteNote(app: App): Promise<boolean> {
-  console.log("=== Тест 4: Удаление заметки ===");
+  console.debug("=== Тест 4: Удаление заметки ===");
 
   const { addTask } = await import("./stores");
 
@@ -577,7 +577,7 @@ export async function test4_DeleteNote(app: App): Promise<boolean> {
     return false;
   }
 
-  console.log("✓ Тест 4 пройден");
+  console.debug("✓ Тест 4 пройден");
   return true;
 }
 
@@ -585,7 +585,7 @@ export async function test4_DeleteNote(app: App): Promise<boolean> {
  * Тест 5: Переименование заметки
  */
 export async function test5_RenameNote(app: App): Promise<boolean> {
-  console.log("=== Тест 5: Переименование заметки ===");
+  console.debug("=== Тест 5: Переименование заметки ===");
 
   const { addTask } = await import("./stores");
 
@@ -620,7 +620,7 @@ export async function test5_RenameNote(app: App): Promise<boolean> {
     return false;
   }
 
-  console.log("✓ Тест 5 пройден");
+  console.debug("✓ Тест 5 пройден");
   return true;
 }
 
@@ -629,7 +629,7 @@ export async function test5_RenameNote(app: App): Promise<boolean> {
 // =============================================================================
 
 export async function runAllTests(app: App): Promise<void> {
-  console.log("Запуск всех тестов...\n");
+  console.debug("Запуск всех тестов...\n");
 
   const results: boolean[] = [];
 
@@ -642,5 +642,5 @@ export async function runAllTests(app: App): Promise<void> {
   const passed = results.filter((r) => r).length;
   const failed = results.filter((r) => !r).length;
 
-  console.log(`\nРезультаты: ${passed} пройдено, ${failed} провалено`);
+  console.debug(`\nРезультаты: ${passed} пройдено, ${failed} провалено`);
 }

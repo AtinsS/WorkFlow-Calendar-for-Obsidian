@@ -6,7 +6,7 @@ import { loadModuleData, saveModuleData } from "../io/vaultStorage";
 
 export const financeData = writable<IFinanceData>({});
 
-let pluginInstance: CalendarPlugin = null;
+let pluginInstance: CalendarPlugin | null = null;
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let loaded = false;
 let storeIsDirty = false; // true when store has unsaved local edits
@@ -130,7 +130,7 @@ export function updateMonthData(monthKey: string, changes: Partial<FinanceMonthD
       updatedAt: new Date().toISOString(),
     },
   }));
-  debouncedSave();
+  void debouncedSave();
 }
 
 export function addIncome(amount: number): void {
@@ -169,7 +169,7 @@ export function deleteMonthData(monthKey: string): void {
     delete next[monthKey];
     return next;
   });
-  debouncedSave();
+  void debouncedSave();
 }
 
 export function deleteMonthsBefore(cutoffKey: string): number {
@@ -181,6 +181,6 @@ export function deleteMonthsBefore(cutoffKey: string): number {
     for (const k of keys) delete next[k];
     return next;
   });
-  debouncedSave();
+  void debouncedSave();
   return keys.length;
 }

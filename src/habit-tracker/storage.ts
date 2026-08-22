@@ -13,19 +13,19 @@ export async function loadHabitData(
   const moduleData = await loadModuleData(plugin.app, "habitTracker");
   if (moduleData && Object.keys(moduleData).length > 0) {
     const data = moduleData as unknown as IHabitTrackerData;
-    console.log(`[Habit] vault: ${data.habits?.length ?? 0} habits`);
+    console.debug(`[Habit] vault: ${data.habits?.length ?? 0} habits`);
     return data;
   }
-  console.log(`[Habit] vault empty, trying data.json...`);
+  console.debug(`[Habit] vault empty, trying data.json...`);
 
   // 2. Fallback: try plugin data.json (legacy format)
   const raw = await plugin.loadDataSafe();
   if (raw && raw["habitTracker"]) {
     const data = raw["habitTracker"] as IHabitTrackerData;
-    console.log(`[Habit] data.json: ${data.habits?.length ?? 0} habits`);
+    console.debug(`[Habit] data.json: ${data.habits?.length ?? 0} habits`);
     return data;
   }
-  console.log(`[Habit] NO DATA`);
+  console.debug(`[Habit] NO DATA`);
   return {
     habits: [],
     habitLogs: [],

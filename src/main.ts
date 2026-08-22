@@ -1,13 +1,11 @@
 import "moment/locale/ru";
-import { moment, App, Plugin, WorkspaceLeaf } from "obsidian";
+import { moment, App, Plugin, WorkspaceLeaf, MarkdownView, View } from "obsidian";
 import type { Moment, WeekSpec } from "moment";
 import { get } from "svelte/store";
 
 const registeredMarkdownCodeBlocks = new Set<string>();
 
-// Track current plugin instance so view factories always reference the live plugin
-// (avoids stale closures after hot-reload)
-let currentPluginInstance: CalendarPlugin | null = null;
+
 
 import {
   VIEW_TYPE_CALENDAR,
@@ -128,9 +126,6 @@ export default class CalendarPlugin extends Plugin {
   }
 
   async onload(): Promise<void> {
-    // Track current instance so view factories reference the live plugin after hot-reload
-    currentPluginInstance = this;
-
     // Initialize locale from settings
     initLocale(this.options?.language || "system");
 
@@ -153,10 +148,10 @@ export default class CalendarPlugin extends Plugin {
       })
     );
 
-    const safeRegisterView = (type: string, factory: (leaf: WorkspaceLeaf) => any) => {
+    const safeRegisterView = (type: string, factory: (leaf: WorkspaceLeaf) => View) => {
       try {
         this.registerView(type, factory);
-      } catch (e) {
+      } catch {
         // View type already registered (hot-reload / double-load) — safe to ignore
       }
     };
@@ -171,7 +166,7 @@ export default class CalendarPlugin extends Plugin {
       try {
         this.registerMarkdownCodeBlockProcessor(lang, processor);
         registeredMarkdownCodeBlocks.add(lang);
-      } catch (e) {
+      } catch {
         // Code block processor already registered (hot-reload / double-load) — safe to ignore
         registeredMarkdownCodeBlocks.add(lang);
       }
@@ -180,9 +175,8 @@ export default class CalendarPlugin extends Plugin {
     safeRegisterView(
       VIEW_TYPE_CALENDAR,
       (leaf: WorkspaceLeaf) => {
-        const p = currentPluginInstance!;
-        p.view = new CalendarView(leaf, p);
-        return p.view;
+        this.view = new CalendarView(leaf, this);
+        return this.view;
       }
     );
 
@@ -193,32 +187,32 @@ export default class CalendarPlugin extends Plugin {
 
     safeRegisterView(
       VIEW_TYPE_SCHEDULE,
-      (leaf: WorkspaceLeaf) => new ScheduleView(leaf, currentPluginInstance!)
+      (leaf: WorkspaceLeaf) => new ScheduleView(leaf, this)
     );
 
     safeRegisterView(
       VIEW_TYPE_MOBILE_SCHEDULE,
-      (leaf: WorkspaceLeaf) => new MobileScheduleView(leaf, currentPluginInstance!)
+      (leaf: WorkspaceLeaf) => new MobileScheduleView(leaf, this)
     );
 
     safeRegisterView(
       VIEW_TYPE_MOBILE_TASKS,
-      (leaf: WorkspaceLeaf) => new MobileTaskTrackerView(leaf, currentPluginInstance!)
+      (leaf: WorkspaceLeaf) => new MobileTaskTrackerView(leaf, this)
     );
 
     safeRegisterView(
       VIEW_TYPE_HABIT_ANALYTICS,
-      (leaf: WorkspaceLeaf) => new HabitAnalyticsView(leaf, currentPluginInstance!)
+      (leaf: WorkspaceLeaf) => new HabitAnalyticsView(leaf, this)
     );
 
     safeRegisterView(
       VIEW_TYPE_FINANCE,
-      (leaf: WorkspaceLeaf) => new FinanceView(leaf, currentPluginInstance!)
+      (leaf: WorkspaceLeaf) => new FinanceView(leaf, this)
     );
 
     safeRegisterView(
       VIEW_TYPE_FINANCIAL_ANALYTICS,
-      (leaf: WorkspaceLeaf) => new FinancialAnalyticsView(leaf, currentPluginInstance!)
+      (leaf: WorkspaceLeaf) => new FinancialAnalyticsView(leaf, this)
     );
 
     this.addCommand({
@@ -375,7 +369,7 @@ export default class CalendarPlugin extends Plugin {
             .onClick(() => {
               const view = this.app.workspace.activeLeaf?.view;
               if (view && "editor" in view) {
-                const editor = (view as any).editor;
+                const editor = (view as MarkdownView).editor;
                 const cursor = editor.getCursor();
                 editor.replaceRange("```datetime-weather\n```", cursor);
                 editor.setCursor({ line: cursor.line + 1, ch: 0 });
@@ -388,7 +382,7 @@ export default class CalendarPlugin extends Plugin {
             .onClick(() => {
               const view = this.app.workspace.activeLeaf?.view;
               if (view && "editor" in view) {
-                const editor = (view as any).editor;
+                const editor = (view as MarkdownView).editor;
                 const cursor = editor.getCursor();
                 editor.replaceRange("```dashboard\n```", cursor);
                 editor.setCursor({ line: cursor.line + 1, ch: 0 });
@@ -401,7 +395,7 @@ export default class CalendarPlugin extends Plugin {
             .onClick(() => {
               const view = this.app.workspace.activeLeaf?.view;
               if (view && "editor" in view) {
-                const editor = (view as any).editor;
+                const editor = (view as MarkdownView).editor;
                 const cursor = editor.getCursor();
                 editor.replaceRange("```hello\n```", cursor);
                 editor.setCursor({ line: cursor.line + 1, ch: 0 });
@@ -449,7 +443,7 @@ export default class CalendarPlugin extends Plugin {
     // Initialize notification service
     this.notificationService = new NotificationService(this);
     if (this.options.notificationsEnabled) {
-      this.notificationService.start();
+      void this.notificationService.start();
     }
 
     // Watch for vault sync file changes (modify + create)
@@ -562,8 +556,7 @@ export default class CalendarPlugin extends Plugin {
 
     if (!headerEl) return;
 
-    this.dtwContainer = document.createElement("div");
-    this.dtwContainer.addClass("mcp-dtw-global");
+    this.dtwContainer = createDiv({ cls: "mcp-dtw-global" });
     // Prevent clicks on dtw-bar from triggering active-leaf-change
     this.dtwContainer.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -665,8 +658,8 @@ export default class CalendarPlugin extends Plugin {
         try {
           const manifestPath = `${dir}/manifest.json`;
           if (await this.app.vault.adapter.exists(manifestPath)) {
-            const raw = await this.app.vault.adapter.read(manifestPath);
-            const manifest = JSON.parse(raw);
+            const raw: string = await this.app.vault.adapter.read(manifestPath);
+            const manifest: { id?: string } = JSON.parse(raw) as { id?: string };
             if (manifest.id === this.manifest.id) {
               return dir;
             }
@@ -699,8 +692,8 @@ export default class CalendarPlugin extends Plugin {
         if (pluginDir) {
           const dataPath = `${pluginDir}/data.json`;
           if (await this.app.vault.adapter.exists(dataPath)) {
-            const content = await this.app.vault.adapter.read(dataPath);
-            if (content) data = JSON.parse(content);
+            const content: string = await this.app.vault.adapter.read(dataPath);
+            if (content) data = JSON.parse(content) as Record<string, unknown>;
           }
         }
       } catch {

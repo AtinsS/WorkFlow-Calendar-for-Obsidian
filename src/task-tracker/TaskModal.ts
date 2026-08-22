@@ -172,7 +172,7 @@ export class TaskModal extends CustomModal {
       priDot.style.setProperty("--pri-dot-color", p.c);
       btn.createSpan({ text: p.l });
       btn.addEventListener("click", () => {
-        this.priority = p.v as any;
+        this.priority = p.v as "low" | "medium" | "high";
         priRow.querySelectorAll(".tm-pri-btn").forEach((b) => b.removeClass("active"));
         btn.addClass("active");
       });
@@ -258,13 +258,16 @@ export class TaskModal extends CustomModal {
     this.advancedBody.addClass("mcp-hidden");
 
     advToggle.addEventListener("click", () => {
-      const show = this.advancedBody!.classList.contains("mcp-hidden");
+      const body = this.advancedBody;
+      if (!body) return;
+      const show = body.classList.contains("mcp-hidden");
       if (show) {
-        this.advancedBody!.removeClass("mcp-hidden");
+        body.removeClass("mcp-hidden");
       } else {
-        this.advancedBody!.addClass("mcp-hidden");
+        body.addClass("mcp-hidden");
       }
-      advToggle.querySelector(".tm-adv-chevron")!.textContent = show ? "▾" : "▸";
+      const chevron = advToggle.querySelector(".tm-adv-chevron");
+      if (chevron) chevron.textContent = show ? "▾" : "▸";
     });
 
     // --- Дедлайн ---
@@ -295,7 +298,7 @@ export class TaskModal extends CustomModal {
     recSelect.createEl("option", { value: "monthly", text: tRaw("tasks.modal.recurrenceMonthly") });
     recSelect.value = this.recurrenceType;
     recSelect.addEventListener("change", () => {
-      this.recurrenceType = recSelect.value as any;
+      this.recurrenceType = recSelect.value as "none" | "daily" | "weekly" | "monthly";
       this.updateRecurrenceSubFields();
     });
 
@@ -418,7 +421,7 @@ export class TaskModal extends CustomModal {
     paySelect.createEl("option", { value: "hour", text: tRaw("tasks.modal.paymentHour") });
     paySelect.createEl("option", { value: "day", text: tRaw("tasks.modal.paymentDay") });
     paySelect.value = this.paymentType;
-    paySelect.addEventListener("change", () => { this.paymentType = paySelect.value as any; this.updateWorkTaskSubFields(); });
+    paySelect.addEventListener("change", () => { this.paymentType = paySelect.value as "hour" | "day"; this.updateWorkTaskSubFields(); });
 
     // Ставка
     const rateRow = this.workTaskSubEl.createDiv({ cls: "tm-adv-row" });
@@ -522,7 +525,7 @@ export class TaskModal extends CustomModal {
         this.descCounterEl.addClass("tm-char-counter-error");
         this.descCounterEl.textContent = `⚠ ${tRaw("tasks.modal.maxLength", { current: String(desc.length) })}`;
         window.setTimeout(() => {
-          this.descCounterEl!.removeClass("tm-char-counter-error");
+          this.descCounterEl?.removeClass("tm-char-counter-error");
           this.updateDescCounter();
         }, 3000);
       }
@@ -538,7 +541,7 @@ export class TaskModal extends CustomModal {
 
     let recurrence: RecurrenceConfig | undefined;
     if (this.recurrenceType !== "none") {
-      recurrence = { type: this.recurrenceType as any, interval: this.recurrenceInterval };
+      recurrence = { type: this.recurrenceType as "daily" | "weekly" | "monthly", interval: this.recurrenceInterval };
       if (this.recurrenceType === "weekly" && this.recurrenceDaysOfWeek.length > 0) recurrence.daysOfWeek = [...this.recurrenceDaysOfWeek];
       if (this.recurrenceUntilDateUID) recurrence.until = this.recurrenceUntilDateUID;
     }
@@ -575,7 +578,7 @@ export class TaskModal extends CustomModal {
       deadline: this.deadlineDateUID || undefined,
       deadlineTime: this.deadlineTime || undefined,
     };
-    console.log("[TaskModal] submitData:", JSON.stringify(submitData));
+    console.debug("[TaskModal] submitData:", JSON.stringify(submitData));
     this.onSubmit(submitData);
     this.close();
   }

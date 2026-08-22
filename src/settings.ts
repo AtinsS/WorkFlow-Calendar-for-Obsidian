@@ -1,4 +1,4 @@
-import { App, PluginSettingTab, Setting, TFolder, Notice } from "obsidian";
+import { App, PluginSettingTab, Setting, TFolder, Notice, TextComponent } from "obsidian";
 import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 import type { ILocaleOverride } from "obsidian-calendar-ui";
 import { get } from "svelte/store";
@@ -316,7 +316,7 @@ export function appHasPeriodicNotesPluginLoaded(): boolean {
 export class CalendarSettingsTab extends PluginSettingTab {
   private plugin: CalendarPlugin;
   private activeTab = "general";
-  private ntfyTopicText: any = null;
+  private ntfyTopicText: TextComponent | null = null;
 
   constructor(app: App, plugin: CalendarPlugin) {
     super(app, plugin);
@@ -824,8 +824,8 @@ export class CalendarSettingsTab extends PluginSettingTab {
           testBtn.textContent = tRaw("settings.weather.noData");
           testBtn.addClass("mcp-color-danger");
         }
-      } catch (e: any) {
-        testBtn.textContent = `✗ ${e?.message || tRaw("settings.weather.connectionError")}`;
+      } catch (e: unknown) {
+        testBtn.textContent = `✗ ${e instanceof Error ? e.message : tRaw("settings.weather.connectionError")}`;
         testBtn.addClass("mcp-color-danger");
       }
       window.setTimeout(() => {
@@ -1160,14 +1160,14 @@ export class CalendarSettingsTab extends PluginSettingTab {
     key: string,
     defaultValue: string
   ): void {
-    const currentColor = (this.plugin.options as any)[key] || defaultValue;
+    const currentColor = (this.plugin.options as Record<string, string | undefined>)[key] || defaultValue;
 
     new Setting(container)
       .setName(name)
       .setDesc(desc)
       .addColorPicker((picker) => {
         picker.setValue(currentColor).onChange(async (value) => {
-          await this.plugin.writeOptions({ [key]: value } as any);
+          await this.plugin.writeOptions({ [key]: value } as Partial<ISettings>);
           applyAllColors(this.plugin.options);
         });
       })
@@ -1176,7 +1176,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
           .setButtonText(tRaw("common.reset"))
           .setTooltip(tRaw("settings.appearance.resetColors"))
           .onClick(async () => {
-            await this.plugin.writeOptions({ [key]: defaultValue } as any);
+            await this.plugin.writeOptions({ [key]: defaultValue } as Partial<ISettings>);
             applyAllColors(this.plugin.options);
             this.display();
           })
@@ -1378,30 +1378,22 @@ priority: medium
   addGitHubGistSettings(container: HTMLElement): void {
     new Setting(container).setName(tRaw("settings.sync.sectionGithubGist")).setHeading();
 
-    const desc = document.createElement("div");
-    desc.addClass("setting-item-description", "mcp-format-info");
+    const desc = container.createDiv({ cls: "setting-item-description mcp-format-info" });
 
-    const gistP1 = document.createElement("p");
-    gistP1.addClass("mcp-format-label");
+    const gistP1 = desc.createEl("p", { cls: "mcp-format-label" });
     gistP1.textContent = `${tRaw("settings.sync.gistDesc1")} ${tRaw("settings.sync.gistDesc2")}`;
-    desc.appendChild(gistP1);
 
-    const gistP2 = document.createElement("p");
-    gistP2.addClass("mcp-format-label");
-    const gistB = document.createElement("b");
+    const gistP2 = desc.createEl("p", { cls: "mcp-format-label" });
+    const gistB = gistP2.createEl("b");
     gistB.textContent = tRaw("settings.sync.gistHowTo");
-    gistP2.appendChild(gistB);
-    gistP2.appendChild(document.createElement("br"));
-    gistP2.appendChild(document.createTextNode("1. GitHub → Settings → Credentials"));
-    gistP2.appendChild(document.createElement("br"));
-    gistP2.appendChild(document.createTextNode("2. Personal access tokens → Tokens (classic)"));
-    gistP2.appendChild(document.createElement("br"));
-    gistP2.appendChild(document.createTextNode(`3. ${tRaw("settings.sync.gistHowToStep1")}`));
-    gistP2.appendChild(document.createElement("br"));
-    gistP2.appendChild(document.createTextNode(`4. ${tRaw("settings.sync.gistHowToStep2")}`));
-    desc.appendChild(gistP2);
-
-    container.appendChild(desc);
+    gistP2.createEl("br");
+    gistP2.appendText("1. GitHub → Settings → Credentials");
+    gistP2.createEl("br");
+    gistP2.appendText("2. Personal access tokens → Tokens (classic)");
+    gistP2.createEl("br");
+    gistP2.appendText(`3. ${tRaw("settings.sync.gistHowToStep1")}`);
+    gistP2.createEl("br");
+    gistP2.appendText(`4. ${tRaw("settings.sync.gistHowToStep2")}`);
 
     new Setting(container)
       .setName(tRaw("settings.sync.githubToken"))
@@ -1480,9 +1472,8 @@ priority: medium
       });
 
     // Auto-sync status indicator
-    const statusDesc = document.createElement("div");
+    const statusDesc = createDiv({ cls: "mcp-gist-sync-status" });
     statusDesc.id = "gist-auto-sync-status";
-    statusDesc.addClass("mcp-gist-sync-status");
     statusDesc.textContent = this.plugin.options.gistAutoSync
       ? tRaw("settings.sync.gistAutoSyncOn")
       : tRaw("settings.sync.gistAutoSyncOff");
@@ -1616,7 +1607,7 @@ priority: medium
       panel.empty();
       const diagnostics = await loadNotificationDiagnostics(this.app);
       const permission = "Notification" in window
-        ? (Notification as any).permission
+        ? Notification.permission
         : "unavailable";
 
       const toolbar = panel.createDiv({ cls: "mcp-notif-toolbar" });

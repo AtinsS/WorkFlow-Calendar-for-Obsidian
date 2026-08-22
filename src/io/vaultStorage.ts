@@ -63,7 +63,7 @@ const moduleQueues: Map<string, Promise<void>> = new Map();
 function enqueueModuleWrite(moduleName: string, fn: () => Promise<void>): Promise<void> {
   const current = moduleQueues.get(moduleName) || Promise.resolve();
   const next = current.then(fn, fn);
-  moduleQueues.set(moduleName, next.catch((e) => {
+  moduleQueues.set(moduleName, next.catch((e: unknown) => {
     console.error(`[vaultStorage] Write failed for module "${moduleName}":`, e);
   }));
   return next;
@@ -86,7 +86,7 @@ async function readFileContent(app: App, path: string): Promise<string | null> {
       const c = await app.vault.adapter.read(path);
       return c;
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(`[VS] readFileContent(${path}) adapter error:`, e);
   }
   return null;
@@ -112,7 +112,7 @@ async function writeFileContent(app: App, path: string, content: string): Promis
 
   try {
     await app.vault.create(path, content);
-  } catch (e) {
+  } catch (e: unknown) {
     // Race condition or "File already exists" — try vault modify, then adapter fallback
     const existing = app.vault.getAbstractFileByPath(path);
     if (isTFile(existing)) {
@@ -137,9 +137,9 @@ export async function loadModuleData(
   const primaryPath = moduleFilePath(moduleName);
   const backupPath = backupFilePath(moduleName);
 
-  console.log(`[VS] loadModule(${moduleName}): start`);
+  console.debug(`[VS] loadModule(${moduleName}): start`);
   const data = await tryLoadJson(app, primaryPath);
-  console.log(`[VS] loadModule(${moduleName}): primary=${data ? Object.keys(data).length + 'k' : 'null'}`);
+  console.debug(`[VS] loadModule(${moduleName}): primary=${data ? Object.keys(data).length + 'k' : 'null'}`);
   if (data !== null) {
     // Verify checksum if meta exists
     const meta = await loadMeta(app);
@@ -228,7 +228,7 @@ async function updateMeta(app: App, moduleName: string, checksum: string): Promi
     meta.lastUpdated = new Date().toISOString();
     const content = JSON.stringify(meta, null, 2);
     await writeFileContent(app, META_FILE, content);
-  } catch (e) {
+  } catch (e: unknown) {
     console.error("[vaultStorage] Failed to update meta:", e);
   }
 }
@@ -296,8 +296,8 @@ export async function migrateFromSingleFile(app: App): Promise<void> {
       await app.vault.adapter.write(migratedPath, content);
       await app.vault.adapter.remove(VAULT_DATA_FILE);
     }
-    console.log(`[vaultStorage] Migrated ${VAULT_DATA_FILE} → ${migratedPath}`);
-  } catch (e) {
+    console.debug(`[vaultStorage] Migrated ${VAULT_DATA_FILE} → ${migratedPath}`);
+  } catch (e: unknown) {
     console.error("[vaultStorage] Migration failed:", e);
   }
 
@@ -333,11 +333,11 @@ export async function migrateRootModuleFiles(app: App): Promise<void> {
 
       if (content) {
         await writeFileContent(app, targetPath, content);
-        const data = JSON.parse(content);
+        const data: Record<string, unknown> = JSON.parse(content) as Record<string, unknown>;
         await updateMeta(app, moduleName, simpleHash(JSON.stringify(data, null, 2)));
-        console.log(`[vaultStorage] Migrated ${rootPath} → ${targetPath}`);
+        console.debug(`[vaultStorage] Migrated ${rootPath} → ${targetPath}`);
       }
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(`[vaultStorage] Failed to migrate ${rootPath}:`, e);
     }
   }
@@ -376,7 +376,7 @@ export async function saveVaultKey(
   if (MODULES.includes(moduleName)) {
     await enqueueModuleWrite(moduleName, async () => {
       const existing = await loadModuleData(app, moduleName);
-      const merged = { ...existing, ...value as Record<string, unknown> };
+      const merged: Record<string, unknown> = { ...existing, ...(value as Record<string, unknown>) };
       await saveModuleData(app, moduleName, merged);
     });
     return;

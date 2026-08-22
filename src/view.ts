@@ -1,5 +1,11 @@
 import { moment } from "obsidian";
 import type { Moment } from "moment";
+
+// Obsidian's type defs export moment as `typeof Moment` (the module namespace),
+// but at runtime it's the callable moment function. Cast once here.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
+  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
 import {
   getDailyNote,
   getDailyNoteSettings,
@@ -27,8 +33,8 @@ import { QuickAddModal } from "./task-tracker/QuickAddModal";
 
 export default class CalendarView extends ItemView {
   private calendar: Calendar;
-  private settings: ISettings;
-  private plugin: CalendarPlugin;
+  private settings: ISettings | null = null;
+  private plugin: CalendarPlugin | undefined;
   private tasksUnsub: (() => void) | null = null;
   private isMobile = typeof window !== "undefined" && window.innerWidth <= 768;
 
@@ -57,8 +63,7 @@ export default class CalendarView extends ItemView {
     this.registerEvent(this.app.vault.on("modify", this.onFileModified));
     this.registerEvent(this.app.workspace.on("file-open", this.onFileOpen));
 
-    this.settings = null;
-    settings.subscribe((val) => { this.settings = val; });
+    settings.subscribe((val: ISettings) => { this.settings = val; });
   }
 
   getViewType(): string { return VIEW_TYPE_CALENDAR; }
@@ -75,7 +80,7 @@ export default class CalendarView extends ItemView {
   async onOpen(): Promise<void> {
     this.contentEl.empty();
     if (this.calendar) { this.calendar.$destroy(); this.calendar = null; }
-    selectedDate.set(getDateUID(moment(), "day"));
+    selectedDate.set(getDateUID(momentFn(), "day"));
 
     const sources = [customTagsSource, streakSource, wordCountSource, taskDotSource, habitSource];
     this.app.workspace.trigger(TRIGGER_ON_OPEN, sources);
@@ -175,7 +180,7 @@ export default class CalendarView extends ItemView {
       let date = getDateFromFile(activeLeaf.view.file, "day");
       if (date) { this.calendar.$set({ displayedMonth: date }); return; }
       const { format } = getWeeklyNoteSettings();
-      date = moment(activeLeaf.view.file.basename, format, true);
+      date = momentFn(activeLeaf.view.file.basename, format, true);
       if (date.isValid()) { this.calendar.$set({ displayedMonth: date }); return; }
     }
   }
@@ -191,7 +196,7 @@ export default class CalendarView extends ItemView {
     const current = get(selectedDate);
     if (current === dateUID) {
       selectedDate.set(null);
-      activeFile.setUID(null);
+      activeFile.setUID("");
     } else {
       selectedDate.set(dateUID);
       activeFile.setUID(dateUID);

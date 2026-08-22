@@ -1,6 +1,13 @@
 import { get } from "svelte/store";
 import { moment, requestUrl } from "obsidian";
+import type { Moment } from "moment";
 import type CalendarPlugin from "src/main";
+
+// Obsidian's type defs export moment as `typeof Moment` (the module namespace),
+// but at runtime it's the callable moment function. Cast once here.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
+  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
 import { tasks } from "src/task-tracker/stores";
 import type { ITask } from "src/task-tracker/types";
 import type { ISettings } from "src/settings";
@@ -71,7 +78,7 @@ export class NotificationService {
   }
 
   private getSettings(): NotificationSettings {
-    const opts = this.plugin.options as ISettings;
+    const opts: ISettings = this.plugin.options;
     return {
       notificationsEnabled: opts.notificationsEnabled ?? defaultNotificationSettings.notificationsEnabled,
       reminderMinutesBefore: opts.reminderMinutesBefore ?? defaultNotificationSettings.reminderMinutesBefore,
@@ -85,13 +92,13 @@ export class NotificationService {
 
   private requestPermission(): void {
     if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
+      void Notification.requestPermission();
     }
   }
 
   private check(): void {
     if (!this.getSettings().notificationsEnabled) return;
-    if ("Notification" in window && (Notification as any).permission !== "granted") return;
+    if ("Notification" in window && Notification.permission !== "granted") return;
 
     const allTasks = get(tasks);
     const now = Date.now();
@@ -210,18 +217,18 @@ export class NotificationService {
     this.cleanupFiredKeys(allTasks);
   }
 
-  private getScheduledMoment(task: ITask): moment.Moment | null {
-    const match = task.dateUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
+  private getScheduledMoment(task: ITask): Moment | null {
+    const match: RegExpMatchArray | null = task.dateUID.match(/^day-(\d{4}-\d{2}-\d{2})/);
     if (!match) return null;
 
-    const dateStr = match[1];
-    return moment(`${dateStr} ${task.scheduledTime}`, "YYYY-MM-DD HH:mm", true);
+    const dateStr: string = match[1];
+    return momentFn(`${dateStr} ${task.scheduledTime}`, "YYYY-MM-DD HH:mm", true);
   }
 
   private notify(title: string, body: string, source: string): void {
-    if (!("Notification" in window) || (Notification as any).permission !== "granted") return;
+    if (!("Notification" in window) || Notification.permission !== "granted") return;
 
-    const notification = new (Notification as any)(title, {
+    const notification: Notification = new Notification(title, {
       body,
     });
 
@@ -239,14 +246,14 @@ export class NotificationService {
       title,
       body,
       source,
-    }).catch((e) => console.warn("[notification] history write failed:", e));
+    }).catch((e: unknown) => console.warn("[notification] history write failed:", e));
 
     // Also send via ntfy.sh if enabled
     this.sendNtfy(title, body, source);
   }
 
   private sendNtfy(title: string, body: string, source: string): void {
-    const opts = this.plugin.options as ISettings;
+    const opts: ISettings = this.plugin.options;
     if (!opts.ntfyEnabled) return;
     if (!opts.ntfyTopic) {
       void recordNotificationEvent(this.plugin.app, {
@@ -256,16 +263,16 @@ export class NotificationService {
         body,
         source,
         error: "ntfy.sh topic is empty",
-      }).catch((e) => console.warn("[ntfy] history write failed:", e));
+      }).catch((e: unknown) => console.warn("[ntfy] history write failed:", e));
       return;
     }
 
-    requestUrl({
+    void requestUrl({
       url: `https://ntfy.sh/${encodeURIComponent(opts.ntfyTopic)}`,
       method: "POST",
       body,
     }).then((response) => {
-      const status = response.status >= 200 && response.status < 300 ? "sent" : "failed";
+      const status: "sent" | "failed" = response.status >= 200 && response.status < 300 ? "sent" : "failed";
       return recordNotificationEvent(this.plugin.app, {
         channel: "ntfy",
         status,
@@ -275,7 +282,7 @@ export class NotificationService {
         topic: opts.ntfyTopic,
         error: status === "failed" ? `HTTP ${response.status}` : undefined,
       });
-    }).catch((e) => {
+    }).catch((e: unknown) => {
       console.warn("[ntfy] send failed:", e);
       return recordNotificationEvent(this.plugin.app, {
         channel: "ntfy",
@@ -285,7 +292,7 @@ export class NotificationService {
         source,
         topic: opts.ntfyTopic,
         error: e instanceof Error ? e.message : String(e),
-      }).catch((historyError) => console.warn("[ntfy] history write failed:", historyError));
+      }).catch((historyError: unknown) => console.warn("[ntfy] history write failed:", historyError));
     });
   }
 
@@ -320,12 +327,12 @@ export class NotificationService {
 
   private async loadFiredState(): Promise<void> {
     try {
-      const data = await this.plugin.loadData();
-      const fired = data?.firedNotifications || {};
-      this.firedReminders = new Set(fired.reminders || []);
-      this.firedOverdue = new Set(fired.overdue || []);
-      this.firedDeadline = new Set(fired.deadline || []);
-      this.firedEstimateExceeded = new Set(fired.estimateExceeded || []);
+      const data: Record<string, unknown> = await this.plugin.loadData() as Record<string, unknown>;
+      const fired = (data?.firedNotifications ?? {}) as Record<string, string[]>;
+      this.firedReminders = new Set(fired.reminders ?? []);
+      this.firedOverdue = new Set(fired.overdue ?? []);
+      this.firedDeadline = new Set(fired.deadline ?? []);
+      this.firedEstimateExceeded = new Set(fired.estimateExceeded ?? []);
     } catch {
       // ignore
     }
@@ -338,10 +345,10 @@ export class NotificationService {
       deadline: [...this.firedDeadline],
       estimateExceeded: [...this.firedEstimateExceeded],
     };
-    this.plugin.loadData().then((existing) => {
-      const updated = { ...(existing || {}) };
+    void this.plugin.loadData().then((existing: unknown) => {
+      const updated: Record<string, unknown> = { ...((existing as Record<string, unknown>) ?? {}) };
       updated.firedNotifications = firedData;
-      this.plugin.saveData(updated);
+      void this.plugin.saveData(updated);
     }).catch(() => { /* ignore */ });
   }
 }

@@ -31,7 +31,7 @@ export const gistSyncStatus = writable<GistSyncStatus>({
   lastAutoSync: "",
 });
 
-let pluginInstance: CalendarPlugin = null;
+let pluginInstance: CalendarPlugin | null = null;
 let autoSyncTimeout: ReturnType<typeof setTimeout> | null = null;
 let unsubscribers: (() => void)[] = [];
 let autoSyncEnabled = false;
@@ -42,11 +42,11 @@ function scheduleAutoSync(): void {
   if (autoSyncTimeout) window.clearTimeout(autoSyncTimeout);
   autoSyncTimeout = window.setTimeout(async () => {
     if (!autoSyncEnabled) return;
-    console.log("[GistSync] Auto-sync triggered, syncing...");
+    console.debug("[GistSync] Auto-sync triggered, syncing...");
     gistSyncStatus.update((s) => ({ ...s, lastAutoSync: new Date().toLocaleTimeString("ru-RU") }));
     const result = await syncToGist();
     if (result.success) {
-      console.log("[GistSync] Auto-sync completed successfully");
+      console.debug("[GistSync] Auto-sync completed successfully");
     } else {
       console.error("[GistSync] Auto-sync failed:", result.error);
     }
@@ -70,17 +70,17 @@ export function initGistSync(plugin: CalendarPlugin): void {
 
 function checkAutoSyncSetting(): void {
   const currentSettings = get(settings);
-  const wasEnabled = autoSyncEnabled;
+  const wasEnabled: boolean = autoSyncEnabled;
   autoSyncEnabled = !!currentSettings.gistAutoSync && !!currentSettings.githubToken && !!currentSettings.gistId;
 
   if (autoSyncEnabled !== wasEnabled) {
-    console.log("[GistSync] Auto-sync", autoSyncEnabled ? "ENABLED" : "DISABLED");
+    console.debug("[GistSync] Auto-sync", autoSyncEnabled ? "ENABLED" : "DISABLED");
   }
 }
 
 export function setAutoSync(enabled: boolean): void {
   autoSyncEnabled = enabled;
-  console.log("[GistSync] setAutoSync called with", enabled);
+  console.debug("[GistSync] setAutoSync called with", enabled);
 
   if (!enabled && autoSyncTimeout) {
     window.clearTimeout(autoSyncTimeout);
@@ -104,16 +104,16 @@ export async function connectGist(
     }
 
     return { success: true };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : tRaw("gist.connectionError");
+  } catch (e: unknown) {
+    const msg: string = e instanceof Error ? e.message : tRaw("gist.connectionError");
     gistSyncStatus.update((s) => ({ ...s, error: msg }));
     return { success: false, error: msg };
   }
 }
 
 function tasksToIcsEvents(): IcsEvent[] {
-  const allTasks = get(tasks);
-  const allProjects = get(projects);
+  const allTasks: Array<import("../task-tracker/types").ITask> = get(tasks);
+  const allProjects: Array<import("../task-tracker/types").IProject> = get(projects);
   const events: IcsEvent[] = [];
 
   for (const task of allTasks) {
@@ -195,10 +195,10 @@ function tasksToIcsEvents(): IcsEvent[] {
 
 export async function syncToGist(): Promise<{ success: boolean; error?: string; url?: string }> {
   const currentSettings = get(settings);
-  const token = currentSettings.githubToken;
-  const gistId = currentSettings.gistId || undefined;
+  const token: string | undefined = currentSettings.githubToken;
+  const gistId: string | undefined = currentSettings.gistId || undefined;
 
-  console.log("[GistSync] syncToGist called, gistId:", gistId ? gistId.substring(0, 8) + "..." : "NONE");
+  console.debug("[GistSync] syncToGist called, gistId:", gistId ? gistId.substring(0, 8) + "..." : "NONE");
 
   if (!token) {
     return { success: false, error: tRaw("gist.tokenNotConfigured") };
@@ -211,7 +211,7 @@ export async function syncToGist(): Promise<{ success: boolean; error?: string; 
     const icsContent = generateIcs(allEvents);
     const config: GistConfig = { token, gistId };
 
-    console.log("[GistSync] Creating", gistId ? "PATCH (update)" : "POST (new)", "gist...");
+    console.debug("[GistSync] Creating", gistId ? "PATCH (update)" : "POST (new)", "gist...");
     const result: GistResult = await createGist(
       config,
       "obsidian-calendar.ics",
@@ -225,7 +225,7 @@ export async function syncToGist(): Promise<{ success: boolean; error?: string; 
         gistUrl: result.url,
         gistRawUrl: result.rawUrl,
       });
-      console.log("[GistSync] Gist saved to settings. ID:", result.id);
+      console.debug("[GistSync] Gist saved to settings. ID:", result.id);
     }
 
     gistSyncStatus.update((s) => ({
@@ -237,11 +237,11 @@ export async function syncToGist(): Promise<{ success: boolean; error?: string; 
       lastSync: new Date().toLocaleString("ru-RU"),
     }));
 
-    console.log("[GistSync] Sync complete. URL:", result.rawUrl);
+    console.debug("[GistSync] Sync complete. URL:", result.rawUrl);
 
     return { success: true, url: result.rawUrl };
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : tRaw("gist.syncError");
+  } catch (e: unknown) {
+    const msg: string = e instanceof Error ? e.message : tRaw("gist.syncError");
     gistSyncStatus.update((s) => ({ ...s, syncing: false, error: msg }));
     return { success: false, error: msg };
   }

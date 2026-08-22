@@ -15,14 +15,14 @@ let cachedActiveCount = 0;
 let cachedHabitsVersion = 0;
 
 function getLogsMap(): Map<string, number> {
-  const current = get(habitLogs);
+  const current: IHabitLog[] = get(habitLogs);
   if (current !== cachedLogs) {
     cachedLogs = current;
     cachedMap = new Map();
     for (const log of current) {
       // Count completed habits
       if (log.completed) {
-        cachedMap.set(log.date, (cachedMap.get(log.date) || 0) + 1);
+        cachedMap.set(log.date, (cachedMap.get(log.date) ?? 0) + 1);
       }
     }
   }
@@ -31,7 +31,7 @@ function getLogsMap(): Map<string, number> {
 
 function getActiveCount(): number {
   const current = get(habits);
-  const version = current.length;
+  const version: number = current.length;
   if (version !== cachedHabitsVersion) {
     cachedHabitsVersion = version;
     cachedActiveCount = current.filter((h) => !h.archived).length;

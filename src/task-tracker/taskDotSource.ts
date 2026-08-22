@@ -1,5 +1,11 @@
 import { moment } from "obsidian";
 import type { Moment } from "moment";
+
+// Obsidian's type defs export moment as `typeof Moment` (the module namespace),
+// but at runtime it's the callable moment function. Cast once here.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
+  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
 import type {
   ICalendarSource,
   IDayMetadata,
@@ -20,7 +26,7 @@ function getTodayUID(): string {
   const now = Date.now();
   // Re-compute only once per second (enough for calendar render)
   if (!cachedTodayUID || now - lastTodayCheck > 1000) {
-    cachedTodayUID = getDateUID(moment(), "day");
+    cachedTodayUID = getDateUID(momentFn(), "day");
     lastTodayCheck = now;
   }
   return cachedTodayUID;

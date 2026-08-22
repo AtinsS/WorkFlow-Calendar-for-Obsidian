@@ -1,4 +1,11 @@
 import { ItemView, WorkspaceLeaf, moment } from "obsidian";
+import type { Moment } from "moment";
+
+// Obsidian's type defs export moment as `typeof Moment` (the module namespace),
+// but at runtime it's the callable moment function. Cast once here.
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+const momentFn: (inp?: unknown, format?: string, strict?: boolean) => Moment =
+  moment as unknown as (inp?: unknown, format?: string, strict?: boolean) => Moment;
 import { VIEW_TYPE_TASKS, VIEW_TYPE_SCHEDULE, VIEW_TYPE_MOBILE_SCHEDULE } from "../constants";
 import TaskPanel from "../task-tracker/TaskPanel.svelte";
 import HabitPanel from "../habit-tracker/HabitPanel.svelte";
@@ -44,7 +51,7 @@ export default class TaskView extends ItemView {
     this.contentEl.empty();
     this.contentEl.addClass("task-view");
 
-    selectedDate.set(getDateUID(moment(), "day"));
+    selectedDate.set(getDateUID(momentFn(), "day"));
     const currentSettings = get(settings);
 
     // Main layout: sidebar + panels

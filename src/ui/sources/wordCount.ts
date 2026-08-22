@@ -16,20 +16,20 @@ const wordCountCache = new Map<string, { mtime: number; count: number }>();
 
 async function getCachedWordCount(note: TFile): Promise<number> {
   const cached = wordCountCache.get(note.path);
-  const mtime = note.stat.mtime;
+  const mtime: number = note.stat.mtime;
 
   if (cached && cached.mtime === mtime) {
     return cached.count;
   }
 
-  const fileContents = await window.app.vault.cachedRead(note);
-  const count = getWordCount(fileContents);
+  const fileContents: string = await window.app.vault.cachedRead(note);
+  const count: number = getWordCount(fileContents);
   wordCountCache.set(note.path, { mtime, count });
   return count;
 }
 
 export async function getWordCountAsDots(note: TFile): Promise<number> {
-  const { wordsPerDot = DEFAULT_WORDS_PER_DOT } = get(settings);
+  const { wordsPerDot = DEFAULT_WORDS_PER_DOT }: { wordsPerDot: number } = get(settings);
   if (!note || wordsPerDot <= 0) {
     return 0;
   }

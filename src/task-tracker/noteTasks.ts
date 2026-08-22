@@ -262,7 +262,7 @@ export async function syncAllExistingTasks(app: App): Promise<number> {
       try {
         await ensureNoteForTask(task, app);
         created++;
-      } catch (error) {
+      } catch (error: unknown) {
         console.error(`[Calendar Plugin] Failed to create note for task ${task.id}:`, error);
       }
     }

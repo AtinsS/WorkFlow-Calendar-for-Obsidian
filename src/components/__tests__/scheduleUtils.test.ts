@@ -9,7 +9,7 @@ import {
 
 const TEST_DATE = "day-2026-07-05T00:00:00";
 
-function makeTask(overrides: Partial<ITask> & Record<string, any> = {}): ITask {
+function makeTask(overrides: Partial<ITask> & Record<string, unknown> = {}): ITask {
   return {
     id: "test-id",
     title: "Test Task",
@@ -281,7 +281,7 @@ describe("tasksToEvents", () => {
     const events = tasksToEvents(taskList, []);
 
     expect(events.length).toBe(1);
-    expect((events[0].extendedProps.task as any).description).toBe("Some description");
+    expect((events[0].extendedProps.task as ITask).description).toBe("Some description");
   });
 
   it("should handle tasks with recurrence", () => {

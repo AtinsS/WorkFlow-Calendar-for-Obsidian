@@ -46,15 +46,15 @@ function createMockApp() {
         if (vaultStore[path] !== undefined) {
           // Must return a real TFile instance so `isTFile` (instanceof) passes
           const file = new TFile();
-          (file as any).path = path;
+          Object.defineProperty(file, 'path', { value: path, writable: false });
           return file;
         }
         return null;
       },
-      async read(file: any) {
+      async read(file: { path: string }) {
         return vaultStore[file.path] ?? "";
       },
-      async modify(_file: any, content: string) {
+      async modify(_file: { path: string }, content: string) {
         vaultStore[_file.path] = content;
       },
       async create(path: string, content: string) {
@@ -64,11 +64,11 @@ function createMockApp() {
         // no-op — directories are implicit in vault mock
       },
     },
-  } as any;
+  } as unknown as App;
 }
 
 function createMockPlugin(): CalendarPlugin {
-  return { app: createMockApp() } as any;
+  return { app: createMockApp() } as unknown as CalendarPlugin;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -77,31 +77,31 @@ async function flushDebounce(): Promise<void> {
 }
 
 /** Read parsed finance data from the split vault file. */
-function getParsedFinanceVault(): Record<string, any> {
+function getParsedFinanceVault(): Record<string, unknown> {
   const raw = vaultStore["calendar-data/finance.json"];
   if (!raw) return {};
   return JSON.parse(raw);
 }
 
 /** Read parsed analytics data from the split vault file. */
-function getParsedAnalyticsVault(): Record<string, any> {
+function getParsedAnalyticsVault(): Record<string, unknown> {
   const raw = vaultStore["calendar-data/financialAnalytics.json"];
   if (!raw) return {};
   return JSON.parse(raw);
 }
 
 /** Convenience: set finance vault data for tests. */
-function setFinanceVault(data: Record<string, any>): void {
+function setFinanceVault(data: Record<string, unknown>): void {
   vaultStore["calendar-data/finance.json"] = JSON.stringify(data);
 }
 
 /** Convenience: set tasks vault data for tests. */
-function setTasksVault(data: Record<string, any>): void {
+function setTasksVault(data: Record<string, unknown>): void {
   vaultStore["calendar-data/tasks.json"] = JSON.stringify(data);
 }
 
 /** Convenience: set analytics vault data for tests. */
-function setAnalyticsVault(data: Record<string, any>): void {
+function setAnalyticsVault(data: Record<string, unknown>): void {
   vaultStore["calendar-data/financialAnalytics.json"] = JSON.stringify(data);
 }
 

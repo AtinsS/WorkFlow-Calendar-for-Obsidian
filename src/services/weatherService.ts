@@ -3,6 +3,54 @@ import { tRaw } from "../i18n";
 
 export type WeatherProvider = "open-meteo" | "openweathermap" | "weatherapi" | "visual-crossing";
 
+interface WeatherAPIForecastDay {
+  date: string;
+  day?: {
+    maxtemp_c?: number;
+    mintemp_c?: number;
+    condition?: { code?: number; text?: string };
+  };
+}
+
+interface VisualCrossingDay {
+  datetime: string;
+  tempmax?: number;
+  tempmin?: number;
+  conditions?: string;
+  icon?: string;
+}
+
+interface OpenMeteoResponse {
+  daily?: {
+    time?: string[];
+    weather_code?: number[];
+    temperature_2m_max?: number[];
+    temperature_2m_min?: number[];
+  };
+}
+
+interface OpenWeatherMapResponse {
+  cod?: string | number;
+  message?: string;
+  list?: Array<{
+    dt_txt?: string;
+    main?: { temp_max?: number; temp_min?: number };
+    weather?: Array<{ id?: number; description?: string }>;
+  }>;
+}
+
+interface WeatherAPIResponse {
+  error?: { message?: string; code?: number };
+  forecast?: {
+    forecastday?: WeatherAPIForecastDay[];
+  };
+}
+
+interface VisualCrossingResponse {
+  message?: string;
+  days?: VisualCrossingDay[];
+}
+
 export const WEATHER_PROVIDERS: Record<WeatherProvider, { name: string; needsKey: boolean; url: string; attribution: string }> = {
   "open-meteo": { name: "Open-Meteo", needsKey: false, url: "open-meteo.com", attribution: "Data by Open-Meteo.com (CC BY 4.0)" },
   "openweathermap": { name: "OpenWeatherMap", needsKey: true, url: "openweathermap.org", attribution: "" },
@@ -105,7 +153,7 @@ export async function fetchWeekWeather(
       default:
         days = await fetchOpenMeteo(lat, lon, startDate, endDate);
     }
-  } catch (e) {
+  } catch (e: unknown) {
     console.error(`[WeatherService] fetch error (${provider}):`, e);
     if (opts?.throwOnError) throw e;
     return [];
@@ -127,16 +175,17 @@ async function fetchOpenMeteo(
 ): Promise<DayWeather[]> {
   const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&start_date=${startDate}&end_date=${endDate}&timezone=auto`;
   const response = await requestUrl({ url, method: "GET" });
-  const json = response.json;
+  const json: OpenMeteoResponse = response.json as OpenMeteoResponse;
   if (!json?.daily?.time) return [];
 
-  return json.daily.time.map((date: string, i: number) => {
-    const code = Number(json.daily.weather_code[i]);
+  const daily = json.daily;
+  return daily.time.map((date: string, i: number) => {
+    const code = Number(daily.weather_code?.[i] ?? 0);
     const info = getWmoCode(code) || { icon: "🌡️", label: `Code ${code}` };
     return {
       date,
-      tempMax: Math.round(json.daily.temperature_2m_max[i]),
-      tempMin: Math.round(json.daily.temperature_2m_min[i]),
+      tempMax: Math.round(daily.temperature_2m_max?.[i] ?? 0),
+      tempMin: Math.round(daily.temperature_2m_min?.[i] ?? 0),
       weatherCode: code,
       icon: info.icon,
       label: info.label,
@@ -153,29 +202,29 @@ async function fetchOpenWeatherMap(
   const weatherLang = tRaw("locale.weatherApiLang");
   const url = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric&lang=${weatherLang}`;
   const response = await requestUrl({ url, method: "GET" });
-  const json = response.json;
+  const json: OpenWeatherMapResponse = response.json as OpenWeatherMapResponse;
   if (json?.cod && json.cod !== "200" && json.cod !== 200) {
-    throw new Error(json.message || `OpenWeatherMap error ${json.cod}`);
+    throw new Error(json.message ?? `OpenWeatherMap error ${json.cod}`);
   }
   if (!json?.list) return [];
 
   // Group by date
   const byDate: Record<string, { temps: number[]; codes: number[]; descs: string[] }> = {};
   for (const item of json.list) {
-    const date = item.dt_txt?.split(" ")[0];
+    const date: string | undefined = item.dt_txt?.split(" ")[0];
     if (!date || date < startDate || date > endDate) continue;
     if (!byDate[date]) byDate[date] = { temps: [], codes: [], descs: [] };
     byDate[date].temps.push(item.main?.temp_max ?? 0, item.main?.temp_min ?? 0);
-    const weatherId = item.weather?.[0]?.id ?? 0;
+    const weatherId: number = item.weather?.[0]?.id ?? 0;
     byDate[date].codes.push(weatherId);
     byDate[date].descs.push(item.weather?.[0]?.description ?? "");
   }
 
   return Object.entries(byDate).map(([date, data]) => {
-    const tempMax = Math.round(Math.max(...data.temps));
-    const tempMin = Math.round(Math.min(...data.temps));
-    const mainCode = data.codes[Math.floor(data.codes.length / 2)]; // pick middle
-    const wmo = owmIdToWmo(mainCode);
+    const tempMax: number = Math.round(Math.max(...data.temps));
+    const tempMin: number = Math.round(Math.min(...data.temps));
+    const mainCode: number = data.codes[Math.floor(data.codes.length / 2)]; // pick middle
+    const wmo: number = owmIdToWmo(mainCode);
     const info = getWmoCode(wmo) || { icon: "🌡️", label: data.descs[0] || `ID ${mainCode}` };
     return { date, tempMax, tempMin, weatherCode: wmo, icon: info.icon, label: info.label };
   }).sort((a, b) => a.date.localeCompare(b.date));
@@ -189,15 +238,15 @@ async function fetchWeatherAPI(
   const weatherLang = tRaw("locale.weatherApiLang");
   const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=14&lang=${weatherLang}`;
   const response = await requestUrl({ url, method: "GET" });
-  const json = response.json;
+  const json: WeatherAPIResponse = response.json as WeatherAPIResponse;
   if (json?.error) {
-    throw new Error(json.error.message || `WeatherAPI error ${json.error.code}`);
+    throw new Error(json.error.message ?? `WeatherAPI error ${json.error.code}`);
   }
   if (!json?.forecast?.forecastday) return [];
 
   return json.forecast.forecastday
-    .filter((d: any) => d.date >= startDate && d.date <= endDate)
-    .map((d: any) => {
+    .filter((d: WeatherAPIForecastDay) => d.date >= startDate && d.date <= endDate)
+    .map((d: WeatherAPIForecastDay) => {
       const code = d.day?.condition?.code ?? 0;
       const wmo = weatherapiCodeToWmo(code);
       const info = getWmoCode(wmo) || { icon: "🌡️", label: d.day?.condition?.text ?? `Code ${code}` };
@@ -220,13 +269,13 @@ async function fetchVisualCrossing(
   const weatherLang = tRaw("locale.weatherApiLang");
   const url = `https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/timeline/${lat},${lon}/${startDate}/${endDate}?key=${apiKey}&unitGroup=metric&lang=${weatherLang}&include=days`;
   const response = await requestUrl({ url, method: "GET" });
-  const json = response.json;
+  const json: VisualCrossingResponse = response.json as VisualCrossingResponse;
   if (json?.message && !json?.days) {
     throw new Error(json.message);
   }
   if (!json?.days) return [];
 
-  return json.days.map((d: any) => {
+  return json.days.map((d: VisualCrossingDay) => {
     const wmo = visualCrossingCodeToWmo(d.conditions ?? "", d.icon ?? "");
     const info = getWmoCode(wmo) || { icon: "🌡️", label: d.conditions ?? `Code ${wmo}` };
     return {

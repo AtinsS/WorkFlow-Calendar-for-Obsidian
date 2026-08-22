@@ -18,6 +18,17 @@ export interface GistResult {
   rawUrl: string;
 }
 
+interface GistApiResponse {
+  id: string;
+  html_url: string;
+  owner?: { login?: string };
+  files: Record<string, { raw_url?: string; content?: string }>;
+}
+
+interface GitHubUserResponse {
+  login: string;
+}
+
 export async function createGist(
   config: GistConfig,
   filename: string,
@@ -50,7 +61,7 @@ export async function createGist(
   });
 
   if (response.status !== 200 && response.status !== 201) {
-    const errorBody = response.text;
+    const errorBody: string = response.text;
     if (response.status === 403) {
       throw new Error(tRaw("gist.noScope"));
     }
@@ -60,13 +71,13 @@ export async function createGist(
     throw new Error(`GitHub API error ${response.status}: ${errorBody}`);
   }
 
-  const data = response.json;
-  const rawUrl = data.files[filename]?.raw_url || "";
+  const data: GistApiResponse = response.json as GistApiResponse;
+  const rawUrl: string = data.files[filename]?.raw_url ?? "";
 
   // Generate stable URL without revision hash for subscriptions
   // Format: https://gist.githubusercontent.com/{user}/{gist_id}/raw/{filename}
-  const owner = data.owner?.login || rawUrl.match(/githubusercontent\.com\/([^/]+)\//)?.[1] || "";
-  const stableRawUrl = owner && data.id
+  const owner: string = data.owner?.login ?? rawUrl.match(/githubusercontent\.com\/([^/]+)\//)?.[1] ?? "";
+  const stableRawUrl: string = owner && data.id
     ? `https://gist.githubusercontent.com/${owner}/${data.id}/raw/${filename}`
     : rawUrl;
 
@@ -93,9 +104,10 @@ export async function verifyToken(token: string): Promise<{ login: string; scope
     throw new Error(`GitHub API error ${response.status}`);
   }
 
-  const data = response.json;
-  const scopes = (response.headers["x-oauth-scopes"] || "").split(",").map((s) => s.trim());
-  const hasGistScope = scopes.includes("gist");
+  const data: GitHubUserResponse = response.json as GitHubUserResponse;
+  const scopesHeader: string = response.headers["x-oauth-scopes"] ?? "";
+  const scopes: string[] = scopesHeader.split(",").map((s: string) => s.trim());
+  const hasGistScope: boolean = scopes.includes("gist");
 
   if (!hasGistScope) {
     console.warn("[GistSync] Token missing 'gist' scope. Current scopes:", scopes);
@@ -119,6 +131,6 @@ export async function getGistContent(
 
   if (response.status !== 200) return null;
 
-  const data = response.json;
-  return data.files[filename]?.content || null;
+  const data: GistApiResponse = response.json as GistApiResponse;
+  return data.files[filename]?.content ?? null;
 }
