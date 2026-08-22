@@ -214,6 +214,21 @@ Style parameters: `color` (text), `bg` (background), `radius` (border radius), `
 
 ---
 
+## 🐛 Issues and Bug Reports
+
+Found a bug or have a feature request? Please open an issue on GitHub:
+
+**[Open an Issue](https://github.com/AtinsS/WorkLife-Calendar-for-Obsidian/issues)**
+
+When reporting a bug, please include:
+- Obsidian version
+- Plugin version
+- Steps to reproduce
+- Expected vs actual behavior
+- Console errors (if any): *Ctrl+Shift+I → Console tab*
+
+---
+
 <div align="center">
   <sub>Developed with attention to detail for the Obsidian community</sub><br>
   <sub>Author: <a href="https://github.com/AtinsS">@AtinsS</a></sub><br>

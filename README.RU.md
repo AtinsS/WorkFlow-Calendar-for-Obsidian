@@ -215,6 +215,21 @@ tasks:Задачи
 
 ---
 
+## 🐛 Issues и баг-репорты
+
+Нашли баг или есть предложение по функционалу? Откройте issue на GitHub:
+
+**[Открыть Issue](https://github.com/AtinsS/WorkLife-Calendar-for-Obsidian/issues)**
+
+При сообщении о баге, пожалуйста, укажите:
+- Версия Obsidian
+- Версия плагина
+- Шаги для воспроизведения
+- Ожидаемое и фактическое поведение
+- Ошибки в консоли (если есть): *Ctrl+Shift+I → вкладка Console*
+
+---
+
 <div align="center">
   <sub>Разработано с вниманием к деталям для сообщества Obsidian</sub><br>
   <sub>Автор: <a href="https://github.com/AtinsS">@AtinsS</a></sub><br>
